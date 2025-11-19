@@ -32,7 +32,7 @@ jobs:
           cache: "npm"
 
       # (optional) WASM build step here
-      # - name: Build WASM
+      # - name: Build WASM 
       #   run: npm run build:wasm
 
       - name: Install dependencies
