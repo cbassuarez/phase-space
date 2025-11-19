@@ -177,8 +177,11 @@ function CanvasPanel({
   }, [camera]);
 
   return (
-    <section
-      className={`relative flex h-full min-h-[480px] rounded-[18px] border border-[color:var(--ps-border-subtle)] shadow-[var(--ps-shadow-subtle)] ${gradientClass}`}
+    <motion.section
+      initial={{ opacity: 0, scale: 0.97, y: 12 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: [0.22, 0.61, 0.36, 1] }}
+      className={`relative flex h-full min-h-[480px] w-full flex-1 rounded-[18px] border border-[color:var(--ps-border-subtle)] shadow-[var(--ps-shadow-subtle)] ${gradientClass}`}
     >
       {!ready && !error && (
         <div className="absolute inset-0 z-10 flex items-center justify-center">
@@ -219,7 +222,7 @@ function CanvasPanel({
         className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-white/60 to-transparent"
         animate={{ opacity: background === "dim" ? 0.15 : 0.3 }}
       />
-    </section>
+    </motion.section>
   );
 }
 

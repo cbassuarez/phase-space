@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { getDefaultSceneJSON } from "../data/defaultScenes";
 import type { SceneSpec, SystemId, Trajectories } from "../types";
 
 type WasmEngineClass = new () => {
@@ -68,23 +69,25 @@ export function usePhaseWasmEngine() {
     if (!engine) return null;
     return {
       getDefaultScene: (system: SystemId): string => {
-        switch (system) {
-          case "lorenz":
-            return engine.default_lorenz_scene();
-          case "rossler":
-            if (engine.default_rossler_scene) return engine.default_rossler_scene();
-            console.warn("phasewasm missing default_rossler_scene; using Lorenz scene instead");
-            return engine.default_lorenz_scene();
-          case "aizawa":
-            if (engine.default_aizawa_scene) return engine.default_aizawa_scene();
-            console.warn("phasewasm missing default_aizawa_scene; using Lorenz scene instead");
-            return engine.default_lorenz_scene();
-          case "thomas":
-          default:
-            if (engine.default_thomas_scene) return engine.default_thomas_scene();
-            console.warn("phasewasm missing default_thomas_scene; using Lorenz scene instead");
-            return engine.default_lorenz_scene();
+        const fromWasm = (() => {
+          switch (system) {
+            case "lorenz":
+              return engine.default_lorenz_scene?.();
+            case "rossler":
+              return engine.default_rossler_scene?.();
+            case "aizawa":
+              return engine.default_aizawa_scene?.();
+            case "thomas":
+            default:
+              return engine.default_thomas_scene?.();
+          }
+        })();
+
+        if (fromWasm && typeof fromWasm === "string" && fromWasm.length > 0) {
+          return fromWasm;
         }
+
+        return getDefaultSceneJSON(system);
       },
       integrateScene: (sceneJson: string): { trajectories: Trajectories; scene: SceneSpec } => {
         const trajectories = engine.integrate_scene(sceneJson) as Trajectories;

@@ -19,15 +19,18 @@ function ResolutionSlider({ value, onChange }: ResolutionSliderProps) {
   return (
     <div className="mt-3 flex flex-col gap-2">
       <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">RESOLUTION</div>
-      <div className="relative mt-1 h-3 rounded-full bg-gradient-to-r from-[rgba(79,111,255,0.08)] to-[rgba(255,214,107,0.18)] shadow-[var(--ps-shadow-inner)]">
+      <div className="relative mt-1 h-3 rounded-full bg-gradient-to-r from-[rgba(79,111,255,0.18)] via-[rgba(255,214,107,0.45)] to-[rgba(255,122,115,0.65)] shadow-[var(--ps-shadow-inner)]">
         <motion.div
-          className="absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-white shadow-soft border border-[color:var(--ps-border-subtle)]"
-          layout
-          transition={{ type: "spring", stiffness: 300, damping: 22 }}
-          style={{ left: activeStop.position, translateX: "-50%" }}
+          className="absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border border-[color:var(--ps-border-subtle)] bg-white shadow-soft"
+          initial={false}
+          animate={{ left: activeStop.position }}
+          transition={{ type: "spring", stiffness: 360, damping: 22, mass: 0.55 }}
+          style={{ translateX: "-50%" }}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.92 }}
         />
       </div>
-      <div className="flex justify-between text-[10px] text-[color:var(--ps-text-muted)]">
+      <div className="mt-1 flex justify-between text-[10px] text-[color:var(--ps-text-muted)]">
         {resolutionStops.map((stop) => (
           <button
             key={stop.id}
