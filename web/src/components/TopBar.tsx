@@ -1,6 +1,13 @@
 const githubUrl = "https://github.com/phase-space/phase-space";
 
 function TopBar() {
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   return (
     <header className="w-full border-b border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-bg)]">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 md:h-16">
@@ -9,11 +16,18 @@ function TopBar() {
           <span className="font-semibold">-space</span>
         </div>
         <nav className="flex items-center gap-4 text-xs text-[color:var(--ps-text-soft)] md:text-sm">
-          <button className="text-[color:var(--ps-accent)] underline decoration-2 underline-offset-4">
+          <button
+            className="text-[color:var(--ps-accent)] underline decoration-2 underline-offset-4"
+            onClick={() => scrollToSection("viewer")}
+          >
             Viewer
           </button>
-          <button className="hidden md:inline hover:text-[color:var(--ps-text)]">Systems</button>
-          <button className="hidden md:inline hover:text-[color:var(--ps-text)]">About</button>
+          <button className="hidden md:inline hover:text-[color:var(--ps-text)]" onClick={() => scrollToSection("systems")}>
+            Systems
+          </button>
+          <button className="hidden md:inline hover:text-[color:var(--ps-text)]" onClick={() => scrollToSection("about")}>
+            About
+          </button>
           <a
             href={githubUrl}
             target="_blank"

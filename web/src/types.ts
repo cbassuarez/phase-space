@@ -2,6 +2,7 @@ export type SystemId = "lorenz" | "rossler" | "aizawa" | "thomas";
 export type Resolution = "fast" | "default" | "high" | "ultra";
 export type Palette = "system" | "plasma" | "viridis" | "rainbow";
 export type Background = "light" | "dim";
+export type LineThickness = "thin" | "default" | "thick";
 
 export type Trajectories = number[][][];
 

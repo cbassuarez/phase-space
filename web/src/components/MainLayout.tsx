@@ -20,8 +20,19 @@ function useIsMobile() {
 
 function MainLayout() {
   const isMobile = useIsMobile();
-  const { ready, trajectories, sceneSpec, palette, background, autoSpin, animateHeadTail, showFullTrajectory, loading, error } =
-    useViewerState();
+  const {
+    ready,
+    trajectories,
+    sceneSpec,
+    palette,
+    background,
+    autoSpin,
+    animateHeadTail,
+    showFullTrajectory,
+    lineThickness,
+    loading,
+    error,
+  } = useViewerState();
 
   const viewCamera = sceneSpec?.view?.camera;
 
@@ -41,14 +52,17 @@ function MainLayout() {
               autoSpin={autoSpin}
               animateHeadTail={animateHeadTail}
               showFullTrajectory={showFullTrajectory}
+              lineThickness={lineThickness}
             />
           </div>
           <ControlPanelBottomSheet />
         </div>
       ) : (
-        <div className="mx-auto flex max-w-6xl flex-1 gap-4 px-4 pb-4 pt-2 md:pt-4">
-          <ControlPanelDesktop />
-          <div className="flex-1">
+        <div className="mx-auto flex max-w-6xl flex-1 gap-4 px-4 pb-6 pt-4 md:pb-6 md:pt-6">
+          <aside className="w-full max-w-xs flex-shrink-0">
+            <ControlPanelDesktop />
+          </aside>
+          <section className="flex-1 min-w-0">
             <CanvasPanel
               ready={ready}
               loading={loading}
@@ -60,8 +74,9 @@ function MainLayout() {
               autoSpin={autoSpin}
               animateHeadTail={animateHeadTail}
               showFullTrajectory={showFullTrajectory}
+              lineThickness={lineThickness}
             />
-          </div>
+          </section>
         </div>
       )}
     </main>

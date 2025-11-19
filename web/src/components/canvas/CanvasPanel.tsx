@@ -1,8 +1,8 @@
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Suspense, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { motion } from "framer-motion";
-import type { Background, CameraSpec, Palette, Trajectories } from "../../types";
+import type { Background, CameraSpec, Palette, Trajectories, LineThickness } from "../../types";
 
 interface CanvasPanelProps {
   ready: boolean;
@@ -15,6 +15,7 @@ interface CanvasPanelProps {
   autoSpin: boolean;
   animateHeadTail: boolean;
   showFullTrajectory: boolean;
+  lineThickness: LineThickness;
 }
 
 function colorForTrajectory(idx: number, palette: Palette) {
@@ -41,11 +42,24 @@ function PhaseScene({
   autoSpin,
   animateHeadTail,
   showFullTrajectory,
-}: Omit<CanvasPanelProps, "ready" | "loading" | "error" | "camera">) {
+  camera,
+  lineThickness,
+}: Omit<CanvasPanelProps, "ready" | "loading" | "error">) {
   const groupRef = useRef<THREE.Group>(null);
   const linesRef = useRef<THREE.Line[]>([]);
+  const cameraTheta = useRef(0.8);
+  const cameraPhi = useRef(0.9);
+  const cameraRadius = useRef(25);
+
+  useEffect(() => {
+    cameraTheta.current = camera?.theta ?? 0.8;
+    cameraPhi.current = camera?.phi ?? 0.9;
+    cameraRadius.current = camera?.r ?? 25;
+  }, [camera]);
 
   const lineGeometries = useMemo(() => {
+    const lineScale = lineThickness === "thin" ? 0.8 : lineThickness === "thick" ? 1.8 : 1.3;
+    const pointSize = lineThickness === "thin" ? 0.9 : lineThickness === "thick" ? 2.4 : 1.6;
     return trajectories.map((traj, idx) => {
       const positions = new Float32Array(traj.length * 3);
       traj.forEach((p, i) => {
@@ -59,25 +73,36 @@ function PhaseScene({
       const color = new THREE.Color(colorForTrajectory(idx, palette));
       const material = new THREE.LineBasicMaterial({
         color,
-        linewidth: 1,
+        linewidth: lineScale,
         transparent: true,
         opacity: 0.92,
         blending: THREE.AdditiveBlending,
       });
-      return { geometry, material };
+      const pointsMaterial = new THREE.PointsMaterial({
+        color,
+        size: pointSize,
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending,
+        sizeAttenuation: true,
+      });
+      return { geometry, material, pointsMaterial };
     });
-  }, [trajectories, palette]);
+  }, [trajectories, palette, lineThickness]);
 
   useFrame((state) => {
     const t = state.clock.getElapsedTime();
-    if (autoSpin) {
-      const radius = state.camera.position.length();
-      const speed = 0.12;
-      const angle = t * speed;
-      state.camera.position.x = radius * Math.cos(angle);
-      state.camera.position.z = radius * Math.sin(angle);
-      state.camera.lookAt(0, 0, 0);
-    }
+    const speed = 0.12;
+    const baseTheta = cameraTheta.current;
+    const phi = cameraPhi.current;
+    const radius = THREE.MathUtils.clamp(cameraRadius.current, 6, 80);
+    const angle = autoSpin ? (baseTheta + t * speed) % (Math.PI * 2) : baseTheta;
+    state.camera.position.set(
+      radius * Math.sin(phi) * Math.cos(angle),
+      radius * Math.cos(phi),
+      radius * Math.sin(phi) * Math.sin(angle)
+    );
+    state.camera.lookAt(0, 0, 0);
 
     linesRef.current.forEach((line) => {
       const geometry = line?.geometry as THREE.BufferGeometry;
@@ -106,15 +131,17 @@ function PhaseScene({
     <group ref={groupRef}>
       <ambientLight intensity={0.6} />
       <pointLight position={[6, 12, 10]} intensity={0.4} />
-      {lineGeometries.map(({ geometry, material }, idx) => (
-        <line
-          key={idx}
-          ref={(el) => {
-            if (el) linesRef.current[idx] = el;
-          }}
-          geometry={geometry}
-          material={material}
-        />
+      {lineGeometries.map(({ geometry, material, pointsMaterial }, idx) => (
+        <group key={idx}>
+          <line
+            ref={(el) => {
+              if (el) linesRef.current[idx] = el;
+            }}
+            geometry={geometry}
+            material={material}
+          />
+          <points geometry={geometry} material={pointsMaterial} />
+        </group>
       ))}
       <color args={[background === "dim" ? "#0e1019" : "#f8f9ff"]} attach="background" />
     </group>
@@ -132,6 +159,7 @@ function CanvasPanel({
   autoSpin,
   animateHeadTail,
   showFullTrajectory,
+  lineThickness,
 }: CanvasPanelProps) {
   const gradientClass =
     background === "dim"
@@ -173,18 +201,20 @@ function CanvasPanel({
           </div>
         </div>
       )}
-      <Canvas camera={{ position: initialCamera.position, fov: 45 }} dpr={[1, 2]}>
-        <Suspense fallback={null}>
-          <PhaseScene
-            trajectories={trajectories}
-            palette={palette}
-            background={background}
-            autoSpin={autoSpin}
-            animateHeadTail={animateHeadTail}
-            showFullTrajectory={showFullTrajectory}
-          />
-        </Suspense>
-      </Canvas>
+        <Canvas camera={{ position: initialCamera.position, fov: 45 }} dpr={[1, 2]}>
+          <Suspense fallback={null}>
+            <PhaseScene
+              trajectories={trajectories}
+              palette={palette}
+              background={background}
+              autoSpin={autoSpin}
+              animateHeadTail={animateHeadTail}
+              showFullTrajectory={showFullTrajectory}
+              camera={camera}
+              lineThickness={lineThickness}
+            />
+          </Suspense>
+        </Canvas>
       <motion.div
         className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-white/60 to-transparent"
         animate={{ opacity: background === "dim" ? 0.15 : 0.3 }}
