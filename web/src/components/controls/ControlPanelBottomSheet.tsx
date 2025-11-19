@@ -1,0 +1,127 @@
+import clsx from "clsx";
+import { motion } from "framer-motion";
+import { useState } from "react";
+import { useViewerState } from "../../state/viewerState";
+import type { Palette, SystemId } from "../../types";
+import ResolutionSlider from "./ResolutionSlider";
+import ToggleSwitch from "./ToggleSwitch";
+
+const systemLabels: { id: SystemId; label: string }[] = [
+  { id: "lorenz", label: "Lorenz" },
+  { id: "rossler", label: "Rössler" },
+  { id: "aizawa", label: "Aizawa" },
+  { id: "thomas", label: "Thomas" },
+];
+
+const paletteOptions: { id: Palette; label: string }[] = [
+  { id: "system", label: "System default" },
+  { id: "plasma", label: "Plasma" },
+  { id: "viridis", label: "Viridis" },
+  { id: "rainbow", label: "Rainbow" },
+];
+
+function ControlPanelBottomSheet() {
+  const {
+    system,
+    resolution,
+    autoSpin,
+    animateHeadTail,
+    showFullTrajectory,
+    palette,
+    background,
+    setSystem,
+    setResolution,
+    toggleAutoSpin,
+    toggleAnimateHeadTail,
+    toggleShowFullTrajectory,
+    setPalette,
+    setBackground,
+  } = useViewerState();
+
+  const [open, setOpen] = useState(false);
+
+  return (
+    <motion.div
+      initial={false}
+      animate={{ y: open ? 0 : "calc(100% - 48px)" }}
+      transition={{ type: "spring", stiffness: 300, damping: 35 }}
+      className="fixed bottom-0 left-0 right-0 z-20 rounded-t-[18px] border-t border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-bg)] shadow-[var(--ps-shadow-soft)]"
+    >
+      <button className="flex w-full flex-col items-center pt-2 pb-1" onClick={() => setOpen((v) => !v)}>
+        <div className="h-1 w-10 rounded-full bg-[color:var(--ps-border-subtle)]" />
+        <span className="mt-1 text-[10px] uppercase tracking-[0.16em] text-[color:var(--ps-text-muted)]">Controls</span>
+      </button>
+      <div className="max-h-[60vh] overflow-y-auto px-4 pb-4">
+        <section className="flex flex-col gap-2 py-2">
+          <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">SYSTEM</div>
+          <div className="grid grid-cols-2 gap-2">
+            {systemLabels.map((opt) => (
+              <button
+                key={opt.id}
+                onClick={() => setSystem(opt.id)}
+                className={clsx(
+                  "rounded-full px-3 py-2 text-xs",
+                  system === opt.id
+                    ? "bg-[color:var(--ps-panel-alt-bg)] text-[color:var(--ps-text)] shadow-subtle"
+                    : "bg-white text-[color:var(--ps-text-soft)]"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <ResolutionSlider value={resolution} onChange={setResolution} />
+
+        <section className="mt-2 flex flex-col gap-2">
+          <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">VIEW</div>
+          <ToggleSwitch label="Auto-spin camera" checked={autoSpin} onToggle={toggleAutoSpin} />
+          <ToggleSwitch label="Animate head/tail" checked={animateHeadTail} onToggle={toggleAnimateHeadTail} />
+          <ToggleSwitch label="Show full trajectory" checked={showFullTrajectory} onToggle={toggleShowFullTrajectory} />
+        </section>
+
+        <section className="mt-2 grid grid-cols-2 gap-3">
+          <div className="space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] px-3 py-2">
+            <p className="text-[11px] uppercase tracking-[0.12em] text-[color:var(--ps-text-muted)]">Palette</p>
+            {paletteOptions.map((opt) => (
+              <label key={opt.id} className="flex items-center justify-between py-1 text-xs text-[color:var(--ps-text-soft)]">
+                <span>{opt.label}</span>
+                <input
+                  type="radio"
+                  name="palette-mobile"
+                  value={opt.id}
+                  checked={palette === opt.id}
+                  onChange={() => setPalette(opt.id)}
+                  className="h-3 w-3 accent-[color:var(--ps-accent)]"
+                />
+              </label>
+            ))}
+          </div>
+
+          <div className="space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] px-3 py-2">
+            <p className="text-[11px] uppercase tracking-[0.12em] text-[color:var(--ps-text-muted)]">Background</p>
+            {[
+              { id: "light", label: "Light" },
+              { id: "dim", label: "Dim" },
+            ].map((opt) => (
+              <label key={opt.id} className="flex items-center justify-between py-1 text-xs text-[color:var(--ps-text-soft)]">
+                <span>{opt.label}</span>
+                <input
+                  type="radio"
+                  name="background-mobile"
+                  value={opt.id}
+                  checked={background === opt.id}
+                  onChange={() => setBackground(opt.id as "light" | "dim")}
+                  className="h-3 w-3 accent-[color:var(--ps-accent)]"
+                />
+              </label>
+            ))}
+          </div>
+        </section>
+      </div>
+    </motion.div>
+  );
+}
+
+export default ControlPanelBottomSheet;

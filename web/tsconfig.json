@@ -4,7 +4,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "strict": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "esModuleInterop": true,
     "allowJs": false,
     "resolveJsonModule": true,
@@ -13,4 +13,3 @@
   },
   "include": ["src"]
 }
-
