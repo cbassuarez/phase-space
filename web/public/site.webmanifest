@@ -1,0 +1,25 @@
+{
+  "name": "Phase Space",
+  "short_name": "Phase Space",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#050814",
+  "theme_color": "#050814",
+  "icons": [
+    {
+      "src": "/phase-space-icon-29.png",
+      "sizes": "29x29",
+      "type": "image/png"
+    },
+    {
+      "src": "/phase-space-icon-76.png",
+      "sizes": "76x76",
+      "type": "image/png"
+    },
+    {
+      "src": "/phase-space-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
