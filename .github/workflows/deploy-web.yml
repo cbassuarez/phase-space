@@ -30,12 +30,9 @@ jobs:
         with:
           node-version: "lts/*"
           cache: "npm"
-          cache-dependency-path: |
-            web/package-lock.json
-            package-lock.json
+          cache-dependency-path: web/package-lock.json
 
-      # If you have a separate step to build the WASM bundle, do it here,
-      # making sure the output ends up in web/public/phasewasm/
+      # (optional) WASM build step here
       # - name: Build WASM
       #   run: npm run build:wasm
 
@@ -48,7 +45,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: web/dist
+          path: dist   # note: `dist` is inside `web/` because of working-directory
 
   deploy:
     needs: build
