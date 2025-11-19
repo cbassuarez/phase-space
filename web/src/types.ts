@@ -1,7 +1,7 @@
 export type SystemId = "lorenz" | "rossler" | "aizawa" | "thomas";
 export type Resolution = "fast" | "default" | "high" | "ultra";
-export type Palette = "system" | "plasma" | "viridis" | "rainbow";
-export type Background = "light" | "dim";
+export type Palette = "plasma" | "viridis" | "rainbow" | "inferno" | "magma" | "cividis";
+export type Background = "dark" | "light";
 export type LineThickness = "thin" | "default" | "thick";
 
 export type Trajectories = number[][][];
@@ -10,6 +10,7 @@ export interface IntegratorSpec {
   dt?: number;
   steps?: number;
   discard_initial?: number;
+  max_radius?: number;
 }
 
 export interface CameraSpec {
@@ -18,12 +19,27 @@ export interface CameraSpec {
   r?: number;
 }
 
+export interface PlaneSpec {
+  normal?: [number, number, number];
+  offset?: number;
+}
+
 export interface ViewSpec {
+  mode?: "mode3d" | "plane";
+  plane?: PlaneSpec | null;
   camera?: CameraSpec;
+  palette?: Palette;
+  background?: Background;
+  point_size?: number;
 }
 
 export interface SceneSpec {
+  id?: string | null;
+  system?: SystemId;
+  params?: Record<string, unknown>;
+  initial_seeds?: { x?: [number, number, number]; color_index?: number | null }[];
   integrator?: IntegratorSpec;
   view?: ViewSpec;
+  random_seed?: number;
   [key: string]: unknown;
 }
