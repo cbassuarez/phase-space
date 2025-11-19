@@ -128,7 +128,7 @@ pub fn default_lorenz() -> Self {
 let params = LorenzParams::default();
 let params_json = params_to_json_lorenz(&params);
 
-```
+
     SceneSpec {
         id: Some("lorenz-default".to_string()),
         system: SystemId::Lorenz,
@@ -296,7 +296,7 @@ pub fn default_thomas() -> Self {
         random_seed: Some(45),
     }
 }
-```
+
 
 }
 
