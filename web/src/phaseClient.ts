@@ -1,5 +1,4 @@
-// Simple wrapper for the WASM engine.
-
+// web/src/phaseClient.ts
 type WasmModule = typeof import("../public/phasewasm/phasewasm");
 
 let wasmInitPromise: Promise<WasmModule> | null = null;
@@ -12,4 +11,3 @@ export async function loadWasmEngine() {
   const engine = new mod.WasmEngine();
   return { mod, engine };
 }
-
