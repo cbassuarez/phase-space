@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 import { usePhaseWasmEngine } from "../hooks/usePhaseWasmEngine";
 import type {
   Background,
@@ -8,6 +8,7 @@ import type {
   SceneSpec,
   SystemId,
   Trajectories,
+  LineThickness,
 } from "../types";
 
 interface TrajectoryMeta {
@@ -24,6 +25,7 @@ interface ViewerContextValue {
   autoSpin: boolean;
   animateHeadTail: boolean;
   showFullTrajectory: boolean;
+  lineThickness: LineThickness;
   palette: Palette;
   background: Background;
   sceneJson: string;
@@ -35,6 +37,7 @@ interface ViewerContextValue {
   toggleAutoSpin: () => void;
   toggleAnimateHeadTail: () => void;
   toggleShowFullTrajectory: () => void;
+  setLineThickness: (t: LineThickness) => void;
   setPalette: (p: Palette) => void;
   setBackground: (b: Background) => void;
   refreshScene: () => void;
@@ -67,6 +70,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const [autoSpin, setAutoSpin] = useState(true);
   const [animateHeadTail, setAnimateHeadTail] = useState(true);
   const [showFullTrajectory, setShowFullTrajectory] = useState(true);
+  const [lineThickness, setLineThickness] = useState<LineThickness>("default");
   const [palette, setPaletteState] = useState<Palette>("system");
   const [background, setBackgroundState] = useState<Background>("light");
   const [sceneJson, setSceneJson] = useState("{}");
@@ -90,20 +94,9 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     setError(engineError);
   }, [engineError]);
 
-  useEffect(() => {
-    if (!engineReady || !api) return;
-    loadScene(system, resolution);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [engineReady, system]);
-
-  useEffect(() => {
-    if (!engineReady) return;
-    loadScene(system, resolution, false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resolution]);
-
-  const loadScene = (nextSystem: SystemId, res: Resolution, resetSystem = true) => {
-    if (!api) return;
+  const loadScene = useCallback(
+    (nextSystem: SystemId, res: Resolution) => {
+      if (!api) return;
     setLoading(true);
     try {
       const baseScene = api.getDefaultScene(nextSystem);
@@ -121,7 +114,6 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
         { count: 0, points: 0 }
       );
       setTrajectoryMeta(meta);
-      if (resetSystem) setSystemState(nextSystem);
       setError(null);
     } catch (err) {
       console.error(err);
@@ -129,9 +121,16 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+    },
+    [api]
+  );
 
-  const refreshScene = () => loadScene(system, resolution, false);
+  useEffect(() => {
+    if (!engineReady || !api) return;
+    loadScene(system, resolution);
+  }, [engineReady, api, system, resolution, loadScene]);
+
+  const refreshScene = useCallback(() => loadScene(system, resolution), [loadScene, system, resolution]);
 
   const value = useMemo<ViewerContextValue>(() => ({
     ready: engineReady,
@@ -142,17 +141,19 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     autoSpin,
     animateHeadTail,
     showFullTrajectory,
+    lineThickness,
     palette,
     background,
     sceneJson,
     sceneSpec,
     trajectories,
     trajectoryMeta,
-    setSystem: (s: SystemId) => loadScene(s, resolution),
-    setResolution: (r: Resolution) => setResolutionState(r),
+    setSystem: setSystemState,
+    setResolution: setResolutionState,
     toggleAutoSpin: () => setAutoSpin((v) => !v),
     toggleAnimateHeadTail: () => setAnimateHeadTail((v) => !v),
     toggleShowFullTrajectory: () => setShowFullTrajectory((v) => !v),
+    setLineThickness,
     setPalette: setPaletteState,
     setBackground: setBackgroundState,
     refreshScene,
@@ -165,12 +166,14 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     autoSpin,
     animateHeadTail,
     showFullTrajectory,
+    lineThickness,
     palette,
     background,
     sceneJson,
     sceneSpec,
     trajectories,
     trajectoryMeta,
+    refreshScene,
   ]);
 
   return <ViewerContext.Provider value={value}>{children}</ViewerContext.Provider>;

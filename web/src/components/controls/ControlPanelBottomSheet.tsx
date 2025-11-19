@@ -27,6 +27,7 @@ function ControlPanelBottomSheet() {
     autoSpin,
     animateHeadTail,
     showFullTrajectory,
+    lineThickness,
     palette,
     background,
     setSystem,
@@ -34,6 +35,7 @@ function ControlPanelBottomSheet() {
     toggleAutoSpin,
     toggleAnimateHeadTail,
     toggleShowFullTrajectory,
+    setLineThickness,
     setPalette,
     setBackground,
   } = useViewerState();
@@ -79,6 +81,24 @@ function ControlPanelBottomSheet() {
           <ToggleSwitch label="Auto-spin camera" checked={autoSpin} onToggle={toggleAutoSpin} />
           <ToggleSwitch label="Animate head/tail" checked={animateHeadTail} onToggle={toggleAnimateHeadTail} />
           <ToggleSwitch label="Show full trajectory" checked={showFullTrajectory} onToggle={toggleShowFullTrajectory} />
+          <div className="mt-1 grid grid-cols-3 gap-2 text-xs">
+            {[{ id: "thin", label: "Thin" }, { id: "default", label: "Default" }, { id: "thick", label: "Thick" }].map(
+              (opt) => (
+                <button
+                  key={opt.id}
+                  onClick={() => setLineThickness(opt.id as typeof lineThickness)}
+                  className={clsx(
+                    "rounded-full px-2 py-1",
+                    lineThickness === opt.id
+                      ? "bg-[color:var(--ps-panel-alt-bg)] text-[color:var(--ps-text)] shadow-subtle"
+                      : "bg-white text-[color:var(--ps-text-soft)]"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              )
+            )}
+          </div>
         </section>
 
         <section className="mt-2 grid grid-cols-2 gap-3">
