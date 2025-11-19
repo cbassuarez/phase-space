@@ -2,17 +2,17 @@ import { useEffect, useMemo, useState } from "react";
 import type { SceneSpec, SystemId, Trajectories } from "../types";
 
 interface PhaseWasmApi {
-  default_lorenz_scene: () => string;
-  default_rossler_scene: () => string;
-  default_aizawa_scene: () => string;
-  default_thomas_scene: () => string;
-  integrate_scene: (sceneJson: string) => Trajectories;
-  WasmEngine: new () => unknown;
+  WasmEngine: new () => {
+    default_lorenz_scene: () => string;
+    default_rossler_scene: () => string;
+    default_aizawa_scene: () => string;
+    default_thomas_scene: () => string;
+    integrate_scene: (sceneJson: string) => Trajectories;
+  };
   default: () => Promise<void>;
 }
 
 type EngineInstance = {
-  WasmEngine: new () => unknown;
   default_lorenz_scene: () => string;
   default_rossler_scene: () => string;
   default_aizawa_scene: () => string;
@@ -31,14 +31,14 @@ export function usePhaseWasmEngine() {
       try {
         const wasmModule: PhaseWasmApi = await import("../wasm/phasewasm");
         await wasmModule.default();
+        const wasmEngine = new wasmModule.WasmEngine();
         if (!mounted) return;
         setEngine({
-          WasmEngine: wasmModule.WasmEngine,
-          default_lorenz_scene: wasmModule.default_lorenz_scene,
-          default_rossler_scene: wasmModule.default_rossler_scene,
-          default_aizawa_scene: wasmModule.default_aizawa_scene,
-          default_thomas_scene: wasmModule.default_thomas_scene,
-          integrate_scene: wasmModule.integrate_scene,
+          default_lorenz_scene: wasmEngine.default_lorenz_scene.bind(wasmEngine),
+          default_rossler_scene: wasmEngine.default_rossler_scene.bind(wasmEngine),
+          default_aizawa_scene: wasmEngine.default_aizawa_scene.bind(wasmEngine),
+          default_thomas_scene: wasmEngine.default_thomas_scene.bind(wasmEngine),
+          integrate_scene: wasmEngine.integrate_scene.bind(wasmEngine),
         });
         setReady(true);
       } catch (err) {
