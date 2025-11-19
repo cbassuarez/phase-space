@@ -19,8 +19,8 @@ pub fn start() {
 fn integrator_spec_to_config(spec: &IntegratorSpec) -> IntegratorConfig {
     IntegratorConfig {
         dt: spec.dt,
-        steps: spec.steps,
-        discard_initial: spec.discard_initial.unwrap_or(0),
+        steps: spec.steps as usize,
+        discard_initial: spec.discard_initial.unwrap_or(0) as usize,
         max_radius: spec.max_radius,
     }
 }
