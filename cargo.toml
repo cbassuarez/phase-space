@@ -1,0 +1,8 @@
+[workspace]
+members = [
+  "phasecore",
+  "phasewasm",
+  "phasecli",
+]
+resolver = "2"
+
