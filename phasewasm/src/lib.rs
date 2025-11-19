@@ -27,24 +27,25 @@ impl WasmEngine {
         let scene: SceneSpec = serde_json::from_str(scene_json)
             .map_err(|e| JsValue::from_str(&format!("Scene parse error: {e}")))?;
 
-        match scene.system {
-            phasecore::scene::SystemId::Lorenz => {
-                let params = parse_lorenz_params(&scene.params)
-                    .map_err(|e| JsValue::from_str(&format!("Param error: {e}")))?;
-                let cfg: IntegratorConfig = scene.integrator.clone().into();
+match scene.system {
+    phasecore::scene::SystemId::Lorenz => {
+        let params = parse_lorenz_params(&scene.params)
+            .map_err(|e| JsValue::from_str(&format!("Param error: {e}")))?;
+        let cfg: IntegratorConfig = scene.integrator.clone().into();
 
-                let mut trajectories: Vec<Vec<[f32; 3]>> = Vec::new();
+        let mut trajectories: Vec<Vec<[f32; 3]>> = Vec::new();
 
-                for seed in &scene.initial_seeds {
-                    let x0: Vec3 = Vec3::from(seed.x);
-                    let points = integrate_trajectory(Lorenz, &params, x0, cfg);
-                    trajectories.push(points.into_iter().map(Into::into).collect());
-                }
-
-                JsValue::from_serde(&trajectories)
-                    .map_err(|e| JsValue::from_str(&format!("Serialize error: {e}")))
-            }
+        for seed in &scene.initial_seeds {
+            let x0: Vec3 = Vec3::from(seed.x);
+            let points = integrate_trajectory(Lorenz, &params, x0, cfg);
+            trajectories.push(points.into_iter().map(Into::into).collect());
         }
+
+        let js_val = serde_wasm_bindgen::to_value(&trajectories)
+            .map_err(|e| JsValue::from_str(&format!("Serialize error: {e}")))?;
+        Ok(js_val)
+    }
+}
     }
 
     /// Return a default Lorenz scene spec JSON string.

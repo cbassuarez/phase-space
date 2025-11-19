@@ -1,0 +1,15 @@
+{
+  "name": "phasewasm",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "phasewasm_bg.wasm",
+    "phasewasm.js",
+    "phasewasm.d.ts"
+  ],
+  "main": "phasewasm.js",
+  "types": "phasewasm.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
