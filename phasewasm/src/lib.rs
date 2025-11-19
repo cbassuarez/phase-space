@@ -26,7 +26,6 @@ pub fn new() -> WasmEngine {
 WasmEngine
 }
 
-```
 /// Integrate a scene described by JSON SceneSpec, return an array-of-arrays of points
 /// shaped as: `[[[x,y,z], ...], ...]` where outer index = trajectory index.
 #[wasm_bindgen]
@@ -133,7 +132,7 @@ pub fn default_thomas_scene(&self) -> String {
     let scene = SceneSpec::default_thomas();
     serde_json::to_string(&scene).unwrap_or_else(|_| "{}".to_string())
 }
-```
+
 
 }
 
@@ -144,9 +143,7 @@ let sigma = v.get("sigma").and_then(Value::as_f64).unwrap_or(10.0) as f32;
 let rho = v.get("rho").and_then(Value::as_f64).unwrap_or(28.0) as f32;
 let beta = v.get("beta").and_then(Value::as_f64).unwrap_or(8.0 / 3.0) as f32;
 
-```
 Ok(LorenzParams { sigma, rho, beta })
-```
 
 }
 
@@ -155,9 +152,7 @@ let a = v.get("a").and_then(Value::as_f64).unwrap_or(0.2) as f32;
 let b = v.get("b").and_then(Value::as_f64).unwrap_or(0.2) as f32;
 let c = v.get("c").and_then(Value::as_f64).unwrap_or(5.7) as f32;
 
-```
 Ok(RosslerParams { a, b, c })
-```
 
 }
 
@@ -169,17 +164,13 @@ let d = v.get("d").and_then(Value::as_f64).unwrap_or(3.5) as f32;
 let e = v.get("e").and_then(Value::as_f64).unwrap_or(0.25) as f32;
 let f = v.get("f").and_then(Value::as_f64).unwrap_or(0.1) as f32;
 
-```
 Ok(AizawaParams { a, b, c, d, e, f })
-```
 
 }
 
 fn parse_thomas_params(v: &Value) -> Result<ThomasParams, String> {
 let b = v.get("b").and_then(Value::as_f64).unwrap_or(0.208186) as f32;
 
-```
 Ok(ThomasParams { b })
-```
 
 }
