@@ -159,6 +159,7 @@ function CanvasPanel({
   autoSpin,
   animateHeadTail,
   showFullTrajectory,
+  lineThickness,
 }: CanvasPanelProps) {
   const gradientClass =
     background === "dim"
