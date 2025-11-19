@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 import { usePhaseWasmEngine } from "../hooks/usePhaseWasmEngine";
+import type { CameraProgram } from "../camera/types";
+import { getDefaultSceneSpec } from "../data/defaultScenes";
 import type {
   Background,
   IntegratorSpec,
@@ -30,6 +32,7 @@ interface ViewerContextValue {
   background: Background;
   sceneJson: string;
   sceneSpec: SceneSpec | null;
+  cameraProgram: CameraProgram | null;
   trajectories: Trajectories;
   trajectoryMeta: TrajectoryMeta;
   setSystem: (s: SystemId) => void;
@@ -40,6 +43,7 @@ interface ViewerContextValue {
   setLineThickness: (t: LineThickness) => void;
   setPalette: (p: Palette) => void;
   setBackground: (b: Background) => void;
+  setCameraProgram: (updater: (c: CameraProgram) => CameraProgram) => void;
   refreshScene: () => void;
 }
 
@@ -75,6 +79,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const [background, setBackgroundState] = useState<Background>("light");
   const [sceneJson, setSceneJson] = useState("{}");
   const [sceneSpec, setSceneSpec] = useState<SceneSpec | null>(null);
+  const [cameraProgram, setCameraProgramState] = useState<CameraProgram | null>(null);
   const [trajectories, setTrajectories] = useState<Trajectories>([]);
   const [trajectoryMeta, setTrajectoryMeta] = useState<TrajectoryMeta>({ count: 0, points: 0 });
   const [loading, setLoading] = useState(false);
@@ -97,30 +102,35 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const loadScene = useCallback(
     (nextSystem: SystemId, res: Resolution) => {
       if (!api) return;
-    setLoading(true);
-    try {
-      const baseScene = api.getDefaultScene(nextSystem);
-      const tunedScene = applyResolution(baseScene, res);
-      const { trajectories: traj, scene } = api.integrateScene(tunedScene);
-      setSceneJson(tunedScene);
-      setSceneSpec(scene);
-      setTrajectories(traj);
-      const meta = traj.reduce(
-        (acc, t) => {
-          acc.count += 1;
-          acc.points += Array.isArray(t) ? t.length : 0;
-          return acc;
-        },
-        { count: 0, points: 0 }
-      );
-      setTrajectoryMeta(meta);
-      setError(null);
-    } catch (err) {
-      console.error(err);
-      setError(String(err));
-    } finally {
-      setLoading(false);
-    }
+      setLoading(true);
+      try {
+        const baseScene = api.getDefaultScene(nextSystem);
+        const tunedScene = applyResolution(baseScene, res);
+        const { trajectories: traj, scene } = api.integrateScene(tunedScene);
+        setSceneJson(tunedScene);
+        setSceneSpec(scene);
+        const fallbackCamera =
+          (scene.camera as CameraProgram | undefined) ??
+          (getDefaultSceneSpec(nextSystem).camera as CameraProgram | undefined) ??
+          null;
+        setCameraProgramState(fallbackCamera ? JSON.parse(JSON.stringify(fallbackCamera)) : null);
+        setTrajectories(traj);
+        const meta = traj.reduce(
+          (acc, t) => {
+            acc.count += 1;
+            acc.points += Array.isArray(t) ? t.length : 0;
+            return acc;
+          },
+          { count: 0, points: 0 }
+        );
+        setTrajectoryMeta(meta);
+        setError(null);
+      } catch (err) {
+        console.error(err);
+        setError(String(err));
+      } finally {
+        setLoading(false);
+      }
     },
     [api]
   );
@@ -129,6 +139,32 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     if (!engineReady || !api) return;
     loadScene(system, resolution);
   }, [engineReady, api, system, resolution, loadScene]);
+
+  const setCameraProgram = useCallback(
+    (updater: (c: CameraProgram) => CameraProgram) => {
+      setCameraProgramState((prev) => {
+        const base =
+          prev ??
+          (sceneSpec?.camera as CameraProgram | undefined) ??
+          (sceneSpec?.system
+            ? (getDefaultSceneSpec(sceneSpec.system as SystemId).camera as CameraProgram | undefined)
+            : undefined) ??
+          (getDefaultSceneSpec(system).camera as CameraProgram | undefined) ??
+          null;
+
+        if (!base) return prev;
+        const next = updater(JSON.parse(JSON.stringify(base)) as CameraProgram);
+        setSceneSpec((prevSpec) => {
+          if (!prevSpec) return prevSpec;
+          const updated = { ...prevSpec, camera: next } as SceneSpec;
+          setSceneJson(JSON.stringify(updated, null, 2));
+          return updated;
+        });
+        return next;
+      });
+    },
+    [sceneSpec, system]
+  );
 
   const refreshScene = useCallback(() => loadScene(system, resolution), [loadScene, system, resolution]);
 
@@ -146,6 +182,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     background,
     sceneJson,
     sceneSpec,
+    cameraProgram,
     trajectories,
     trajectoryMeta,
     setSystem: setSystemState,
@@ -156,6 +193,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     setLineThickness,
     setPalette: setPaletteState,
     setBackground: setBackgroundState,
+    setCameraProgram,
     refreshScene,
   }), [
     engineReady,
@@ -171,8 +209,10 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     background,
     sceneJson,
     sceneSpec,
+    cameraProgram,
     trajectories,
     trajectoryMeta,
+    setCameraProgram,
     refreshScene,
   ]);
 
