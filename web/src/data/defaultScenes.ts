@@ -1,4 +1,60 @@
 import { SceneSpec, SystemId } from "../types";
+import type { CameraProgram } from "../camera/types";
+
+function defaultCameraProgram(): CameraProgram {
+  return {
+    mode: "orbit",
+    speed_scalar: 1.0,
+    zoom_scalar: 1.0,
+    stability: 0.25,
+    orbit: {
+      base_radius: 1.2,
+      radius_jitter: 0.05,
+      azimuth_speed: 0.25,
+      polar_speed: 0.15,
+      polar_center: 0.9,
+      polar_amplitude: 0.25,
+      hand_held_jitter: 0.15,
+    },
+    path_rider: {
+      trajectory_index: 0,
+      ahead_offset: 150,
+      lateral_offset: 0.3,
+      up_blend: 0.6,
+      time_scale: 1.0,
+      loop_mode: "wrap",
+    },
+    grid_surface: {
+      plane_height: 0,
+      camera_height: 2.0,
+      tilt_angle: 0.4,
+      travel_radius: 1.2,
+      travel_speed: 0.25,
+      path_shape: "circle",
+    },
+    drone_ghost: {
+      system: "lorenz",
+      radius_scale: 1.4,
+      center_bias: 0.4,
+      speed: 1.0,
+      mode: "offset",
+    },
+    lobe_focus: {
+      dwell_time: 6.0,
+      transition_time: 2.5,
+      zoom_inner: 0.9,
+      zoom_outer: 1.4,
+      cycle_mode: "alternate",
+    },
+    macro_micro: {
+      cycle_duration: 24.0,
+      micro_hold_fraction: 0.4,
+      macro_radius: 1.3,
+      micro_radius: 0.6,
+      patch_selection: "random",
+    },
+  };
+}
 
 const defaultScenes: Record<SystemId, SceneSpec> = {
   lorenz: {
@@ -28,6 +84,13 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       point_size: 1.0,
     },
     random_seed: 42,
+    camera: (() => {
+      const cam = defaultCameraProgram();
+      cam.mode = "orbit";
+      cam.zoom_scalar = 1.0;
+      cam.stability = 0.2;
+      return cam;
+    })(),
   },
   rossler: {
     id: "rossler-default",
@@ -56,6 +119,13 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       point_size: 1.0,
     },
     random_seed: 43,
+    camera: (() => {
+      const cam = defaultCameraProgram();
+      cam.mode = "macro-micro";
+      cam.zoom_scalar = 1.15;
+      cam.macro_micro.micro_radius = 0.55;
+      return cam;
+    })(),
   },
   aizawa: {
     id: "aizawa-default",
@@ -88,6 +158,13 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       point_size: 1.0,
     },
     random_seed: 44,
+    camera: (() => {
+      const cam = defaultCameraProgram();
+      cam.mode = "path-rider";
+      cam.path_rider.time_scale = 0.8;
+      cam.path_rider.ahead_offset = 220;
+      return cam;
+    })(),
   },
   thomas: {
     id: "thomas-default",
@@ -115,6 +192,13 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       point_size: 1.0,
     },
     random_seed: 45,
+    camera: (() => {
+      const cam = defaultCameraProgram();
+      cam.mode = "drone-ghost";
+      cam.drone_ghost.radius_scale = 1.6;
+      cam.drone_ghost.center_bias = 0.35;
+      return cam;
+    })(),
   },
 };
 

@@ -1,3 +1,5 @@
+import type { CameraProgram } from "./camera/types";
+
 export type SystemId = "lorenz" | "rossler" | "aizawa" | "thomas";
 export type Resolution = "fast" | "default" | "high" | "ultra";
 export type Palette = "plasma" | "viridis" | "rainbow" | "inferno" | "magma" | "cividis";
@@ -41,5 +43,6 @@ export interface SceneSpec {
   integrator?: IntegratorSpec;
   view?: ViewSpec;
   random_seed?: number;
+  camera?: CameraProgram;
   [key: string]: unknown;
 }

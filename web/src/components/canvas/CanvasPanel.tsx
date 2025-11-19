@@ -2,6 +2,8 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { Suspense, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { motion } from "framer-motion";
+import { computeCameraPose } from "../../camera/controller";
+import type { CameraContext, CameraPose, CameraProgram } from "../../camera/types";
 import type { Background, CameraSpec, Palette, Trajectories, LineThickness } from "../../types";
 
 interface CanvasPanelProps {
@@ -12,6 +14,8 @@ interface CanvasPanelProps {
   palette: Palette;
   background: Background;
   camera?: CameraSpec;
+  cameraProgram?: CameraProgram | null;
+  randomSeed?: number;
   autoSpin: boolean;
   animateHeadTail: boolean;
   showFullTrajectory: boolean;
@@ -42,20 +46,58 @@ function PhaseScene({
   autoSpin,
   animateHeadTail,
   showFullTrajectory,
+  cameraProgram,
+  randomSeed,
   camera,
   lineThickness,
 }: Omit<CanvasPanelProps, "ready" | "loading" | "error">) {
   const groupRef = useRef<THREE.Group>(null);
   const linesRef = useRef<THREE.Line[]>([]);
-  const cameraTheta = useRef(0.8);
-  const cameraPhi = useRef(0.9);
-  const cameraRadius = useRef(25);
+  const timeRef = useRef(0);
+  const lastPoseRef = useRef<CameraPose | null>(null);
 
   useEffect(() => {
-    cameraTheta.current = camera?.theta ?? 0.8;
-    cameraPhi.current = camera?.phi ?? 0.9;
-    cameraRadius.current = camera?.r ?? 25;
-  }, [camera]);
+    if (!cameraProgram) {
+      lastPoseRef.current = null;
+    }
+  }, [cameraProgram]);
+
+  const bounds = useMemo(() => {
+    if (!trajectories.length) {
+      return {
+        bboxMin: [-10, -10, -10] as [number, number, number],
+        bboxMax: [10, 10, 10] as [number, number, number],
+        centroid: [0, 0, 0] as [number, number, number],
+      };
+    }
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let minZ = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    let maxZ = -Infinity;
+
+    trajectories.forEach((traj) => {
+      traj.forEach((p) => {
+        minX = Math.min(minX, p[0]);
+        minY = Math.min(minY, p[1]);
+        minZ = Math.min(minZ, p[2]);
+        maxX = Math.max(maxX, p[0]);
+        maxY = Math.max(maxY, p[1]);
+        maxZ = Math.max(maxZ, p[2]);
+      });
+    });
+
+    const bboxMin: [number, number, number] = [minX, minY, minZ];
+    const bboxMax: [number, number, number] = [maxX, maxY, maxZ];
+    const centroid: [number, number, number] = [
+      (minX + maxX) / 2,
+      (minY + maxY) / 2,
+      (minZ + maxZ) / 2,
+    ];
+    return { bboxMin, bboxMax, centroid };
+  }, [trajectories]);
 
   const lineGeometries = useMemo(() => {
     const lineScale = lineThickness === "thin" ? 0.8 : lineThickness === "thick" ? 1.8 : 1.3;
@@ -90,19 +132,41 @@ function PhaseScene({
     });
   }, [trajectories, palette, lineThickness]);
 
-  useFrame((state) => {
-    const t = state.clock.getElapsedTime();
-    const speed = 0.12;
-    const baseTheta = cameraTheta.current;
-    const phi = cameraPhi.current;
-    const radius = THREE.MathUtils.clamp(cameraRadius.current, 6, 80);
-    const angle = autoSpin ? (baseTheta + t * speed) % (Math.PI * 2) : baseTheta;
-    state.camera.position.set(
-      radius * Math.sin(phi) * Math.cos(angle),
-      radius * Math.cos(phi),
-      radius * Math.sin(phi) * Math.sin(angle)
-    );
-    state.camera.lookAt(0, 0, 0);
+  useFrame((state, delta) => {
+    const frameDelta = delta;
+    if (cameraProgram) {
+      if (autoSpin) {
+        timeRef.current += frameDelta;
+      }
+      const ctx: CameraContext = {
+        t: timeRef.current,
+        dt: frameDelta,
+        randomSeed: randomSeed ?? 42,
+        bboxMin: bounds.bboxMin,
+        bboxMax: bounds.bboxMax,
+        centroid: bounds.centroid,
+        trajectories: trajectories as [number, number, number][][],
+        primaryTrajectoryIndex: 0,
+      };
+      const pose = computeCameraPose(cameraProgram, ctx, lastPoseRef.current);
+      lastPoseRef.current = pose;
+      state.camera.position.set(...pose.position);
+      state.camera.up.set(...pose.up);
+      state.camera.lookAt(...pose.target);
+    } else {
+      const t = state.clock.getElapsedTime();
+      const speed = 0.12;
+      const baseTheta = camera?.theta ?? 0.8;
+      const phi = camera?.phi ?? 0.9;
+      const radius = THREE.MathUtils.clamp(camera?.r ?? 25, 6, 80);
+      const angle = autoSpin ? (baseTheta + t * speed) % (Math.PI * 2) : baseTheta;
+      state.camera.position.set(
+        radius * Math.sin(phi) * Math.cos(angle),
+        radius * Math.cos(phi),
+        radius * Math.sin(phi) * Math.sin(angle)
+      );
+      state.camera.lookAt(0, 0, 0);
+    }
 
     linesRef.current.forEach((line) => {
       const geometry = line?.geometry as THREE.BufferGeometry;
@@ -156,6 +220,8 @@ function CanvasPanel({
   palette,
   background,
   camera,
+  cameraProgram,
+  randomSeed,
   autoSpin,
   animateHeadTail,
   showFullTrajectory,
@@ -210,6 +276,8 @@ function CanvasPanel({
               trajectories={trajectories}
               palette={palette}
               background={background}
+              cameraProgram={cameraProgram}
+              randomSeed={randomSeed}
               autoSpin={autoSpin}
               animateHeadTail={animateHeadTail}
               showFullTrajectory={showFullTrajectory}

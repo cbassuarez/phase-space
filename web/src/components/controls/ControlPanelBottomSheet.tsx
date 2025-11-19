@@ -20,6 +20,15 @@ const paletteOptions: { id: Palette; label: string }[] = [
   { id: "rainbow", label: "Rainbow" },
 ];
 
+const cameraModes = [
+  { id: "orbit", label: "Orbit" },
+  { id: "path-rider", label: "Path" },
+  { id: "grid-surface", label: "Grid" },
+  { id: "drone-ghost", label: "Ghost" },
+  { id: "lobe-focus", label: "Lobe" },
+  { id: "macro-micro", label: "Macro" },
+];
+
 function ControlPanelBottomSheet() {
   const {
     system,
@@ -38,6 +47,8 @@ function ControlPanelBottomSheet() {
     setLineThickness,
     setPalette,
     setBackground,
+    cameraProgram,
+    setCameraProgram,
   } = useViewerState();
 
   const [open, setOpen] = useState(false);
@@ -100,6 +111,58 @@ function ControlPanelBottomSheet() {
             )}
           </div>
         </section>
+
+        {cameraProgram && (
+          <section className="mt-2 space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] px-3 py-2">
+            <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">CAMERA</div>
+            <div className="grid grid-cols-3 gap-2 text-[11px] text-[color:var(--ps-text-soft)]">
+              {cameraModes.map((opt) => (
+                <button
+                  key={opt.id}
+                  onClick={() => setCameraProgram((c) => ({ ...c, mode: opt.id as typeof c.mode }))}
+                  className={clsx(
+                    "rounded-full px-2 py-1",
+                    cameraProgram.mode === opt.id
+                      ? "bg-[color:var(--ps-panel-bg)] text-[color:var(--ps-text)] shadow-subtle"
+                      : "bg-white text-[color:var(--ps-text-soft)]"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <label className="flex flex-col gap-1 text-[11px] text-[color:var(--ps-text-soft)]">
+              <div className="flex items-center justify-between">
+                <span>Speed</span>
+                <span className="tabular-nums text-[10px] text-[color:var(--ps-text-muted)]">{cameraProgram.speed_scalar.toFixed(2)}</span>
+              </div>
+              <input
+                type="range"
+                min={0.25}
+                max={2}
+                step={0.05}
+                value={cameraProgram.speed_scalar}
+                onChange={(e) => setCameraProgram((c) => ({ ...c, speed_scalar: parseFloat(e.target.value) }))}
+                className="accent-[color:var(--ps-accent)]"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-[11px] text-[color:var(--ps-text-soft)]">
+              <div className="flex items-center justify-between">
+                <span>Zoom bias</span>
+                <span className="tabular-nums text-[10px] text-[color:var(--ps-text-muted)]">{cameraProgram.zoom_scalar.toFixed(2)}</span>
+              </div>
+              <input
+                type="range"
+                min={0.5}
+                max={2}
+                step={0.05}
+                value={cameraProgram.zoom_scalar}
+                onChange={(e) => setCameraProgram((c) => ({ ...c, zoom_scalar: parseFloat(e.target.value) }))}
+                className="accent-[color:var(--ps-accent)]"
+              />
+            </label>
+          </section>
+        )}
 
         <section className="mt-2 grid grid-cols-2 gap-3">
           <div className="space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] px-3 py-2">

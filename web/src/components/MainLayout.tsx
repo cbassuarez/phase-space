@@ -30,11 +30,13 @@ function MainLayout() {
     animateHeadTail,
     showFullTrajectory,
     lineThickness,
+    cameraProgram,
     loading,
     error,
   } = useViewerState();
 
   const viewCamera = sceneSpec?.view?.camera;
+  const sceneSeed = sceneSpec?.random_seed ?? undefined;
 
   return (
     <main className="flex flex-1 flex-col">
@@ -49,6 +51,8 @@ function MainLayout() {
               palette={palette}
               background={background}
               camera={viewCamera}
+              cameraProgram={cameraProgram}
+              randomSeed={sceneSeed}
               autoSpin={autoSpin}
               animateHeadTail={animateHeadTail}
               showFullTrajectory={showFullTrajectory}
@@ -71,6 +75,8 @@ function MainLayout() {
               palette={palette}
               background={background}
               camera={viewCamera}
+              cameraProgram={cameraProgram}
+              randomSeed={sceneSeed}
               autoSpin={autoSpin}
               animateHeadTail={animateHeadTail}
               showFullTrajectory={showFullTrajectory}
