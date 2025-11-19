@@ -1,13 +1,9 @@
 // web/src/phaseClient.ts
-type WasmModule = typeof import("../public/phasewasm/phasewasm");
-
-let wasmInitPromise: Promise<WasmModule> | null = null;
+import init, { WasmEngine } from "./wasm/phasewasm";
 
 export async function loadWasmEngine() {
-  if (!wasmInitPromise) {
-    wasmInitPromise = import("../public/phasewasm/phasewasm");
-  }
-  const mod = await wasmInitPromise;
-  const engine = new mod.WasmEngine();
-  return { mod, engine };
+  // Initialize the WASM module
+  await init();
+  const engine = new WasmEngine();
+  return { engine };
 }
