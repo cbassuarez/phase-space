@@ -27,6 +27,7 @@ function ControlPanelDesktop() {
     autoSpin,
     animateHeadTail,
     showFullTrajectory,
+    lineThickness,
     palette,
     background,
     setSystem,
@@ -34,6 +35,7 @@ function ControlPanelDesktop() {
     toggleAutoSpin,
     toggleAnimateHeadTail,
     toggleShowFullTrajectory,
+    setLineThickness,
     setPalette,
     setBackground,
     trajectoryMeta,
@@ -89,6 +91,30 @@ function ControlPanelDesktop() {
         <ToggleSwitch label="Auto-spin camera" checked={autoSpin} onToggle={toggleAutoSpin} />
         <ToggleSwitch label="Animate head/tail" checked={animateHeadTail} onToggle={toggleAnimateHeadTail} />
         <ToggleSwitch label="Show full trajectory" checked={showFullTrajectory} onToggle={toggleShowFullTrajectory} />
+        <div className="mt-1 flex flex-col gap-2">
+          <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">THICKNESS</div>
+          <div className="inline-flex items-center rounded-full bg-[color:var(--ps-panel-alt-bg)] p-1 text-xs">
+            {[
+              { id: "thin", label: "Thin" },
+              { id: "default", label: "Default" },
+              { id: "thick", label: "Thick" },
+            ].map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setLineThickness(opt.id as typeof lineThickness)}
+                className={clsx(
+                  "flex-1 rounded-full px-3 py-1 transition-all",
+                  lineThickness === opt.id
+                    ? "bg-[color:var(--ps-panel-bg)] text-[color:var(--ps-text)] border border-[color:var(--ps-accent)] shadow-[var(--ps-shadow-subtle)]"
+                    : "text-[color:var(--ps-text-soft)]"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </section>
 
       <section className="mt-2 flex flex-col gap-3">
