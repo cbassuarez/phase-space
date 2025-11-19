@@ -30,10 +30,7 @@ jobs:
         with:
           node-version: "lts/*"
           cache: "npm"
-
-      # (optional) WASM build step here
-      # - name: Build WASM 
-      #   run: npm run build:wasm
+          cache-dependency-path: web/package-lock.json   # 👈 this is the missing piece
 
       - name: Install dependencies
         run: npm ci
@@ -44,7 +41,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist   # note: `dist` is inside `web/` because of working-directory
+          path: dist   # from web/dist because of working-directory
 
   deploy:
     needs: build
