@@ -1,0 +1,55 @@
+{
+  "buses": [
+    {
+      "id": "M1",
+      "enabled": true,
+      "source": {
+        "domain": "audio",
+        "feature": "level",
+        "smoothing": 0.85,
+        "gain": 1.0
+      },
+      "targets": [
+        {
+          "path": "render.neon.emissiveIntensity",
+          "range": [0.5, 3.0],
+          "curve": "exp",
+          "lag": 0.8
+        }
+      ]
+    },
+    {
+      "id": "M2",
+      "enabled": false,
+      "source": {
+        "domain": "audio",
+        "feature": "brightness",
+        "smoothing": 0.9,
+        "gain": 1.0
+      },
+      "targets": []
+    },
+    {
+      "id": "M3",
+      "enabled": false,
+      "source": {
+        "domain": "visual",
+        "feature": "camera_orbit_phase",
+        "smoothing": 0.9,
+        "gain": 1.0
+      },
+      "targets": []
+    },
+    {
+      "id": "M4",
+      "enabled": false,
+      "source": {
+        "domain": "visual",
+        "feature": "avg_speed",
+        "smoothing": 0.9,
+        "gain": 1.0
+      },
+      "targets": []
+    }
+  ]
+}

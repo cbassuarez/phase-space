@@ -5,6 +5,7 @@ import { useViewerState } from "../../state/viewerState";
 import type { Palette, SystemId } from "../../types";
 import ResolutionSlider from "./ResolutionSlider";
 import ToggleSwitch from "./ToggleSwitch";
+import ModulationSection from "./ModulationSection";
 
 const systemLabels: { id: SystemId; label: string }[] = [
   { id: "lorenz", label: "Lorenz" },
@@ -197,6 +198,8 @@ function ControlPanelBottomSheet() {
             </label>
           </section>
         )}
+
+        <ModulationSection compact />
 
         <section className="mt-2 grid grid-cols-2 gap-3">
           <div className="space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] px-3 py-2">

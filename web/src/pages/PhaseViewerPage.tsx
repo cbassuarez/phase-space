@@ -1,14 +1,16 @@
 import React from "react";
 import MainLayout from "../components/MainLayout";
+import { ModulationProvider } from "../state/modulationState";
 import { ViewerProvider } from "../state/viewerState";
 
 export const PhaseViewerPage: React.FC = () => {
   return (
     <div className="flex min-h-screen flex-col bg-[color:var(--ps-bg)]">
       <ViewerProvider>
-        <section id="viewer" className="scroll-mt-24">
-          <MainLayout />
-        </section>
+        <ModulationProvider>
+          <section id="viewer" className="scroll-mt-24">
+            <MainLayout />
+          </section>
         <section
           id="systems"
           className="border-t border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-bg)] py-12 text-[color:var(--ps-text)]"
@@ -30,6 +32,7 @@ export const PhaseViewerPage: React.FC = () => {
             </p>
           </div>
         </section>
+        </ModulationProvider>
       </ViewerProvider>
     </div>
   );
