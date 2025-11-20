@@ -2,12 +2,13 @@ import clsx from "clsx";
 import { motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import { useViewerState } from "../../state/viewerState";
-import type { Palette, SystemId } from "../../types";
+import type { Background, Palette, SystemId } from "../../types";
 import ResolutionSlider from "./ResolutionSlider";
 import ToggleSwitch from "./ToggleSwitch";
 import ModulationSection from "./ModulationSection";
 import { builtinPalettes } from "../../palettes";
 import CustomPaletteEditor from "./CustomPaletteEditor";
+import { PHASECORE_VERSION, PHASEWASM_VERSION } from "../../version";
 
 const systemLabels: { id: SystemId; label: string }[] = [
   { id: "lorenz", label: "Lorenz" },
@@ -22,7 +23,6 @@ const cameraModes = [
   { id: "grid-surface", label: "Grid" },
   { id: "drone-ghost", label: "Ghost" },
   { id: "lobe-focus", label: "Lobe" },
-  { id: "macro-micro", label: "Macro" },
 ];
 
 function ControlPanelBottomSheet() {
@@ -41,6 +41,7 @@ function ControlPanelBottomSheet() {
     palette,
     customPalette,
     background,
+    customBackgrounds,
     setSystem,
     setResolution,
     toggleAutoSpin,
@@ -51,8 +52,12 @@ function ControlPanelBottomSheet() {
     setPalette,
     setCustomPalette,
     setBackground,
+    setCustomBackgrounds,
     cameraProgram,
     setCameraProgram,
+    trajectoryMeta,
+    sceneSpec,
+    fps,
   } = useViewerState();
 
   const paletteOptions: { id: Palette; label: string; swatch: string }[] = useMemo(() => {
@@ -72,6 +77,17 @@ function ControlPanelBottomSheet() {
   }, [customPalette]);
 
   const [open, setOpen] = useState(false);
+
+  const backgroundOptions: { id: Background; label: string }[] = [
+    { id: "light", label: "Light" },
+    { id: "dim", label: "Dim" },
+    { id: "custom1", label: "C1" },
+    { id: "custom2", label: "C2" },
+  ];
+
+  const steps = sceneSpec?.integrator?.steps ?? 0;
+  const pointsLabel = trajectoryMeta.points > 0 ? `${(trajectoryMeta.points / 1000).toFixed(1)}k` : "—";
+  const stepsLabel = steps > 0 ? steps.toLocaleString() : "—";
 
   return (
     <motion.div
@@ -374,27 +390,64 @@ function ControlPanelBottomSheet() {
 
           <div className="space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] px-3 py-2">
             <p className="text-[11px] uppercase tracking-[0.12em] text-[color:var(--ps-text-muted)]">Background</p>
-            {[
-              { id: "light", label: "Light" },
-              { id: "dim", label: "Dim" },
-            ].map((opt) => (
-              <label key={opt.id} className="flex items-center justify-between py-1 text-xs text-[color:var(--ps-text-soft)]">
-                <span>{opt.label}</span>
+            <div className="grid grid-cols-4 gap-2 text-xs">
+              {backgroundOptions.map((opt) => (
+                <button
+                  key={opt.id}
+                  onClick={() => setBackground(opt.id)}
+                  className={clsx(
+                    "rounded-full px-2 py-1",
+                    background === opt.id
+                      ? "bg-[color:var(--ps-panel-bg)] text-[color:var(--ps-text)] shadow-subtle border border-[color:var(--ps-accent)]"
+                      : "bg-white text-[color:var(--ps-text-soft)]"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {background === "custom1" && (
+              <div className="flex items-center justify-between rounded-[10px] bg-white/80 px-3 py-2 text-[11px] text-[color:var(--ps-text-soft)]">
+                <span>Custom 1 color</span>
                 <input
-                  type="radio"
-                  name="background-mobile"
-                  value={opt.id}
-                  checked={background === opt.id}
-                  onChange={() => setBackground(opt.id as "light" | "dim")}
-                  className="h-3 w-3 accent-[color:var(--ps-accent)]"
+                  type="color"
+                  value={customBackgrounds.custom1}
+                  onChange={(e) => setCustomBackgrounds({ custom1: e.target.value })}
+                  className="h-8 w-16 cursor-pointer rounded border border-[color:var(--ps-border-subtle)] bg-transparent p-0"
                 />
-              </label>
-            ))}
+              </div>
+            )}
+            {background === "custom2" && (
+              <div className="flex items-center justify-between rounded-[10px] bg-white/80 px-3 py-2 text-[11px] text-[color:var(--ps-text-soft)]">
+                <span>Custom 2 color</span>
+                <input
+                  type="color"
+                  value={customBackgrounds.custom2}
+                  onChange={(e) => setCustomBackgrounds({ custom2: e.target.value })}
+                  className="h-8 w-16 cursor-pointer rounded border border-[color:var(--ps-border-subtle)] bg-transparent p-0"
+                />
+              </div>
+            )}
           </div>
         </section>
 
         <div className="mt-3">
           {palette === "custom" && <CustomPaletteEditor state={customPalette} onChange={setCustomPalette} />}
+        </div>
+
+        <div className="mt-3 space-y-1 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-white/80 px-3 py-2 text-[11px] text-[color:var(--ps-text-muted)]">
+          <div className="flex items-center justify-between">
+            <span>fps</span>
+            <span className="tabular-nums text-[color:var(--ps-text-soft)]">{Math.round(fps) || 0}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>points • steps</span>
+            <span className="tabular-nums text-[color:var(--ps-text-soft)]">{pointsLabel} • {stepsLabel}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>engine</span>
+            <span className="tabular-nums text-[color:var(--ps-text-soft)]">phasecore v{PHASECORE_VERSION} • phasewasm v{PHASEWASM_VERSION}</span>
+          </div>
         </div>
       </div>
     </motion.div>

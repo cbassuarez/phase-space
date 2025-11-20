@@ -22,6 +22,7 @@ import { createRendererForStyle } from "./renderers";
 import { computeVisualFeatures, type VisualFeatureFrame } from "../../visual/visualFeatures";
 import { useModulation } from "../../state/modulationState";
 import { getRenderQuality, getViewportBackgroundColor } from "../../visual/renderQuality";
+import { CustomBackgrounds, getBackgroundColors } from "../../theme/backgroundModes";
 
 interface CanvasPanelProps {
   ready: boolean;
@@ -31,6 +32,7 @@ interface CanvasPanelProps {
   palette: Palette;
   customPalette: CustomPaletteState;
   background: Background;
+  customBackgrounds: CustomBackgrounds;
   camera?: CameraSpec;
   cameraProgram?: CameraProgram | null;
   randomSeed?: number;
@@ -49,6 +51,7 @@ function PhaseScene({
   palette,
   customPalette,
   background,
+  customBackgrounds,
   autoSpin,
   animateHeadTail,
   showFullTrajectory,
@@ -66,6 +69,7 @@ function PhaseScene({
   const lastPoseRef = useRef<CameraPose | null>(null);
   const strategyRef = useRef<RendererStrategy | null>(null);
   const countsRef = useRef<number[]>([]);
+  const fpsRef = useRef({ elapsed: 0, frames: 0 });
   const visualFrameRef = useRef<VisualFeatureFrame | null>(null);
   const tempRefs = useRef({
     target: new THREE.Vector3(),
@@ -76,14 +80,19 @@ function PhaseScene({
     bgAlt: new THREE.Color(),
   });
   const { scene, camera: threeCamera, gl } = useThree();
-  const { setRenderStillHandler } = useViewerState();
+  const { setRenderStillHandler, setFps } = useViewerState();
   const { modEngine, audioFrameRef, modValuesRef } = useModulation();
 
   const quality = useMemo(() => getRenderQuality(resolution), [resolution]);
 
+  const { scene: sceneBackground } = useMemo(
+    () => getBackgroundColors(background, customBackgrounds),
+    [background, customBackgrounds]
+  );
+
   const backgroundColor = useMemo(
-    () => getViewportBackgroundColor(renderStyle, background),
-    [background, renderStyle]
+    () => getViewportBackgroundColor(background, customBackgrounds),
+    [background, customBackgrounds]
   );
 
   useEffect(() => {
@@ -209,6 +218,14 @@ function PhaseScene({
   useFrame((state, delta) => {
     const frameDelta = delta;
     const elapsedTime = state.clock.getElapsedTime();
+    fpsRef.current.elapsed += frameDelta;
+    fpsRef.current.frames += 1;
+    if (fpsRef.current.elapsed >= 1) {
+      const fpsSample = fpsRef.current.frames / fpsRef.current.elapsed;
+      setFps(fpsSample);
+      fpsRef.current.elapsed = 0;
+      fpsRef.current.frames = 0;
+    }
     const { target, offset, position, spherical, bgBase, bgAlt } = tempRefs.current;
     const modValues = modValuesRef.current;
     target.set(0, 0, 0);
@@ -312,7 +329,9 @@ function PhaseScene({
 
     const baseColorHex = backgroundColor;
     bgBase.set(baseColorHex);
-    bgAlt.set(background === "light" ? "#e3e6f0" : "#000000");
+    const hsl = bgBase.clone().getHSL({ h: 0, s: 0, l: 0 });
+    const altLightness = background === "light" || background === "custom2" ? Math.min(1, hsl.l + 0.1) : Math.max(0, hsl.l - 0.15);
+    bgAlt.setHSL(hsl.h, hsl.s, altLightness);
     const bgMix = bgBase.clone().lerp(bgAlt, modValues.backgroundBrightness);
     gl.setClearColor(bgMix, 1);
 
@@ -343,7 +362,7 @@ function PhaseScene({
     <group ref={groupRef}>
       <ambientLight intensity={0.6} />
       <pointLight position={[6, 12, 10]} intensity={0.4} />
-      <color args={[backgroundColor]} attach="background" />
+      <color args={[sceneBackground]} attach="background" />
     </group>
   );
 }
@@ -356,6 +375,7 @@ function CanvasPanel({
   palette,
   customPalette,
   background,
+  customBackgrounds,
   camera,
   cameraProgram,
   randomSeed,
@@ -368,10 +388,19 @@ function CanvasPanel({
   photonWeaveSettings,
   causticsSettings,
 }: CanvasPanelProps) {
-  const gradientClass =
-    background === "light"
-      ? "bg-[radial-gradient(circle_at_center,#fbfcff_0%,#e5ebff_70%)]"
-      : "bg-gradient-to-br from-[#13162b] to-[#0b0d18]";
+  const { page: pageBackground } = useMemo(
+    () => getBackgroundColors(background, customBackgrounds),
+    [background, customBackgrounds]
+  );
+
+  const gradientStyle = useMemo(
+    () => ({
+      background: background === "light" || background === "custom2"
+        ? `radial-gradient(circle at center, ${pageBackground} 0%, #e5ebff 70%)`
+        : `linear-gradient(135deg, ${pageBackground}, rgba(17, 24, 39, 0.85))`
+    }),
+    [background, pageBackground]
+  );
 
   const initialCamera = useMemo(() => {
     const theta = camera?.theta ?? 0.8;
@@ -388,7 +417,8 @@ function CanvasPanel({
       initial={{ opacity: 0, scale: 0.97, y: 12 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={{ duration: 0.2, ease: [0.22, 0.61, 0.36, 1] }}
-      className={`relative flex h-full min-h-[480px] w-full flex-1 min-w-0 rounded-[18px] border border-[color:var(--ps-border-subtle)] shadow-[var(--ps-shadow-subtle)] ${gradientClass}`}
+      className={`relative flex h-full min-h-[480px] w-full flex-1 min-w-0 rounded-[18px] border border-[color:var(--ps-border-subtle)] shadow-[var(--ps-shadow-subtle)]`}
+      style={gradientStyle}
     >
       {!ready && !error && (
         <div className="absolute inset-0 z-10 flex items-center justify-center">
@@ -434,7 +464,7 @@ function CanvasPanel({
         </Canvas>
       <motion.div
         className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-white/60 to-transparent"
-        animate={{ opacity: background === "light" ? 0.3 : 0.15 }}
+        animate={{ opacity: background === "light" || background === "custom2" ? 0.3 : 0.15 }}
       />
     </motion.section>
   );

@@ -4,6 +4,18 @@ import { PageHeader } from "../components/PageHeader";
 import { Section } from "../components/Section";
 import { systems } from "../data/systems";
 import { SystemCard } from "../components/SystemCard";
+import { PHASE_SPACE_VERSION, PHASECORE_VERSION, PHASEWASM_VERSION } from "../version";
+
+const Badge = ({ label }: { label: string }) => (
+  <div className="flex items-center gap-2 rounded-sm border border-slate-200 bg-white/80 px-2 py-1 text-[11px] font-medium text-slate-900 shadow-sm">
+    <div className="flex h-5 overflow-hidden rounded-[2px] border border-slate-200">
+      <span className="w-[3px] bg-red-500" />
+      <span className="w-[3px] bg-yellow-400" />
+      <span className="w-[3px] bg-blue-500" />
+    </div>
+    <span>{label}</span>
+  </div>
+);
 
 export const AboutPage: React.FC = () => {
   return (
@@ -13,6 +25,14 @@ export const AboutPage: React.FC = () => {
         title="What is Phase Space?"
         subtitle="Phase Space is a small instrument panel for exploring chaotic dynamical systems as moving points in three-dimensional space."
       >
+        <div className="flex flex-wrap items-center gap-2 pb-2">
+          <Badge label={`phase-space v${PHASE_SPACE_VERSION}`} />
+          <Badge label={`phasecore v${PHASECORE_VERSION}`} />
+          <Badge label={`phasewasm v${PHASEWASM_VERSION}`} />
+          <Badge label="WebGL" />
+          <Badge label="WASM" />
+          <Badge label="Rust" />
+        </div>
         <p className="max-w-2xl text-xs text-slate-600">
           It’s designed both as a mesmerizing toy to stare at and as a reusable
           engine for other tools and artworks that need attractors, trajectories,

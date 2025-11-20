@@ -90,9 +90,9 @@ export const systems: SystemMeta[] = [
         description: "Circles the spiral, emphasizing the sheet-like structure.",
       },
       {
-        id: "macro-micro",
-        label: "Macro / Micro",
-        description: "Breathes between wide shots and close-ups of the spiral folds.",
+        id: "drone-ghost",
+        label: "Drone Ghost",
+        description: "Floats around the spiral while drifting toward the core.",
       },
       {
         id: "grid-surface",
@@ -130,9 +130,9 @@ export const systems: SystemMeta[] = [
         description: "Floats through the volume like a slow camera drone.",
       },
       {
-        id: "macro-micro",
-        label: "Macro / Micro",
-        description: "Alternates between the whole bloom and a single filament.",
+        id: "grid-surface",
+        label: "Grid Surface",
+        description: "Skims across a tilted plane to reveal cross-sections.",
       },
     ],
   },
@@ -164,9 +164,9 @@ export const systems: SystemMeta[] = [
         description: "Moves along a single loop, hugging the ring.",
       },
       {
-        id: "macro-micro",
-        label: "Macro / Micro",
-        description: "Zooms between a global view and very close passes through the ring.",
+        id: "drone-ghost",
+        label: "Drone Ghost",
+        description: "Orbits with gentle offsets to emphasize the ghostly loops.",
       },
     ],
   },

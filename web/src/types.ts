@@ -4,7 +4,7 @@ import type { PaletteId } from "./palettes";
 export type SystemId = "lorenz" | "rossler" | "aizawa" | "thomas";
 export type Resolution = "fast" | "default" | "high" | "ultra";
 export type Palette = PaletteId;
-export type Background = "dark" | "light" | "dim";
+export type Background = "light" | "dim" | "custom1" | "custom2";
 export type LineThickness = "thin" | "default" | "thick";
 export type RenderStyle =
   | "photon-weave"
@@ -136,7 +136,7 @@ export function normalizeViewSpec(view: ViewSpec | undefined): ViewSpec {
       plane: null,
       camera: { theta: 0.8, phi: 0.9, r: 25 },
       palette: "plasma",
-      background: "dark",
+      background: "dim",
       point_size: 1,
       render_style: "photon-weave",
     };

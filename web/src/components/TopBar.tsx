@@ -1,4 +1,5 @@
 import { Link, NavLink } from "react-router-dom";
+import { PHASE_SPACE_VERSION } from "../version";
 
 const githubUrl = "https://github.com/phase-space/phase-space";
 
@@ -31,6 +32,16 @@ function TopBar() {
           <NavLink to="/credits" className={navLinkClass}>
             Credits
           </NavLink>
+          <div className="hidden items-center gap-2 md:flex">
+            <div className="flex h-5 overflow-hidden rounded-[2px] border border-slate-200">
+              <span className="w-[3px] bg-red-500" />
+              <span className="w-[3px] bg-yellow-400" />
+              <span className="w-[3px] bg-blue-500" />
+            </div>
+            <span className="rounded-sm border border-slate-300 bg-white/80 px-2 py-1 text-[11px] font-medium text-slate-900 shadow-sm">
+              phase-space v{PHASE_SPACE_VERSION} • beta
+            </span>
+          </div>
           <a
             href={githubUrl}
             target="_blank"

@@ -27,6 +27,7 @@ function MainLayout() {
     palette,
     customPalette,
     background,
+    customBackgrounds,
     autoSpin,
     animateHeadTail,
     showFullTrajectory,
@@ -56,6 +57,7 @@ function MainLayout() {
               palette={palette}
               customPalette={customPalette}
               background={background}
+              customBackgrounds={customBackgrounds}
               camera={viewCamera}
               cameraProgram={cameraProgram}
               randomSeed={sceneSeed}
@@ -85,6 +87,7 @@ function MainLayout() {
               palette={palette}
               customPalette={customPalette}
               background={background}
+              customBackgrounds={customBackgrounds}
               camera={viewCamera}
               cameraProgram={cameraProgram}
               randomSeed={sceneSeed}

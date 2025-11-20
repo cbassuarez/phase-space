@@ -1,4 +1,6 @@
-import type { Background, RenderStyle, Resolution } from "../types";
+import type { Background, Resolution } from "../types";
+import type { CustomBackgrounds } from "../theme/backgroundModes";
+import { getBackgroundColors } from "../theme/backgroundModes";
 
 export interface RenderQuality {
   filamentSampleStep: number;
@@ -41,17 +43,6 @@ export function getRenderQuality(resolution: Resolution): RenderQuality {
   }
 }
 
-export function getViewportBackgroundColor(style: RenderStyle, background: Background): string {
-  const darkBase = "#0e1019";
-  const lightBase = "#f1f3fb";
-  const dimBase = "#0f111d";
-
-  if (background === "dark") return darkBase;
-  if (background === "dim") return dimBase;
-
-  if (style === "photon-weave" || style === "caustics") {
-    return "#e6e9f4";
-  }
-
-  return lightBase;
+export function getViewportBackgroundColor(background: Background, custom: CustomBackgrounds): string {
+  return getBackgroundColors(background, custom).scene;
 }

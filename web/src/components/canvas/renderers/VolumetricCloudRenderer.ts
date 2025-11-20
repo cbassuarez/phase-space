@@ -30,7 +30,7 @@ export class VolumetricCloudRenderer implements RendererStrategy {
       }
       const geom = new BufferGeometry();
       geom.setAttribute("position", new Float32BufferAttribute(positions, 3));
-      const useAdditive = data.background !== "light";
+      const useAdditive = !(data.background === "light" || data.background === "custom2");
       const density = data.cloudDensity ?? 1;
       const mat = new PointsMaterial({
         size:
@@ -57,7 +57,7 @@ export class VolumetricCloudRenderer implements RendererStrategy {
     if (!this.data) return;
     this.data = { ...this.data, ...data };
     const density = this.data.cloudDensity ?? 1;
-    const useAdditive = this.data.background !== "light";
+    const useAdditive = !(this.data.background === "light" || this.data.background === "custom2");
 
     this.points.forEach((cloud, idx) => {
       const mat = cloud.material as PointsMaterial;

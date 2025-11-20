@@ -46,13 +46,6 @@ function defaultCameraProgram(): CameraProgram {
       zoom_outer: 1.4,
       cycle_mode: "alternate",
     },
-    macro_micro: {
-      cycle_duration: 24.0,
-      micro_hold_fraction: 0.4,
-      macro_radius: 1.3,
-      micro_radius: 0.6,
-      patch_selection: "random",
-    },
   };
 }
 
@@ -80,7 +73,7 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       plane: null,
       camera: { theta: 0.8, phi: 0.9, r: 25.0 },
       palette: "prism",
-      background: "dark",
+      background: "dim",
       point_size: 1.0,
       render_style: "photon-weave",
     },
@@ -116,16 +109,15 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       plane: null,
       camera: { theta: 1.0, phi: 0.9, r: 18.0 },
       palette: "viridis",
-      background: "dark",
+      background: "dim",
       point_size: 1.0,
       render_style: "photon-weave",
     },
     random_seed: 43,
     camera: (() => {
       const cam = defaultCameraProgram();
-      cam.mode = "macro-micro";
-      cam.zoom_scalar = 1.15;
-      cam.macro_micro.micro_radius = 0.55;
+      cam.mode = "grid-surface";
+      cam.zoom_scalar = 1.05;
       return cam;
     })(),
   },
@@ -156,7 +148,7 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       plane: null,
       camera: { theta: 1.2, phi: 0.9, r: 22.0 },
       palette: "prism",
-      background: "dark",
+      background: "dim",
       point_size: 1.0,
       render_style: "photon-weave",
     },
@@ -191,7 +183,7 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       plane: null,
       camera: { theta: 0.7, phi: 0.9, r: 16.0 },
       palette: "plasma",
-      background: "dark",
+      background: "dim",
       point_size: 1.0,
       render_style: "photon-weave",
     },
