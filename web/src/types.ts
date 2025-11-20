@@ -3,14 +3,14 @@ import type { CameraProgram } from "./camera/types";
 export type SystemId = "lorenz" | "rossler" | "aizawa" | "thomas";
 export type Resolution = "fast" | "default" | "high" | "ultra";
 export type Palette = "plasma" | "viridis" | "rainbow" | "inferno" | "magma" | "cividis";
-export type Background = "dark" | "light";
+export type Background = "dark" | "light" | "dim";
 export type LineThickness = "thin" | "default" | "thick";
 export type RenderStyle =
   | "neon-filaments"
   | "volumetric-cloud"
   | "crt-scope"
   | "ribbon"
-  | "path-trace";
+  | "cells";
 
 export type Trajectories = number[][][];
 
@@ -69,6 +69,6 @@ export function normalizeViewSpec(view: ViewSpec | undefined): ViewSpec {
 
   return {
     ...view,
-    render_style: view.render_style ?? "neon-filaments",
+    render_style: view.render_style === "path-trace" ? "cells" : view.render_style ?? "neon-filaments",
   };
 }
