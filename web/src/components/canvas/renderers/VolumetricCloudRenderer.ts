@@ -14,10 +14,12 @@ export class VolumetricCloudRenderer implements RendererStrategy {
   readonly style = "volumetric-cloud" as const;
   private group: Group | null = null;
   private points: Points[] = [];
+  private data: TrajectoryData | null = null;
 
   init({ threeScene }: RenderContext, data: TrajectoryData) {
     this.group = new Group();
     this.points = [];
+    this.data = data;
     threeScene.add(this.group);
 
     data.trajectories.forEach((traj, idx) => {
@@ -29,14 +31,16 @@ export class VolumetricCloudRenderer implements RendererStrategy {
       const geom = new BufferGeometry();
       geom.setAttribute("position", new Float32BufferAttribute(positions, 3));
       const useAdditive = data.background !== "light";
+      const density = data.cloudDensity ?? 1;
       const mat = new PointsMaterial({
-        size: data.lineThickness === "thick" ? 0.2 : data.lineThickness === "thin" ? 0.1 : 0.15,
+        size:
+          (data.lineThickness === "thick" ? 0.2 : data.lineThickness === "thin" ? 0.1 : 0.15) * (0.7 + density * 0.6),
         sizeAttenuation: true,
         transparent: true,
-        opacity: 0.7,
+        opacity: Math.max(0.15, 0.7 * (0.4 + density * 0.8)),
         depthWrite: false,
         blending: useAdditive ? AdditiveBlending : NormalBlending,
-        color: colorForTrajectory(idx, data.palette),
+        color: colorForTrajectory(idx, data.palette, data.paletteShift ?? 0),
       });
       const cloud = new Points(geom, mat);
       this.points.push(cloud);
@@ -47,6 +51,25 @@ export class VolumetricCloudRenderer implements RendererStrategy {
   update(context: RenderContext, data: TrajectoryData) {
     this.dispose(context);
     this.init(context, data);
+  }
+
+  applyDynamic(data: TrajectoryData) {
+    if (!this.data) return;
+    this.data = { ...this.data, ...data };
+    const density = this.data.cloudDensity ?? 1;
+    const useAdditive = this.data.background !== "light";
+
+    this.points.forEach((cloud, idx) => {
+      const mat = cloud.material as PointsMaterial;
+      mat.color = colorForTrajectory(idx, this.data!.palette, this.data?.paletteShift ?? 0);
+      mat.opacity = Math.max(0.15, 0.7 * (0.4 + density * 0.8));
+      mat.size *= 1; // keep base size
+      mat.size =
+        (this.data.lineThickness === "thick" ? 0.2 : this.data.lineThickness === "thin" ? 0.1 : 0.15) *
+        (0.7 + density * 0.6);
+      mat.blending = useAdditive ? AdditiveBlending : NormalBlending;
+      mat.needsUpdate = true;
+    });
   }
 
   updateDrawWindow(trajectoryIndex: number, start: number, count: number) {

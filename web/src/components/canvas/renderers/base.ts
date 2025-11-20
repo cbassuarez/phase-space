@@ -6,6 +6,12 @@ export interface TrajectoryData {
   palette: Palette;
   lineThickness: LineThickness;
   background: Background;
+  paletteShift?: number;
+  neonEmissive?: number | null;
+  ribbonWidth?: number | null;
+  cloudDensity?: number | null;
+  crtScanDepth?: number | null;
+  backgroundBrightness?: number;
 }
 
 export interface RenderContext {
@@ -21,4 +27,5 @@ export interface RendererStrategy {
   dispose(context: RenderContext): void;
   updateDrawWindow?(trajectoryIndex: number, start: number, count: number): void;
   renderStill?(context: RenderContext): void;
+   applyDynamic?(data: TrajectoryData): void;
 }

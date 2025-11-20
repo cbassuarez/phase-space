@@ -8,6 +8,8 @@ import type { Background, CameraSpec, Palette, Trajectories, LineThickness, Rend
 import { useViewerState } from "../../state/viewerState";
 import type { RendererStrategy } from "./renderers/base";
 import { createRendererForStyle } from "./renderers";
+import { computeVisualFeatures, type VisualFeatureFrame } from "../../visual/visualFeatures";
+import { useModulation } from "../../state/modulationState";
 
 interface CanvasPanelProps {
   ready: boolean;
@@ -44,8 +46,18 @@ function PhaseScene({
   const lastPoseRef = useRef<CameraPose | null>(null);
   const strategyRef = useRef<RendererStrategy | null>(null);
   const countsRef = useRef<number[]>([]);
+  const visualFrameRef = useRef<VisualFeatureFrame | null>(null);
+  const tempRefs = useRef({
+    target: new THREE.Vector3(),
+    offset: new THREE.Vector3(),
+    position: new THREE.Vector3(),
+    spherical: new THREE.Spherical(),
+    bgBase: new THREE.Color(),
+    bgAlt: new THREE.Color(),
+  });
   const { scene, camera: threeCamera, gl } = useThree();
   const { setRenderStillHandler } = useViewerState();
+  const { modEngine, audioFrameRef, modValuesRef } = useModulation();
 
   const backgroundColor = useMemo(
     () => (background === "dark" || background === "dim" ? "#0e1019" : "#f8f9ff"),
@@ -107,7 +119,19 @@ function PhaseScene({
 
   useEffect(() => {
     const ctx = { threeScene: scene, camera: threeCamera as THREE.PerspectiveCamera, renderer: gl as THREE.WebGLRenderer };
-    const data = { trajectories, palette, lineThickness, background };
+    const modValues = modValuesRef.current;
+    const data = {
+      trajectories,
+      palette,
+      lineThickness,
+      background,
+      paletteShift: modValues.paletteShift,
+      neonEmissive: modValues.neonEmissive,
+      ribbonWidth: modValues.ribbonWidth,
+      cloudDensity: modValues.cloudDensity,
+      crtScanDepth: modValues.crtScanDepth,
+      backgroundBrightness: modValues.backgroundBrightness,
+    };
     if (!strategyRef.current || strategyRef.current.style !== renderStyle) {
       strategyRef.current?.dispose(ctx);
       const next = createRendererForStyle(renderStyle);
@@ -128,6 +152,10 @@ function PhaseScene({
   useFrame((state, delta) => {
     const frameDelta = delta;
     const elapsedTime = state.clock.getElapsedTime();
+    const { target, offset, position, spherical, bgBase, bgAlt } = tempRefs.current;
+    const modValues = modValuesRef.current;
+    target.set(0, 0, 0);
+    position.set(0, 0, 0);
     if (cameraProgram) {
       if (autoSpin) {
         timeRef.current += frameDelta;
@@ -144,24 +172,74 @@ function PhaseScene({
       };
       const pose = computeCameraPose(cameraProgram, ctx, lastPoseRef.current);
       lastPoseRef.current = pose;
-      state.camera.position.set(...pose.position);
+      position.set(pose.position[0], pose.position[1], pose.position[2]);
+      target.set(pose.target[0], pose.target[1], pose.target[2]);
       state.camera.up.set(...pose.up);
-      state.camera.lookAt(...pose.target);
     } else {
       const speed = 0.12;
       const baseTheta = camera?.theta ?? 0.8;
       const phi = camera?.phi ?? 0.9;
       const radius = THREE.MathUtils.clamp(camera?.r ?? 25, 6, 80);
       const angle = autoSpin ? (baseTheta + elapsedTime * speed) % (Math.PI * 2) : baseTheta;
-      state.camera.position.set(
+      position.set(
         radius * Math.sin(phi) * Math.cos(angle),
         radius * Math.cos(phi),
         radius * Math.sin(phi) * Math.sin(angle)
       );
-      state.camera.lookAt(0, 0, 0);
+      target.set(0, 0, 0);
     }
 
+    offset.copy(position).sub(target);
+    spherical.setFromVector3(offset);
+    if (modValues.camera.r !== null) {
+      spherical.radius = modValues.camera.r;
+    }
+    if (modValues.camera.theta !== null) {
+      spherical.theta = modValues.camera.theta;
+    }
+    if (modValues.camera.phi !== null) {
+      spherical.phi = modValues.camera.phi;
+    }
+    offset.setFromSpherical(spherical);
+    position.copy(target).add(offset);
+    state.camera.position.copy(position);
+    state.camera.lookAt(target);
+
     const strategy = strategyRef.current;
+    const cameraState = {
+      theta: spherical.theta,
+      phi: spherical.phi,
+      r: spherical.radius,
+      minR: 6,
+      maxR: 80,
+    };
+    const visual = computeVisualFeatures({ camera: cameraState, trajectories }, visualFrameRef.current ?? undefined);
+    visualFrameRef.current = visual;
+    if (modEngine) {
+      modEngine.step(audioFrameRef.current, visual);
+    }
+
+    if (strategy?.applyDynamic) {
+      strategy.applyDynamic({
+        trajectories,
+        palette,
+        lineThickness,
+        background,
+        paletteShift: modValues.paletteShift,
+        neonEmissive: modValues.neonEmissive,
+        ribbonWidth: modValues.ribbonWidth,
+        cloudDensity: modValues.cloudDensity,
+        crtScanDepth: modValues.crtScanDepth,
+        backgroundBrightness: modValues.backgroundBrightness,
+      });
+    }
+
+    const baseColorHex = background === "dark" || background === "dim" ? "#0e1019" : "#f8f9ff";
+    bgBase.set(baseColorHex);
+    bgAlt.set(background === "light" ? "#ffffff" : "#000000");
+    const bgMix = bgBase.clone().lerp(bgAlt, modValues.backgroundBrightness);
+    gl.setClearColor(bgMix, 1);
+
     if (strategy && strategy.updateDrawWindow) {
       countsRef.current.forEach((count, idx) => {
         if (showFullTrajectory) {

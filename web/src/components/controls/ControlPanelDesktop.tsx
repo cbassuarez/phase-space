@@ -5,6 +5,7 @@ import { useViewerState } from "../../state/viewerState";
 import type { Palette, SystemId } from "../../types";
 import ResolutionSlider from "./ResolutionSlider";
 import ToggleSwitch from "./ToggleSwitch";
+import ModulationSection from "./ModulationSection";
 
 const systemLabels: { id: SystemId; label: string }[] = [
   { id: "lorenz", label: "Lorenz" },
@@ -376,6 +377,8 @@ function ControlPanelDesktop() {
           </div>
         )}
       </section>
+
+      <ModulationSection />
 
       <section className="mt-2 flex flex-col gap-3">
         <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">COLOR</div>

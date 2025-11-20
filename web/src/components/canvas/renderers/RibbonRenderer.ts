@@ -14,10 +14,12 @@ export class RibbonRenderer implements RendererStrategy {
   readonly style = "ribbon" as const;
   private group: Group | null = null;
   private meshes: Mesh[] = [];
+  private data: TrajectoryData | null = null;
 
   init({ threeScene }: RenderContext, data: TrajectoryData) {
     this.group = new Group();
     this.meshes = [];
+    this.data = data;
     threeScene.add(this.group);
 
     data.trajectories.forEach((traj, idx) => {
@@ -32,7 +34,8 @@ export class RibbonRenderer implements RendererStrategy {
         const next = new Vector3().fromArray(traj[Math.min(traj.length - 1, i + 1)]);
         const tangent = new Vector3().subVectors(next, prev).normalize();
         const bitangent = new Vector3().crossVectors(up, tangent).normalize();
-        const width = data.lineThickness === "thick" ? 0.28 : data.lineThickness === "thin" ? 0.12 : 0.18;
+        const widthBase = data.lineThickness === "thick" ? 0.28 : data.lineThickness === "thin" ? 0.12 : 0.18;
+        const width = widthBase * (data.ribbonWidth ?? 1);
         const left = new Vector3().copy(current).addScaledVector(bitangent, -width);
         const right = new Vector3().copy(current).addScaledVector(bitangent, width);
 
@@ -57,11 +60,11 @@ export class RibbonRenderer implements RendererStrategy {
       geometry.setAttribute("normal", new BufferAttribute(new Float32Array(normals), 3));
       geometry.computeVertexNormals();
       const material = new MeshStandardMaterial({
-        color: colorForTrajectory(idx, data.palette),
+        color: colorForTrajectory(idx, data.palette, data.paletteShift ?? 0),
         side: DoubleSide,
         roughness: 0.45,
         metalness: 0.05,
-        emissiveIntensity: 0.3,
+        emissiveIntensity: 0.3 * (data.neonEmissive ?? 1),
       });
       const mesh = new Mesh(geometry, material);
       this.meshes.push(mesh);
@@ -72,6 +75,19 @@ export class RibbonRenderer implements RendererStrategy {
   update(context: RenderContext, data: TrajectoryData) {
     this.dispose(context);
     this.init(context, data);
+  }
+
+  applyDynamic(data: TrajectoryData) {
+    if (!this.data) return;
+    this.data = { ...this.data, ...data };
+    const widthScale = this.data.ribbonWidth ?? 1;
+    this.meshes.forEach((mesh, idx) => {
+      mesh.scale.setScalar(Math.max(0.5, Math.min(2.5, widthScale)));
+      const mat = mesh.material as MeshStandardMaterial;
+      mat.color = colorForTrajectory(idx, this.data!.palette, this.data?.paletteShift ?? 0);
+      mat.emissiveIntensity = 0.3 * (this.data.neonEmissive ?? 1);
+      mat.needsUpdate = true;
+    });
   }
 
   updateDrawWindow(trajectoryIndex: number, start: number, count: number) {
