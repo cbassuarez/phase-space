@@ -39,6 +39,10 @@ function ControlPanelBottomSheet() {
     showFullTrajectory,
     lineThickness,
     renderStyle,
+    photonWeaveSettings,
+    causticsSettings,
+    setPhotonWeaveSettings,
+    setCausticsSettings,
     palette,
     background,
     setSystem,
@@ -96,7 +100,7 @@ function ControlPanelBottomSheet() {
           <ToggleSwitch label="Animate head/tail" checked={animateHeadTail} onToggle={toggleAnimateHeadTail} />
           <ToggleSwitch label="Show full trajectory" checked={showFullTrajectory} onToggle={toggleShowFullTrajectory} />
           <div className="grid grid-cols-3 gap-2 text-xs">
-            {[{ id: "neon-filaments", label: "Neon" }, { id: "volumetric-cloud", label: "Cloud" }, { id: "crt-scope", label: "CRT" }].map(
+            {[{ id: "photon-weave", label: "Photon Weave" }, { id: "volumetric-cloud", label: "Cloud" }, { id: "caustics", label: "Caustics" }].map(
               (opt) => (
                 <button
                   key={opt.id}
@@ -145,6 +149,139 @@ function ControlPanelBottomSheet() {
               )
             )}
           </div>
+          {renderStyle === "photon-weave" && (
+            <div className="mt-3 space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] p-3">
+              <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">Photon Weave</div>
+              <label className="flex flex-col gap-1 text-[11px] text-[color:var(--ps-text-soft)]">
+                <div className="flex items-center justify-between">
+                  <span>Brightness</span>
+                  <span className="tabular-nums text-[10px] text-[color:var(--ps-text-muted)]">{photonWeaveSettings.brightness.toFixed(2)}</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={2}
+                  step={0.01}
+                  value={photonWeaveSettings.brightness}
+                  onChange={(e) => setPhotonWeaveSettings({ brightness: parseFloat(e.target.value) })}
+                  className="accent-[color:var(--ps-accent)]"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-[11px] text-[color:var(--ps-text-soft)]">
+                <div className="flex items-center justify-between">
+                  <span>Trail length</span>
+                  <span className="tabular-nums text-[10px] text-[color:var(--ps-text-muted)]">{photonWeaveSettings.trailLength.toFixed(2)}</span>
+                </div>
+                <input
+                  type="range"
+                  min={0.5}
+                  max={2}
+                  step={0.01}
+                  value={photonWeaveSettings.trailLength}
+                  onChange={(e) => setPhotonWeaveSettings({ trailLength: parseFloat(e.target.value) })}
+                  className="accent-[color:var(--ps-accent)]"
+                />
+              </label>
+              <div className="flex flex-col gap-2 text-[11px] text-[color:var(--ps-text-soft)]">
+                <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">Filament density</div>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  {[{ id: "low", label: "Low" }, { id: "medium", label: "Medium" }, { id: "high", label: "High" }].map((opt) => (
+                    <button
+                      key={opt.id}
+                      onClick={() => setPhotonWeaveSettings({ filamentDensity: opt.id as typeof photonWeaveSettings.filamentDensity })}
+                      className={clsx(
+                        "rounded-full px-2 py-1",
+                        photonWeaveSettings.filamentDensity === opt.id
+                          ? "bg-[color:var(--ps-panel-alt-bg)] text-[color:var(--ps-text)] shadow-subtle"
+                          : "bg-white text-[color:var(--ps-text-soft)]"
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <ToggleSwitch
+                label="Shimmer"
+                checked={photonWeaveSettings.shimmer}
+                onToggle={() => setPhotonWeaveSettings({ shimmer: !photonWeaveSettings.shimmer })}
+              />
+            </div>
+          )}
+
+          {renderStyle === "caustics" && (
+            <div className="mt-3 space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] p-3">
+              <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">Caustics</div>
+              <label className="flex flex-col gap-1 text-[11px] text-[color:var(--ps-text-soft)]">
+                <div className="flex items-center justify-between">
+                  <span>Blur radius</span>
+                  <span className="tabular-nums text-[10px] text-[color:var(--ps-text-muted)]">{causticsSettings.blurRadius.toFixed(2)}</span>
+                </div>
+                <input
+                  type="range"
+                  min={0.1}
+                  max={1.2}
+                  step={0.01}
+                  value={causticsSettings.blurRadius}
+                  onChange={(e) => setCausticsSettings({ blurRadius: parseFloat(e.target.value) })}
+                  className="accent-[color:var(--ps-accent)]"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-[11px] text-[color:var(--ps-text-soft)]">
+                <div className="flex items-center justify-between">
+                  <span>Intensity</span>
+                  <span className="tabular-nums text-[10px] text-[color:var(--ps-text-muted)]">{causticsSettings.intensity.toFixed(2)}</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={2.5}
+                  step={0.01}
+                  value={causticsSettings.intensity}
+                  onChange={(e) => setCausticsSettings({ intensity: parseFloat(e.target.value) })}
+                  className="accent-[color:var(--ps-accent)]"
+                />
+              </label>
+              <div className="flex flex-col gap-2 text-[11px] text-[color:var(--ps-text-soft)]">
+                <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">Projection axis</div>
+                <div className="grid grid-cols-4 gap-2 text-xs">
+                  {[{ id: "auto", label: "Auto" }, { id: "xy", label: "XY" }, { id: "xz", label: "XZ" }, { id: "yz", label: "YZ" }].map((opt) => (
+                    <button
+                      key={opt.id}
+                      onClick={() => setCausticsSettings({ projectionAxis: opt.id as typeof causticsSettings.projectionAxis })}
+                      className={clsx(
+                        "rounded-full px-2 py-1",
+                        causticsSettings.projectionAxis === opt.id
+                          ? "bg-[color:var(--ps-panel-alt-bg)] text-[color:var(--ps-text)] shadow-subtle"
+                          : "bg-white text-[color:var(--ps-text-soft)]"
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex flex-col gap-2 text-[11px] text-[color:var(--ps-text-soft)]">
+                <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">Color mode</div>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  {[{ id: "global", label: "Palette" }, { id: "warm", label: "Caustic Warm" }, { id: "cool", label: "Caustic Cool" }].map((opt) => (
+                    <button
+                      key={opt.id}
+                      onClick={() => setCausticsSettings({ colorMode: opt.id as typeof causticsSettings.colorMode })}
+                      className={clsx(
+                        "rounded-full px-2 py-1",
+                        causticsSettings.colorMode === opt.id
+                          ? "bg-[color:var(--ps-panel-alt-bg)] text-[color:var(--ps-text)] shadow-subtle"
+                          : "bg-white text-[color:var(--ps-text-soft)]"
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </section>
 
         {cameraProgram && (

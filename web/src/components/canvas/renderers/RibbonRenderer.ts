@@ -64,7 +64,7 @@ export class RibbonRenderer implements RendererStrategy {
         side: DoubleSide,
         roughness: 0.45,
         metalness: 0.05,
-        emissiveIntensity: 0.3 * (data.neonEmissive ?? 1),
+        emissiveIntensity: 0.3 * (data.emissiveBoost ?? 1),
       });
       const mesh = new Mesh(geometry, material);
       this.meshes.push(mesh);
@@ -85,7 +85,7 @@ export class RibbonRenderer implements RendererStrategy {
       mesh.scale.setScalar(Math.max(0.5, Math.min(2.5, widthScale)));
       const mat = mesh.material as MeshStandardMaterial;
       mat.color = colorForTrajectory(idx, this.data!.palette, this.data?.paletteShift ?? 0);
-      mat.emissiveIntensity = 0.3 * (this.data.neonEmissive ?? 1);
+      mat.emissiveIntensity = 0.3 * (this.data.emissiveBoost ?? 1);
       mat.needsUpdate = true;
     });
   }

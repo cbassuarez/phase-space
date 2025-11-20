@@ -31,6 +31,9 @@ function MainLayout() {
     showFullTrajectory,
     lineThickness,
     renderStyle,
+    resolution,
+    photonWeaveSettings,
+    causticsSettings,
     cameraProgram,
     loading,
     error,
@@ -59,6 +62,9 @@ function MainLayout() {
               showFullTrajectory={showFullTrajectory}
               lineThickness={lineThickness}
               renderStyle={renderStyle}
+              resolution={resolution}
+              photonWeaveSettings={photonWeaveSettings}
+              causticsSettings={causticsSettings}
             />
           </div>
           <ControlPanelBottomSheet />
@@ -84,6 +90,9 @@ function MainLayout() {
               showFullTrajectory={showFullTrajectory}
               lineThickness={lineThickness}
               renderStyle={renderStyle}
+              resolution={resolution}
+              photonWeaveSettings={photonWeaveSettings}
+              causticsSettings={causticsSettings}
             />
           </section>
         </div>

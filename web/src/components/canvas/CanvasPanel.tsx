@@ -4,12 +4,23 @@ import * as THREE from "three";
 import { motion } from "framer-motion";
 import { computeCameraPose } from "../../camera/controller";
 import type { CameraContext, CameraPose, CameraProgram } from "../../camera/types";
-import type { Background, CameraSpec, Palette, Trajectories, LineThickness, RenderStyle } from "../../types";
+import type {
+  Background,
+  CameraSpec,
+  Palette,
+  Trajectories,
+  LineThickness,
+  RenderStyle,
+  Resolution,
+  PhotonWeaveSettings,
+  CausticsSettings,
+} from "../../types";
 import { useViewerState } from "../../state/viewerState";
 import type { RendererStrategy } from "./renderers/base";
 import { createRendererForStyle } from "./renderers";
 import { computeVisualFeatures, type VisualFeatureFrame } from "../../visual/visualFeatures";
 import { useModulation } from "../../state/modulationState";
+import { getRenderQuality, getViewportBackgroundColor } from "../../visual/renderQuality";
 
 interface CanvasPanelProps {
   ready: boolean;
@@ -26,6 +37,9 @@ interface CanvasPanelProps {
   showFullTrajectory: boolean;
   lineThickness: LineThickness;
   renderStyle: RenderStyle;
+  resolution: Resolution;
+  photonWeaveSettings: PhotonWeaveSettings;
+  causticsSettings: CausticsSettings;
 }
 
 function PhaseScene({
@@ -40,6 +54,9 @@ function PhaseScene({
   camera,
   lineThickness,
   renderStyle,
+  resolution,
+  photonWeaveSettings,
+  causticsSettings,
 }: Omit<CanvasPanelProps, "ready" | "loading" | "error">) {
   const groupRef = useRef<THREE.Group>(null);
   const timeRef = useRef(0);
@@ -59,9 +76,11 @@ function PhaseScene({
   const { setRenderStillHandler } = useViewerState();
   const { modEngine, audioFrameRef, modValuesRef } = useModulation();
 
+  const quality = useMemo(() => getRenderQuality(resolution), [resolution]);
+
   const backgroundColor = useMemo(
-    () => (background === "dark" || background === "dim" ? "#0e1019" : "#f8f9ff"),
-    [background]
+    () => getViewportBackgroundColor(renderStyle, background),
+    [background, renderStyle]
   );
 
   useEffect(() => {
@@ -120,17 +139,22 @@ function PhaseScene({
   useEffect(() => {
     const ctx = { threeScene: scene, camera: threeCamera as THREE.PerspectiveCamera, renderer: gl as THREE.WebGLRenderer };
     const modValues = modValuesRef.current;
+    const photonBrightness = (modValues.photonWeaveBrightness ?? 1) * photonWeaveSettings.brightness;
+    const causticsIntensity = (modValues.causticsIntensity ?? 1) * causticsSettings.intensity;
+
     const data = {
       trajectories,
       palette,
       lineThickness,
       background,
       paletteShift: modValues.paletteShift,
-      neonEmissive: modValues.neonEmissive,
+      emissiveBoost: modValues.emissiveBoost,
       ribbonWidth: modValues.ribbonWidth,
       cloudDensity: modValues.cloudDensity,
-      crtScanDepth: modValues.crtScanDepth,
       backgroundBrightness: modValues.backgroundBrightness,
+      quality,
+      photonWeave: { ...photonWeaveSettings, brightness: photonBrightness },
+      caustics: { ...causticsSettings, intensity: causticsIntensity },
     };
     if (!strategyRef.current || strategyRef.current.style !== renderStyle) {
       strategyRef.current?.dispose(ctx);
@@ -147,7 +171,20 @@ function PhaseScene({
       strategyRef.current = null;
       setRenderStillHandler(null);
     };
-  }, [scene, threeCamera, gl, trajectories, palette, lineThickness, background, renderStyle, setRenderStillHandler]);
+  }, [
+    scene,
+    threeCamera,
+    gl,
+    trajectories,
+    palette,
+    lineThickness,
+    background,
+    renderStyle,
+    quality,
+    photonWeaveSettings.filamentDensity,
+    causticsSettings.projectionAxis,
+    setRenderStillHandler,
+  ]);
 
   useFrame((state, delta) => {
     const frameDelta = delta;
@@ -220,23 +257,27 @@ function PhaseScene({
     }
 
     if (strategy?.applyDynamic) {
+      const photonBrightness = (modValues.photonWeaveBrightness ?? 1) * photonWeaveSettings.brightness;
+      const causticsIntensity = (modValues.causticsIntensity ?? 1) * causticsSettings.intensity;
       strategy.applyDynamic({
         trajectories,
         palette,
         lineThickness,
         background,
         paletteShift: modValues.paletteShift,
-        neonEmissive: modValues.neonEmissive,
+        emissiveBoost: modValues.emissiveBoost,
         ribbonWidth: modValues.ribbonWidth,
         cloudDensity: modValues.cloudDensity,
-        crtScanDepth: modValues.crtScanDepth,
         backgroundBrightness: modValues.backgroundBrightness,
+        quality,
+        photonWeave: { ...photonWeaveSettings, brightness: photonBrightness },
+        caustics: { ...causticsSettings, intensity: causticsIntensity },
       });
     }
 
-    const baseColorHex = background === "dark" || background === "dim" ? "#0e1019" : "#f8f9ff";
+    const baseColorHex = backgroundColor;
     bgBase.set(baseColorHex);
-    bgAlt.set(background === "light" ? "#ffffff" : "#000000");
+    bgAlt.set(background === "light" ? "#e3e6f0" : "#000000");
     const bgMix = bgBase.clone().lerp(bgAlt, modValues.backgroundBrightness);
     gl.setClearColor(bgMix, 1);
 

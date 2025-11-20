@@ -73,6 +73,10 @@ function ControlPanelDesktop() {
     showFullTrajectory,
     lineThickness,
     renderStyle,
+    photonWeaveSettings,
+    setPhotonWeaveSettings,
+    causticsSettings,
+    setCausticsSettings,
     palette,
     background,
     setSystem,
@@ -148,9 +152,9 @@ function ControlPanelDesktop() {
           <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">Rendering</div>
           <div className="inline-flex w-full items-center rounded-full bg-[color:var(--ps-panel-alt-bg)] p-1 text-xs">
             {[
-              { id: "neon-filaments", label: "Neon" },
+              { id: "photon-weave", label: "Photon Weave" },
               { id: "volumetric-cloud", label: "Cloud" },
-              { id: "crt-scope", label: "CRT" },
+              { id: "caustics", label: "Caustics" },
               { id: "ribbon", label: "Ribbon" },
               { id: "cells", label: "Cells" },
             ].map((opt) => (
@@ -194,6 +198,115 @@ function ControlPanelDesktop() {
             ))}
           </div>
         </div>
+
+        {renderStyle === "photon-weave" && (
+          <div className="mt-2 space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] p-3">
+            <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">PHOTON WEAVE</div>
+            <CameraSlider
+              label="Brightness"
+              value={photonWeaveSettings.brightness}
+              min={0}
+              max={2}
+              step={0.01}
+              onChange={(v) => setPhotonWeaveSettings({ brightness: v })}
+            />
+            <CameraSlider
+              label="Trail length"
+              value={photonWeaveSettings.trailLength}
+              min={0.5}
+              max={2}
+              step={0.01}
+              onChange={(v) => setPhotonWeaveSettings({ trailLength: v })}
+            />
+            <div className="flex flex-col gap-2 text-[11px] text-[color:var(--ps-text-soft)]">
+              <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">FILAMENT DENSITY</div>
+              <div className="inline-flex items-center rounded-full bg-[color:var(--ps-panel-bg)] p-1 text-xs shadow-[var(--ps-shadow-inner)]">
+                {[{ id: "low", label: "Low" }, { id: "medium", label: "Medium" }, { id: "high", label: "High" }].map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setPhotonWeaveSettings({ filamentDensity: opt.id as typeof photonWeaveSettings.filamentDensity })}
+                    className={clsx(
+                      "flex-1 rounded-full px-3 py-1 transition-all",
+                      photonWeaveSettings.filamentDensity === opt.id
+                        ? "bg-[color:var(--ps-panel-alt-bg)] text-[color:var(--ps-text)] shadow-[var(--ps-shadow-subtle)]"
+                        : "text-[color:var(--ps-text-soft)]"
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <ToggleSwitch
+              label="Shimmer"
+              checked={photonWeaveSettings.shimmer}
+              onToggle={() => setPhotonWeaveSettings({ shimmer: !photonWeaveSettings.shimmer })}
+            />
+          </div>
+        )}
+
+        {renderStyle === "caustics" && (
+          <div className="mt-2 space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] p-3">
+            <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">CAUSTICS</div>
+            <CameraSlider
+              label="Blur radius"
+              value={causticsSettings.blurRadius}
+              min={0.1}
+              max={1.2}
+              step={0.01}
+              onChange={(v) => setCausticsSettings({ blurRadius: v })}
+            />
+            <CameraSlider
+              label="Intensity"
+              value={causticsSettings.intensity}
+              min={0}
+              max={2.5}
+              step={0.01}
+              onChange={(v) => setCausticsSettings({ intensity: v })}
+            />
+            <div className="flex flex-col gap-2 text-[11px] text-[color:var(--ps-text-soft)]">
+              <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">PROJECTION</div>
+              <div className="grid grid-cols-4 gap-1 text-xs">
+                {[{ id: "auto", label: "Auto" }, { id: "xy", label: "XY" }, { id: "xz", label: "XZ" }, { id: "yz", label: "YZ" }].map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setCausticsSettings({ projectionAxis: opt.id as typeof causticsSettings.projectionAxis })}
+                    className={clsx(
+                      "rounded-full px-2 py-1 transition-all",
+                      causticsSettings.projectionAxis === opt.id
+                        ? "bg-[color:var(--ps-panel-alt-bg)] text-[color:var(--ps-text)] shadow-[var(--ps-shadow-subtle)]"
+                        : "text-[color:var(--ps-text-soft)]"
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 text-[11px] text-[color:var(--ps-text-soft)]">
+              <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">COLOR MODE</div>
+              <div className="grid grid-cols-3 gap-1 text-xs">
+                {[{ id: "global", label: "Palette" }, { id: "warm", label: "Caustic Warm" }, { id: "cool", label: "Caustic Cool" }].map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setCausticsSettings({ colorMode: opt.id as typeof causticsSettings.colorMode })}
+                    className={clsx(
+                      "rounded-full px-2 py-1 transition-all",
+                      causticsSettings.colorMode === opt.id
+                        ? "bg-[color:var(--ps-panel-alt-bg)] text-[color:var(--ps-text)] shadow-[var(--ps-shadow-subtle)]"
+                        : "text-[color:var(--ps-text-soft)]"
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="mt-2 space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] p-3">
