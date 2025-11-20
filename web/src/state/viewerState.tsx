@@ -11,7 +11,9 @@ import type {
   SystemId,
   Trajectories,
   LineThickness,
+  RenderStyle,
 } from "../types";
+import { normalizeViewSpec } from "../types";
 
 interface TrajectoryMeta {
   count: number;
@@ -28,6 +30,7 @@ interface ViewerContextValue {
   animateHeadTail: boolean;
   showFullTrajectory: boolean;
   lineThickness: LineThickness;
+  renderStyle: RenderStyle;
   palette: Palette;
   background: Background;
   sceneJson: string;
@@ -41,9 +44,12 @@ interface ViewerContextValue {
   toggleAnimateHeadTail: () => void;
   toggleShowFullTrajectory: () => void;
   setLineThickness: (t: LineThickness) => void;
+  setRenderStyle: (s: RenderStyle) => void;
   setPalette: (p: Palette) => void;
   setBackground: (b: Background) => void;
   setCameraProgram: (updater: (c: CameraProgram) => CameraProgram) => void;
+  requestRenderStill: () => void;
+  setRenderStillHandler: (handler: (() => void) | null) => void;
   refreshScene: () => void;
 }
 
@@ -75,6 +81,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const [animateHeadTail, setAnimateHeadTail] = useState(true);
   const [showFullTrajectory, setShowFullTrajectory] = useState(true);
   const [lineThickness, setLineThickness] = useState<LineThickness>("default");
+  const [renderStyle, setRenderStyleState] = useState<RenderStyle>("neon-filaments");
   const [palette, setPaletteState] = useState<Palette>("system");
   const [background, setBackgroundState] = useState<Background>("light");
   const [sceneJson, setSceneJson] = useState("{}");
@@ -84,6 +91,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const [trajectoryMeta, setTrajectoryMeta] = useState<TrajectoryMeta>({ count: 0, points: 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [renderStillHandler, setRenderStillHandler] = useState<(() => void) | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -107,8 +115,11 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
         const baseScene = api.getDefaultScene(nextSystem);
         const tunedScene = applyResolution(baseScene, res);
         const { trajectories: traj, scene } = api.integrateScene(tunedScene);
-        setSceneJson(tunedScene);
-        setSceneSpec(scene);
+        const normalizedView = normalizeViewSpec(scene.view);
+        const normalizedScene = { ...scene, view: normalizedView } as SceneSpec;
+        setSceneJson(JSON.stringify({ ...normalizedScene }, null, 2));
+        setSceneSpec(normalizedScene);
+        setRenderStyleState(normalizedView.render_style ?? "neon-filaments");
         const fallbackCamera =
           (scene.camera as CameraProgram | undefined) ??
           (getDefaultSceneSpec(nextSystem).camera as CameraProgram | undefined) ??
@@ -168,6 +179,26 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
 
   const refreshScene = useCallback(() => loadScene(system, resolution), [loadScene, system, resolution]);
 
+  const setRenderStyle = useCallback(
+    (style: RenderStyle) => {
+      setRenderStyleState(style);
+      setSceneSpec((prev) => {
+        if (!prev) return prev;
+        const updatedView = normalizeViewSpec(prev.view);
+        const nextScene = { ...prev, view: { ...updatedView, render_style: style } } as SceneSpec;
+        setSceneJson(JSON.stringify(nextScene, null, 2));
+        return nextScene;
+      });
+    },
+    [setSceneJson]
+  );
+
+  const requestRenderStill = useCallback(() => {
+    if (renderStillHandler) {
+      renderStillHandler();
+    }
+  }, [renderStillHandler]);
+
   const value = useMemo<ViewerContextValue>(() => ({
     ready: engineReady,
     loading,
@@ -178,6 +209,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     animateHeadTail,
     showFullTrajectory,
     lineThickness,
+    renderStyle,
     palette,
     background,
     sceneJson,
@@ -191,9 +223,12 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     toggleAnimateHeadTail: () => setAnimateHeadTail((v) => !v),
     toggleShowFullTrajectory: () => setShowFullTrajectory((v) => !v),
     setLineThickness,
+    setRenderStyle,
     setPalette: setPaletteState,
     setBackground: setBackgroundState,
     setCameraProgram,
+    requestRenderStill,
+    setRenderStillHandler,
     refreshScene,
   }), [
     engineReady,
@@ -205,6 +240,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     animateHeadTail,
     showFullTrajectory,
     lineThickness,
+    renderStyle,
     palette,
     background,
     sceneJson,
@@ -213,6 +249,9 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     trajectories,
     trajectoryMeta,
     setCameraProgram,
+    setRenderStyle,
+    requestRenderStill,
+    setRenderStillHandler,
     refreshScene,
   ]);
 

@@ -100,6 +100,21 @@ pub enum Background {
     Light,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum RenderStyle {
+    #[serde(rename = "neon-filaments")]
+    NeonFilaments,
+    #[serde(rename = "volumetric-cloud")]
+    VolumetricCloud,
+    #[serde(rename = "crt-scope")]
+    CrtScope,
+    #[serde(rename = "ribbon")]
+    Ribbon,
+    #[serde(rename = "path-trace")]
+    PathTrace,
+}
+
 /// View configuration for rendering a scene.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ViewSpec {
@@ -111,6 +126,12 @@ pub struct ViewSpec {
     pub palette: Palette,
     pub background: Background,
     pub point_size: f32,
+    #[serde(default = "default_render_style")]
+    pub render_style: RenderStyle,
+}
+
+fn default_render_style() -> RenderStyle {
+    RenderStyle::NeonFilaments
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -381,6 +402,7 @@ impl SceneSpec {
                 palette: Palette::Plasma,
                 background: Background::Dark,
                 point_size: 1.0,
+                render_style: RenderStyle::NeonFilaments,
             },
             random_seed: Some(42),
             camera,
@@ -428,6 +450,7 @@ impl SceneSpec {
                 palette: Palette::Viridis,
                 background: Background::Dark,
                 point_size: 1.0,
+                render_style: RenderStyle::NeonFilaments,
             },
             random_seed: Some(43),
             camera,
@@ -479,6 +502,7 @@ impl SceneSpec {
                 palette: Palette::Rainbow,
                 background: Background::Dark,
                 point_size: 1.0,
+                render_style: RenderStyle::NeonFilaments,
             },
             random_seed: Some(44),
             camera,
@@ -531,6 +555,7 @@ impl SceneSpec {
                 palette: Palette::Plasma,
                 background: Background::Dark,
                 point_size: 1.0,
+                render_style: RenderStyle::NeonFilaments,
             },
             random_seed: Some(45),
             camera,

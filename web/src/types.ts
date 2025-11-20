@@ -5,6 +5,12 @@ export type Resolution = "fast" | "default" | "high" | "ultra";
 export type Palette = "plasma" | "viridis" | "rainbow" | "inferno" | "magma" | "cividis";
 export type Background = "dark" | "light";
 export type LineThickness = "thin" | "default" | "thick";
+export type RenderStyle =
+  | "neon-filaments"
+  | "volumetric-cloud"
+  | "crt-scope"
+  | "ribbon"
+  | "path-trace";
 
 export type Trajectories = number[][][];
 
@@ -33,6 +39,7 @@ export interface ViewSpec {
   palette?: Palette;
   background?: Background;
   point_size?: number;
+  render_style?: RenderStyle;
 }
 
 export interface SceneSpec {
@@ -45,4 +52,23 @@ export interface SceneSpec {
   random_seed?: number;
   camera?: CameraProgram;
   [key: string]: unknown;
+}
+
+export function normalizeViewSpec(view: ViewSpec | undefined): ViewSpec {
+  if (!view) {
+    return {
+      mode: "mode3d",
+      plane: null,
+      camera: { theta: 0.8, phi: 0.9, r: 25 },
+      palette: "plasma",
+      background: "dark",
+      point_size: 1,
+      render_style: "neon-filaments",
+    };
+  }
+
+  return {
+    ...view,
+    render_style: view.render_style ?? "neon-filaments",
+  };
 }
