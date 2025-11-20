@@ -1,4 +1,5 @@
 import { Link, NavLink } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
 import VersionBadge from "./VersionBadge";
 import { PHASE_SPACE_VERSION } from "../version";
 
@@ -9,14 +10,71 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? "text-[color:var(--ps-text)]" : "text-[color:var(--ps-text-soft)]"
   }`;
 
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia === "undefined") return undefined;
+    const mql = window.matchMedia(query);
+    const handleChange = (event: MediaQueryListEvent) => setMatches(event.matches);
+    setMatches(mql.matches);
+    mql.addEventListener("change", handleChange);
+    return () => mql.removeEventListener("change", handleChange);
+  }, [query]);
+
+  return matches;
+}
+
 function TopBar() {
+  const wordmarkRef = useRef<HTMLSpanElement | null>(null);
+  const [useShortWordmark, setUseShortWordmark] = useState(false);
+  const mobilePortrait = useMediaQuery("(max-width: 768px) and (orientation: portrait)");
   const versionLabel = `phase-space v${PHASE_SPACE_VERSION} • beta`;
+
+  useEffect(() => {
+    if (!mobilePortrait) {
+      setUseShortWordmark(false);
+      return;
+    }
+
+    const el = wordmarkRef.current;
+    if (!el) return;
+
+    const checkWrap = () => {
+      const isWrapped = el.scrollHeight > el.clientHeight + 1;
+      setUseShortWordmark(isWrapped);
+    };
+
+    checkWrap();
+    const resizeObserver = new ResizeObserver(checkWrap);
+    resizeObserver.observe(el);
+    window.addEventListener("resize", checkWrap);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", checkWrap);
+    };
+  }, [mobilePortrait]);
+
+  const wordmark = useMemo(
+    () => (mobilePortrait && useShortWordmark ? "p-s" : "phase-space"),
+    [mobilePortrait, useShortWordmark]
+  );
+
   return (
     <header className="w-full border-b border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-bg)]">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 md:h-16">
         <Link to="/" className="text-lg font-semibold tracking-tight text-[color:var(--ps-text)]">
-          <span className="font-normal">phase</span>
-          <span className="font-semibold">-space</span>
+          <span ref={wordmarkRef} className="block whitespace-normal">
+            {wordmark === "phase-space" ? (
+              <>
+                <span className="font-normal">phase</span>
+                <span className="font-semibold">-space</span>
+              </>
+            ) : (
+              <span className="font-semibold">p-s</span>
+            )}
+          </span>
         </Link>
         <div className="flex items-center gap-4">
           <nav className="flex items-center gap-4 text-xs text-[color:var(--ps-text-soft)] md:text-sm">
@@ -36,7 +94,7 @@ function TopBar() {
               Credits
             </NavLink>
           </nav>
-          <VersionBadge label={versionLabel} />
+          {!mobilePortrait && <VersionBadge label={versionLabel} />}
           <a
             href={githubUrl}
             target="_blank"

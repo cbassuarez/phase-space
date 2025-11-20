@@ -10,8 +10,8 @@ function defaultCameraProgram(): CameraProgram {
     orbit: {
       base_radius: 1.2,
       radius_jitter: 0.05,
-      azimuth_speed: 0.25,
-      polar_speed: 0.15,
+      azimuth_speed: 0.05,
+      polar_speed: 0.08,
       polar_center: 0.9,
       polar_amplitude: 0.25,
       hand_held_jitter: 0.15,
@@ -75,7 +75,7 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       palette: "prism",
       background: "dark",
       point_size: 1.0,
-      render_style: "photon-weave",
+      render_style: "volumetric-cloud",
     },
     random_seed: 42,
     camera: (() => {
@@ -111,7 +111,7 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       palette: "viridis",
       background: "dark",
       point_size: 1.0,
-      render_style: "photon-weave",
+      render_style: "volumetric-cloud",
     },
     random_seed: 43,
     camera: (() => {
@@ -150,7 +150,7 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       palette: "prism",
       background: "dark",
       point_size: 1.0,
-      render_style: "photon-weave",
+      render_style: "volumetric-cloud",
     },
     random_seed: 44,
     camera: (() => {
@@ -185,7 +185,7 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       palette: "plasma",
       background: "dark",
       point_size: 1.0,
-      render_style: "photon-weave",
+      render_style: "volumetric-cloud",
     },
     random_seed: 45,
     camera: (() => {

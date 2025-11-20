@@ -135,10 +135,10 @@ export function normalizeViewSpec(view: ViewSpec | undefined): ViewSpec {
       mode: "mode3d",
       plane: null,
       camera: { theta: 0.8, phi: 0.9, r: 25 },
-      palette: "plasma",
+      palette: "prism",
       background: "dark",
       point_size: 1,
-      render_style: "photon-weave",
+      render_style: "volumetric-cloud",
     };
   }
 
