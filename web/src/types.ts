@@ -130,22 +130,25 @@ export interface SceneSpec {
 }
 
 export function normalizeViewSpec(view: ViewSpec | undefined): ViewSpec {
+  const defaultView: ViewSpec = {
+    mode: "mode3d",
+    plane: null,
+    camera: { theta: 0.8, phi: 0.9, r: 25 },
+    palette: "prism",
+    background: "dark",
+    point_size: 1,
+    render_style: "volumetric-cloud",
+  };
+
   if (!view) {
-    return {
-      mode: "mode3d",
-      plane: null,
-      camera: { theta: 0.8, phi: 0.9, r: 25 },
-      palette: "plasma",
-      background: "dark",
-      point_size: 1,
-      render_style: "photon-weave",
-    };
+    return defaultView;
   }
 
   return {
+    ...defaultView,
     ...view,
-    palette: mapLegacyPalette(view.palette),
-    render_style: mapLegacyRenderStyle(view.render_style),
+    palette: mapLegacyPalette(view.palette ?? defaultView.palette),
+    render_style: mapLegacyRenderStyle(view.render_style ?? defaultView.render_style),
   };
 }
 

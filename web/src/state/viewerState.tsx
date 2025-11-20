@@ -90,7 +90,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const [animateHeadTail, setAnimateHeadTail] = useState(true);
   const [showFullTrajectory, setShowFullTrajectory] = useState(true);
   const [lineThickness, setLineThickness] = useState<LineThickness>("default");
-  const [renderStyle, setRenderStyleState] = useState<RenderStyle>("photon-weave");
+  const [renderStyle, setRenderStyleState] = useState<RenderStyle>("volumetric-cloud");
   const [photonWeaveSettings, setPhotonWeaveSettingsState] =
     useState<PhotonWeaveSettings>({
       brightness: 1,
@@ -104,7 +104,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     projectionAxis: "auto",
     colorMode: "global",
   });
-  const [palette, setPaletteState] = useState<Palette>("plasma");
+  const [palette, setPaletteState] = useState<Palette>("prism");
   const [paletteLocked, setPaletteLocked] = useState(false);
   const [customPalette, setCustomPaletteState] = useState<CustomPaletteState>(loadCustomPalette());
   const [background, setBackgroundState] = useState<Background>("light");
@@ -160,7 +160,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
         }
         setSceneJson(JSON.stringify({ ...normalizedScene }, null, 2));
         setSceneSpec(normalizedScene);
-        const normalizedStyle = normalizedView.render_style ?? "photon-weave";
+        const normalizedStyle = normalizedView.render_style ?? "volumetric-cloud";
         setRenderStyleState(normalizedStyle);
         if (!paletteLocked && scene.view?.palette) {
           setPaletteState(mapLegacyPalette(scene.view.palette));

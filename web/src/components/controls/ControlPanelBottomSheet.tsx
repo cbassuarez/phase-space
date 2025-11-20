@@ -112,23 +112,21 @@ function ControlPanelBottomSheet() {
           <ToggleSwitch label="Animate head/tail" checked={animateHeadTail} onToggle={toggleAnimateHeadTail} />
           <ToggleSwitch label="Show full trajectory" checked={showFullTrajectory} onToggle={toggleShowFullTrajectory} />
           <div className="grid grid-cols-3 gap-2 text-xs">
-            {[{ id: "photon-weave", label: "Photon Weave" }, { id: "volumetric-cloud", label: "Cloud" }, { id: "caustics", label: "Caustics" }].map(
-              (opt) => (
-                <button
-                  key={opt.id}
-                  onClick={() => setRenderStyle(opt.id as typeof renderStyle)}
-                  className={clsx(
-                    "rounded-full px-2 py-1",
-                    renderStyle === opt.id
-                      ? "bg-[color:var(--ps-panel-alt-bg)] text-[color:var(--ps-text)] shadow-subtle"
-                      : "bg-white text-[color:var(--ps-text-soft)]"
-                  )}
-                >
-                  {opt.label}
-                </button>
-              )
-            )}
-            {[{ id: "ribbon", label: "Ribbon" }, { id: "cells", label: "Cells" }].map((opt) => (
+            {[{ id: "volumetric-cloud", label: "Cloud" }, { id: "ribbon", label: "Ribbon" }, { id: "cells", label: "Cells" }].map((opt) => (
+              <button
+                key={opt.id}
+                onClick={() => setRenderStyle(opt.id as typeof renderStyle)}
+                className={clsx(
+                  "rounded-full px-2 py-1",
+                  renderStyle === opt.id
+                    ? "bg-[color:var(--ps-panel-alt-bg)] text-[color:var(--ps-text)] shadow-subtle"
+                    : "bg-white text-[color:var(--ps-text-soft)]"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+            {[{ id: "photon-weave", label: "Photon Weave" }, { id: "caustics", label: "Caustics" }].map((opt) => (
               <button
                 key={opt.id}
                 onClick={() => setRenderStyle(opt.id as typeof renderStyle)}
