@@ -10,8 +10,8 @@ function defaultCameraProgram(): CameraProgram {
     orbit: {
       base_radius: 1.2,
       radius_jitter: 0.05,
-      azimuth_speed: 0.015,
-      polar_speed: 0.025,
+      azimuth_speed: 0.05,
+      polar_speed: 0.08,
       polar_center: 0.9,
       polar_amplitude: 0.25,
       hand_held_jitter: 0.15,
