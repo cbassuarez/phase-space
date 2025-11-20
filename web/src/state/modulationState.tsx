@@ -8,10 +8,11 @@ interface ModValues {
   camera: { r: number | null; theta: number | null; phi: number | null };
   paletteShift: number;
   backgroundBrightness: number;
-  neonEmissive: number | null;
+  photonWeaveBrightness: number | null;
+  emissiveBoost: number | null;
   ribbonWidth: number | null;
   cloudDensity: number | null;
-  crtScanDepth: number | null;
+  causticsIntensity: number | null;
 }
 
 interface ModulationContextValue {
@@ -51,8 +52,10 @@ const createTargetRegistry = (
   const setBackgroundBrightness = (v: number) => {
     valuesRef.current.backgroundBrightness = clamp01(v);
   };
-  const setNeonEmissive = (v: number) => {
-    valuesRef.current.neonEmissive = Math.max(0.05, Math.min(3.5, v));
+  const setPhotonWeaveBrightness = (v: number) => {
+    const clamped = Math.max(0.05, Math.min(3.5, v));
+    valuesRef.current.photonWeaveBrightness = clamped;
+    valuesRef.current.emissiveBoost = clamped;
   };
   const setRibbonWidth = (v: number) => {
     valuesRef.current.ribbonWidth = Math.max(0.3, Math.min(2.8, v));
@@ -60,8 +63,8 @@ const createTargetRegistry = (
   const setCloudDensity = (v: number) => {
     valuesRef.current.cloudDensity = clamp01(v);
   };
-  const setCrtScanDepth = (v: number) => {
-    valuesRef.current.crtScanDepth = clamp01(v);
+  const setCausticsIntensity = (v: number) => {
+    valuesRef.current.causticsIntensity = clamp01(v * 2.2);
   };
 
   const setVoicePitch = (v: number) => synth.setVoicePitch(0, clamp01(v));
@@ -75,10 +78,10 @@ const createTargetRegistry = (
     "view.camera.phi": setCameraPhi,
     "view.palette_shift": setPaletteShift,
     "view.background_brightness": setBackgroundBrightness,
-    "render.neon.emissiveIntensity": setNeonEmissive,
+    "render.photonWeave.brightness": setPhotonWeaveBrightness,
     "render.ribbon.width": setRibbonWidth,
     "render.cloud.density": setCloudDensity,
-    "render.crt.scanlineDepth": setCrtScanDepth,
+    "render.caustics.intensity": setCausticsIntensity,
     "audio.voice_0.pitch": setVoicePitch,
     "audio.voice_0.pan": setVoicePan,
     "audio.voice_0.brightness": setVoiceBrightness,
@@ -103,10 +106,11 @@ export function ModulationProvider({ children }: { children: React.ReactNode }) 
     camera: { r: null, theta: null, phi: null },
     paletteShift: 0,
     backgroundBrightness: 0,
-    neonEmissive: null,
+    photonWeaveBrightness: null,
+    emissiveBoost: null,
     ribbonWidth: null,
     cloudDensity: null,
-    crtScanDepth: null,
+    causticsIntensity: null,
   });
 
   useEffect(() => {

@@ -2,15 +2,33 @@ import type { CameraProgram } from "./camera/types";
 
 export type SystemId = "lorenz" | "rossler" | "aizawa" | "thomas";
 export type Resolution = "fast" | "default" | "high" | "ultra";
-export type Palette = "plasma" | "viridis" | "rainbow" | "inferno" | "magma" | "cividis";
+export type Palette = "system" | "plasma" | "viridis" | "rainbow" | "inferno" | "magma" | "cividis";
 export type Background = "dark" | "light" | "dim";
 export type LineThickness = "thin" | "default" | "thick";
 export type RenderStyle =
-  | "neon-filaments"
+  | "photon-weave"
   | "volumetric-cloud"
-  | "crt-scope"
+  | "caustics"
   | "ribbon"
   | "cells";
+
+export type FilamentDensity = "low" | "medium" | "high";
+export type ProjectionAxis = "xy" | "xz" | "yz" | "auto";
+export type CausticsColorMode = "global" | "warm" | "cool";
+
+export interface PhotonWeaveSettings {
+  brightness: number;
+  trailLength: number;
+  filamentDensity: FilamentDensity;
+  shimmer: boolean;
+}
+
+export interface CausticsSettings {
+  blurRadius: number;
+  intensity: number;
+  projectionAxis: ProjectionAxis;
+  colorMode: CausticsColorMode;
+}
 
 export type Trajectories = number[][][];
 
@@ -42,6 +60,25 @@ export interface ViewSpec {
   render_style?: RenderStyle;
 }
 
+function mapLegacyRenderStyle(style: RenderStyle | string | undefined | null): RenderStyle {
+  switch (style) {
+    case "neon-filaments":
+      return "photon-weave";
+    case "crt-scope":
+      return "caustics";
+    case "volumetric-cloud":
+    case "ribbon":
+    case "cells":
+    case "photon-weave":
+    case "caustics":
+      return style;
+    case "path-trace":
+      return "cells";
+    default:
+      return "cells";
+  }
+}
+
 export interface SceneSpec {
   id?: string | null;
   system?: SystemId;
@@ -63,12 +100,14 @@ export function normalizeViewSpec(view: ViewSpec | undefined): ViewSpec {
       palette: "plasma",
       background: "dark",
       point_size: 1,
-      render_style: "neon-filaments",
+      render_style: "photon-weave",
     };
   }
 
   return {
     ...view,
-    render_style: view.render_style === "path-trace" ? "cells" : view.render_style ?? "neon-filaments",
+    render_style: mapLegacyRenderStyle(view.render_style),
   };
 }
+
+export { mapLegacyRenderStyle };

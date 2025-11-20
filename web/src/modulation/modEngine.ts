@@ -8,10 +8,10 @@ export type TargetPath =
   | "view.camera.phi"
   | "view.palette_shift"
   | "view.background_brightness"
-  | "render.neon.emissiveIntensity"
+  | "render.photonWeave.brightness"
   | "render.ribbon.width"
   | "render.cloud.density"
-  | "render.crt.scanlineDepth"
+  | "render.caustics.intensity"
   | "audio.voice_0.pitch"
   | "audio.voice_0.pan"
   | "audio.voice_0.brightness"
@@ -42,7 +42,9 @@ export class ModulationEngine {
 
   static async load(registry: TargetRegistry): Promise<ModulationEngine | null> {
     try {
-      const res = await fetch("/mod-routing.json");
+      const base = import.meta.env.BASE_URL ?? "/";
+      const normalizedBase = base.endsWith("/") ? base : `${base}/`;
+      const res = await fetch(`${normalizedBase}mod-routing.json`);
       if (!res.ok) throw new Error("Failed to load mod-routing.json");
       const json = await res.json();
       const config: ModulationEngineConfig = {
