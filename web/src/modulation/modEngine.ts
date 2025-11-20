@@ -42,7 +42,9 @@ export class ModulationEngine {
 
   static async load(registry: TargetRegistry): Promise<ModulationEngine | null> {
     try {
-      const res = await fetch("/mod-routing.json");
+      const base = import.meta.env.BASE_URL ?? "/";
+      const normalizedBase = base.endsWith("/") ? base : `${base}/`;
+      const res = await fetch(`${normalizedBase}mod-routing.json`);
       if (!res.ok) throw new Error("Failed to load mod-routing.json");
       const json = await res.json();
       const config: ModulationEngineConfig = {

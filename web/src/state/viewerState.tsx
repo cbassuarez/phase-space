@@ -14,9 +14,8 @@ import type {
   LineThickness,
   RenderStyle,
   CausticsSettings,
-  mapLegacyRenderStyle,
 } from "../types";
-import { normalizeViewSpec } from "../types";
+import { mapLegacyRenderStyle, normalizeViewSpec } from "../types";
 
 interface TrajectoryMeta {
   count: number;
