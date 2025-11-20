@@ -41,7 +41,7 @@ function TopBar() {
     if (!el) return;
 
     const checkWrap = () => {
-      const isWrapped = el.scrollHeight > el.clientHeight + 1;
+      const isWrapped = el.scrollWidth > el.clientWidth + 1;
       setUseShortWordmark(isWrapped);
     };
 
@@ -65,7 +65,7 @@ function TopBar() {
     <header className="w-full border-b border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-bg)]">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 md:h-16">
         <Link to="/" className="text-lg font-semibold tracking-tight text-[color:var(--ps-text)]">
-          <span ref={wordmarkRef} className="block whitespace-normal">
+          <span ref={wordmarkRef} className="block whitespace-nowrap">
             {wordmark === "phase-space" ? (
               <>
                 <span className="font-normal">phase</span>

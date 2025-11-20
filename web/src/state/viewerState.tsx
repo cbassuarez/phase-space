@@ -160,7 +160,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
         }
         setSceneJson(JSON.stringify({ ...normalizedScene }, null, 2));
         setSceneSpec(normalizedScene);
-        const normalizedStyle = normalizedView.render_style ?? "photon-weave";
+        const normalizedStyle = normalizedView.render_style ?? "volumetric-cloud";
         setRenderStyleState(normalizedStyle);
         if (!paletteLocked && scene.view?.palette) {
           setPaletteState(mapLegacyPalette(scene.view.palette));
