@@ -35,6 +35,16 @@ export const TRI_PRIMARY_ANCHORS = {
 
 export const builtinPalettes: PaletteDef[] = [
   {
+    id: "prism",
+    label: "Prism",
+    stops: [
+      { t: 0, color: TRI_PRIMARY_ANCHORS.red },
+      { t: 0.5, color: TRI_PRIMARY_ANCHORS.yellow },
+      { t: 1, color: TRI_PRIMARY_ANCHORS.blue },
+    ],
+    interpolation: "linearRGB",
+  },
+  {
     id: "plasma",
     label: "Plasma",
     stops: [
@@ -53,16 +63,6 @@ export const builtinPalettes: PaletteDef[] = [
       { t: 0.33, color: "#31688e" },
       { t: 0.66, color: "#35b779" },
       { t: 1, color: "#fde725" },
-    ],
-    interpolation: "linearRGB",
-  },
-  {
-    id: "prism",
-    label: "Prism",
-    stops: [
-      { t: 0, color: TRI_PRIMARY_ANCHORS.red },
-      { t: 0.5, color: TRI_PRIMARY_ANCHORS.yellow },
-      { t: 1, color: TRI_PRIMARY_ANCHORS.blue },
     ],
     interpolation: "linearRGB",
   },

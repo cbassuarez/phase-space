@@ -168,11 +168,11 @@ function ControlPanelDesktop() {
           <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">Rendering</div>
           <div className="inline-flex w-full items-center rounded-full bg-[color:var(--ps-panel-alt-bg)] p-1 text-xs">
             {[
-              { id: "photon-weave", label: "Photon Weave" },
               { id: "volumetric-cloud", label: "Cloud" },
-              { id: "caustics", label: "Caustics" },
               { id: "ribbon", label: "Ribbon" },
               { id: "cells", label: "Cells" },
+              { id: "photon-weave", label: "Photon Weave" },
+              { id: "caustics", label: "Caustics" },
             ].map((opt) => (
               <button
                 key={opt.id}
