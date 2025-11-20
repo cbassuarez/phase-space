@@ -5,6 +5,7 @@ import {
   Group,
   Points,
   PointsMaterial,
+  NormalBlending,
 } from "three";
 import { colorForTrajectory } from "./utils";
 import type { RendererStrategy, RenderContext, TrajectoryData } from "./base";
@@ -27,13 +28,14 @@ export class VolumetricCloudRenderer implements RendererStrategy {
       }
       const geom = new BufferGeometry();
       geom.setAttribute("position", new Float32BufferAttribute(positions, 3));
+      const useAdditive = data.background !== "light";
       const mat = new PointsMaterial({
         size: data.lineThickness === "thick" ? 0.2 : data.lineThickness === "thin" ? 0.1 : 0.15,
         sizeAttenuation: true,
         transparent: true,
         opacity: 0.7,
         depthWrite: false,
-        blending: AdditiveBlending,
+        blending: useAdditive ? AdditiveBlending : NormalBlending,
         color: colorForTrajectory(idx, data.palette),
       });
       const cloud = new Points(geom, mat);
