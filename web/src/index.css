@@ -18,17 +18,18 @@
   --ps-text-muted: #8b90a5;
 
   /* Prism tri-primary anchors */
-  --ps-primary-red: #ff00ff;
-  --ps-primary-blue: #00ffff;
-  --ps-primary-yellow: #ffff00;
+  --ps-primary-red: #ff1a1a;
+  --ps-primary-blue: #0057ff;
+  --ps-primary-yellow: #ffd600;
 
-  /* Primary accent */
-  --ps-accent: var(--ps-primary-red);
+  /* Primary accents */
+  --ps-accent: #111111;
+  --ps-accent-subtle: #1f2933;
 
   /* Trajectory palette anchors */
-  --ps-traj-1: #00ffff;
-  --ps-traj-2: #ff00ff;
-  --ps-traj-3: #ffff00;
+  --ps-traj-1: #ff1a1a;
+  --ps-traj-2: #ffd600;
+  --ps-traj-3: #0057ff;
 
   /* Shadows / elevation */
   --ps-shadow-soft: 0 14px 35px rgba(10, 24, 64, 0.12);

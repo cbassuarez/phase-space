@@ -60,7 +60,7 @@ export class RibbonRenderer implements RendererStrategy {
       geometry.setAttribute("normal", new BufferAttribute(new Float32Array(normals), 3));
       geometry.computeVertexNormals();
       const material = new MeshStandardMaterial({
-        color: colorForTrajectory(idx, data.palette, data.customPalettes, data.paletteShift ?? 0),
+        color: colorForTrajectory(idx, data.palette, data.customPalette, data.paletteShift ?? 0),
         side: DoubleSide,
         roughness: 0.45,
         metalness: 0.05,
@@ -87,7 +87,7 @@ export class RibbonRenderer implements RendererStrategy {
       mat.color = colorForTrajectory(
         idx,
         this.data!.palette,
-        this.data!.customPalettes,
+        this.data!.customPalette,
         this.data?.paletteShift ?? 0
       );
       mat.emissiveIntensity = 0.3 * (this.data.emissiveBoost ?? 1);

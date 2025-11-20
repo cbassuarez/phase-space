@@ -17,7 +17,7 @@ import {
   WebGLRenderTarget,
 } from "three";
 import { samplePalette } from "../../../palettes";
-import type { CustomPaletteBank } from "../../../palettes";
+import type { CustomPaletteState } from "../../../palettes";
 import type { Palette, ProjectionAxis } from "../../../types";
 import type { RendererStrategy, RenderContext, TrajectoryData } from "./base";
 
@@ -80,12 +80,12 @@ const colorFragment = `
   }
 `;
 
-function buildPaletteTexture(id: Palette, customPalettes: CustomPaletteBank): DataTexture {
+function buildPaletteTexture(id: Palette, customPalette: CustomPaletteState): DataTexture {
   const size = 256;
   const data = new Uint8Array(size * 3);
   for (let i = 0; i < size; i++) {
     const t = size === 1 ? 0 : i / (size - 1);
-    const color = samplePalette(id, t, customPalettes).clone().convertLinearToSRGB();
+    const color = samplePalette(id, t, customPalette).clone().convertLinearToSRGB();
     data[i * 3 + 0] = Math.round(color.r * 255);
     data[i * 3 + 1] = Math.round(color.g * 255);
     data[i * 3 + 2] = Math.round(color.b * 255);
@@ -265,9 +265,9 @@ export class CausticsRenderer implements RendererStrategy {
     this.blurSceneH.add(new Mesh(quadGeom, this.blurMaterialH));
     this.blurSceneV.add(new Mesh(quadGeom, this.blurMaterialV));
 
-    this.paletteTexture = buildPaletteTexture(data.palette as Palette, data.customPalettes);
-    this.warmPaletteTexture = buildPaletteTexture("solar", data.customPalettes);
-    this.coolPaletteTexture = buildPaletteTexture("abyss", data.customPalettes);
+    this.paletteTexture = buildPaletteTexture(data.palette as Palette, data.customPalette);
+    this.warmPaletteTexture = buildPaletteTexture("solar", data.customPalette);
+    this.coolPaletteTexture = buildPaletteTexture("abyss", data.customPalette);
     this.outputMaterial = new ShaderMaterial({
       uniforms: {
         uTexture: { value: this.finalTarget.texture },
@@ -329,13 +329,13 @@ export class CausticsRenderer implements RendererStrategy {
     }
   }
 
-  private refreshPalettes(palette: Palette, customPalettes: CustomPaletteBank) {
+  private refreshPalettes(palette: Palette, customPalette: CustomPaletteState) {
     this.paletteTexture?.dispose();
     this.warmPaletteTexture?.dispose();
     this.coolPaletteTexture?.dispose();
-    this.paletteTexture = buildPaletteTexture(palette, customPalettes);
-    this.warmPaletteTexture = buildPaletteTexture("solar", customPalettes);
-    this.coolPaletteTexture = buildPaletteTexture("abyss", customPalettes);
+    this.paletteTexture = buildPaletteTexture(palette, customPalette);
+    this.warmPaletteTexture = buildPaletteTexture("solar", customPalette);
+    this.coolPaletteTexture = buildPaletteTexture("abyss", customPalette);
     if (this.outputMaterial) {
       this.outputMaterial.uniforms.uPalette.value = this.paletteTexture;
       this.outputMaterial.uniforms.uPaletteWarm.value = this.warmPaletteTexture;
@@ -351,7 +351,7 @@ export class CausticsRenderer implements RendererStrategy {
 
   applyDynamic(data: TrajectoryData) {
     this.data = { ...this.data, ...data };
-    this.refreshPalettes(data.palette as Palette, data.customPalettes);
+    this.refreshPalettes(data.palette as Palette, data.customPalette);
     if (this.outputMaterial) {
       this.outputMaterial.uniforms.uIntensity.value = data.caustics?.intensity ?? 1;
       this.outputMaterial.uniforms.uColorMode.value = data.caustics?.colorMode === "warm" ? 1 : data.caustics?.colorMode === "cool" ? 2 : 0;

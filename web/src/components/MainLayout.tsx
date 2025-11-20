@@ -25,7 +25,7 @@ function MainLayout() {
     trajectories,
     sceneSpec,
     palette,
-    customPalettes,
+    customPalette,
     background,
     autoSpin,
     animateHeadTail,
@@ -54,7 +54,7 @@ function MainLayout() {
               error={error}
               trajectories={trajectories}
               palette={palette}
-              customPalettes={customPalettes}
+              customPalette={customPalette}
               background={background}
               camera={viewCamera}
               cameraProgram={cameraProgram}
@@ -83,7 +83,7 @@ function MainLayout() {
               error={error}
               trajectories={trajectories}
               palette={palette}
-              customPalettes={customPalettes}
+              customPalette={customPalette}
               background={background}
               camera={viewCamera}
               cameraProgram={cameraProgram}

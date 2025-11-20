@@ -7,9 +7,7 @@ export type PaletteId =
   | "solar"
   | "abyss"
   | "mono"
-  | "custom-1"
-  | "custom-2"
-  | "custom-3";
+  | "custom";
 
 export type PaletteStop = {
   t: number; // 0..1
@@ -21,26 +19,18 @@ export type PaletteDef = {
   label: string;
   stops: PaletteStop[];
   interpolation?: "linearRGB" | "oklab";
-  triPrimary?: boolean;
 };
 
-export type CustomPaletteId = "custom-1" | "custom-2" | "custom-3";
-
 export type CustomPaletteState = {
-  id: CustomPaletteId;
   low: string;
   mid: string;
   high: string;
-  saturationBoost: boolean;
-  gamma: number;
 };
 
-export type CustomPaletteBank = Record<CustomPaletteId, CustomPaletteState>;
-
-export const TRI_PRIMARY_ACCENTS = {
-  a: "#00FFFF",
-  b: "#FF00FF",
-  c: "#FFFF00",
+export const TRI_PRIMARY_ANCHORS = {
+  red: "#FF1A1A",
+  yellow: "#FFD600",
+  blue: "#0057FF",
 };
 
 export const builtinPalettes: PaletteDef[] = [
@@ -69,12 +59,10 @@ export const builtinPalettes: PaletteDef[] = [
   {
     id: "prism",
     label: "Prism",
-    triPrimary: true,
     stops: [
-      { t: 0, color: "#00FFFF" },
-      { t: 0.33, color: "#FF00FF" },
-      { t: 0.66, color: "#FFFF00" },
-      { t: 1, color: "#FFFFFF" },
+      { t: 0, color: TRI_PRIMARY_ANCHORS.red },
+      { t: 0.5, color: TRI_PRIMARY_ANCHORS.yellow },
+      { t: 1, color: TRI_PRIMARY_ANCHORS.blue },
     ],
     interpolation: "linearRGB",
   },
@@ -112,63 +100,72 @@ export const builtinPalettes: PaletteDef[] = [
   },
 ];
 
-const defaultCustomPalettes: CustomPaletteBank = {
-  "custom-1": {
-    id: "custom-1",
-    low: "#00FFFF",
-    mid: "#FF00FF",
-    high: "#FFFF00",
-    saturationBoost: true,
-    gamma: 1,
-  },
-  "custom-2": {
-    id: "custom-2",
-    low: "#331100",
-    mid: "#FF8C3C",
-    high: "#FFE7B3",
-    saturationBoost: false,
-    gamma: 0.95,
-  },
-  "custom-3": {
-    id: "custom-3",
-    low: "#021024",
-    mid: "#2AE1FF",
-    high: "#B6F1FF",
-    saturationBoost: true,
-    gamma: 1.05,
-  },
+const defaultCustomPalette: CustomPaletteState = {
+  low: TRI_PRIMARY_ANCHORS.red,
+  mid: TRI_PRIMARY_ANCHORS.yellow,
+  high: TRI_PRIMARY_ANCHORS.blue,
 };
 
-export const CUSTOM_STORAGE_KEY = "phase-space.customPalettes.v1";
+export const CUSTOM_STORAGE_KEY = "phase-space.customPalette.v2";
+const LEGACY_CUSTOM_STORAGE_KEY = "phase-space.customPalettes.v1";
 
-export function getDefaultCustomPaletteBank(): CustomPaletteBank {
-  return JSON.parse(JSON.stringify(defaultCustomPalettes)) as CustomPaletteBank;
+function cloneCustomPalette(state: CustomPaletteState): CustomPaletteState {
+  return { ...state };
 }
 
-export function loadCustomPaletteBank(): CustomPaletteBank {
+export function getDefaultCustomPalette(): CustomPaletteState {
+  return cloneCustomPalette(defaultCustomPalette);
+}
+
+function normalizeCustomPalette(state?: Partial<CustomPaletteState>): CustomPaletteState {
+  const fallback = getDefaultCustomPalette();
+  return {
+    low: state?.low ?? fallback.low,
+    mid: state?.mid ?? fallback.mid,
+    high: state?.high ?? fallback.high,
+  };
+}
+
+function loadLegacyCustomPalette(): CustomPaletteState | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const saved = window.localStorage.getItem(LEGACY_CUSTOM_STORAGE_KEY);
+    if (!saved) return null;
+    const parsed = JSON.parse(saved) as Record<string, any>;
+    const first = parsed?.["custom-1"];
+    if (first) {
+      return normalizeCustomPalette({ low: first.low, mid: first.mid, high: first.high });
+    }
+  } catch (err) {
+    console.warn("Failed to load legacy custom palette", err);
+  }
+  return null;
+}
+
+export function loadCustomPalette(): CustomPaletteState {
   if (typeof window === "undefined") {
-    return getDefaultCustomPaletteBank();
+    return getDefaultCustomPalette();
   }
   try {
     const saved = window.localStorage.getItem(CUSTOM_STORAGE_KEY);
-    if (!saved) return getDefaultCustomPaletteBank();
-    const parsed = JSON.parse(saved) as Partial<CustomPaletteBank>;
-    return {
-      ...getDefaultCustomPaletteBank(),
-      ...parsed,
-    } as CustomPaletteBank;
+    if (saved) {
+      const parsed = JSON.parse(saved) as Partial<CustomPaletteState>;
+      return normalizeCustomPalette(parsed);
+    }
+    const legacy = loadLegacyCustomPalette();
+    if (legacy) return legacy;
   } catch (err) {
-    console.warn("Failed to load custom palettes", err);
-    return getDefaultCustomPaletteBank();
+    console.warn("Failed to load custom palette", err);
   }
+  return getDefaultCustomPalette();
 }
 
-export function saveCustomPaletteBank(bank: CustomPaletteBank) {
+export function saveCustomPalette(palette: CustomPaletteState) {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(CUSTOM_STORAGE_KEY, JSON.stringify(bank));
+    window.localStorage.setItem(CUSTOM_STORAGE_KEY, JSON.stringify(normalizeCustomPalette(palette)));
   } catch (err) {
-    console.warn("Failed to save custom palettes", err);
+    console.warn("Failed to save custom palette", err);
   }
 }
 
@@ -180,16 +177,7 @@ function clamp01(v: number): number {
   return Math.min(1, Math.max(0, v));
 }
 
-function enforceTriSaturation(color: THREE.Color): THREE.Color {
-  const srgb = color.clone().convertLinearToSRGB();
-  const hsl = srgb.getHSL({ h: 0, s: 0, l: 0 });
-  if (hsl.s < 0.8) {
-    srgb.setHSL(hsl.h, 0.8, hsl.l);
-  }
-  return srgb.convertSRGBToLinear();
-}
-
-function interpolateStops(stops: PaletteStop[], t: number, triPrimary?: boolean): THREE.Color {
+function interpolateStops(stops: PaletteStop[], t: number): THREE.Color {
   const ordered = [...stops].sort((a, b) => a.t - b.t);
   const clamped = clamp01(t);
   if (ordered.length === 0) return new THREE.Color(1, 1, 1);
@@ -203,55 +191,44 @@ function interpolateStops(stops: PaletteStop[], t: number, triPrimary?: boolean)
     left = ordered[i];
   }
   if (right.t === left.t) {
-    const base = toLinear(right.color);
-    return triPrimary ? enforceTriSaturation(base) : base;
+    return toLinear(right.color);
   }
   const localT = (clamped - left.t) / (right.t - left.t);
   const c1 = toLinear(left.color);
   const c2 = toLinear(right.color);
-  const mixed = c1.clone().lerp(c2, localT);
-  return triPrimary ? enforceTriSaturation(mixed) : mixed;
+  return c1.clone().lerp(c2, localT);
 }
 
-export function samplePalette(
-  id: PaletteId,
-  t: number,
-  custom?: CustomPaletteBank
-): THREE.Color {
+export function samplePalette(id: PaletteId, t: number, custom?: CustomPaletteState): THREE.Color {
   const clampedT = clamp01(t);
-  const customBank = custom ?? getDefaultCustomPaletteBank();
-  if (id.startsWith("custom-")) {
-    const state = customBank[id as CustomPaletteId] ?? getDefaultCustomPaletteBank()[id as CustomPaletteId];
+  if (id === "custom") {
+    const state = normalizeCustomPalette(custom);
     const stops: PaletteStop[] = [
       { t: 0, color: state.low },
       { t: 0.5, color: state.mid },
       { t: 1, color: state.high },
     ];
-    const gammaT = Math.pow(clampedT, Math.max(0.0001, state.gamma));
-    const color = interpolateStops(stops, gammaT, state.saturationBoost);
-    return state.saturationBoost ? enforceTriSaturation(color) : color;
+    return interpolateStops(stops, clampedT);
   }
 
   const def = builtinPalettes.find((p) => p.id === id) ?? builtinPalettes[0];
-  return interpolateStops(def.stops, clampedT, def.triPrimary);
+  return interpolateStops(def.stops, clampedT);
 }
 
-export function paletteDefById(id: PaletteId, custom?: CustomPaletteBank): PaletteDef | null {
-  if (!id.startsWith("custom-")) {
+export function paletteDefById(id: PaletteId, custom?: CustomPaletteState): PaletteDef | null {
+  if (id !== "custom") {
     return builtinPalettes.find((p) => p.id === id) ?? null;
   }
-  const bank = custom ?? getDefaultCustomPaletteBank();
-  const state = bank[id as CustomPaletteId];
-  if (!state) return null;
+
+  const state = normalizeCustomPalette(custom);
   return {
-    id: id as PaletteId,
-    label: id,
+    id: "custom",
+    label: "Custom",
     stops: [
       { t: 0, color: state.low },
       { t: 0.5, color: state.mid },
       { t: 1, color: state.high },
     ],
     interpolation: "linearRGB",
-    triPrimary: state.saturationBoost,
   };
 }

@@ -100,15 +100,17 @@ function mapLegacyPalette(palette: Palette | string | undefined | null): Palette
       return "solar";
     case "cividis":
       return "mono";
+    case "custom-1":
+    case "custom-2":
+    case "custom-3":
+      return "custom";
     case "plasma":
     case "viridis":
     case "prism":
     case "solar":
     case "abyss":
     case "mono":
-    case "custom-1":
-    case "custom-2":
-    case "custom-3":
+    case "custom":
       return palette;
     default:
       return "plasma";
