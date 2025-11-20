@@ -22,7 +22,6 @@ const cameraModes = [
   { id: "grid-surface", label: "Grid" },
   { id: "drone-ghost", label: "Ghost" },
   { id: "lobe-focus", label: "Lobe" },
-  { id: "macro-micro", label: "Macro" },
 ];
 
 function ControlPanelBottomSheet() {
@@ -177,7 +176,7 @@ function ControlPanelBottomSheet() {
                   step={0.01}
                   value={photonWeaveSettings.brightness}
                   onChange={(e) => setPhotonWeaveSettings({ brightness: parseFloat(e.target.value) })}
-                  className="accent-[color:var(--ps-accent)]"
+                  className="accent-[color:var(--ps-accent-subtle)]"
                 />
               </label>
               <label className="flex flex-col gap-1 text-[11px] text-[color:var(--ps-text-soft)]">
@@ -192,7 +191,7 @@ function ControlPanelBottomSheet() {
                   step={0.01}
                   value={photonWeaveSettings.trailLength}
                   onChange={(e) => setPhotonWeaveSettings({ trailLength: parseFloat(e.target.value) })}
-                  className="accent-[color:var(--ps-accent)]"
+                  className="accent-[color:var(--ps-accent-subtle)]"
                 />
               </label>
               <div className="flex flex-col gap-2 text-[11px] text-[color:var(--ps-text-soft)]">
@@ -237,7 +236,7 @@ function ControlPanelBottomSheet() {
                   step={0.01}
                   value={causticsSettings.blurRadius}
                   onChange={(e) => setCausticsSettings({ blurRadius: parseFloat(e.target.value) })}
-                  className="accent-[color:var(--ps-accent)]"
+                  className="accent-[color:var(--ps-accent-subtle)]"
                 />
               </label>
               <label className="flex flex-col gap-1 text-[11px] text-[color:var(--ps-text-soft)]">
@@ -252,7 +251,7 @@ function ControlPanelBottomSheet() {
                   step={0.01}
                   value={causticsSettings.intensity}
                   onChange={(e) => setCausticsSettings({ intensity: parseFloat(e.target.value) })}
-                  className="accent-[color:var(--ps-accent)]"
+                  className="accent-[color:var(--ps-accent-subtle)]"
                 />
               </label>
               <div className="flex flex-col gap-2 text-[11px] text-[color:var(--ps-text-soft)]">
@@ -328,7 +327,7 @@ function ControlPanelBottomSheet() {
                 step={0.05}
                 value={cameraProgram.speed_scalar}
                 onChange={(e) => setCameraProgram((c) => ({ ...c, speed_scalar: parseFloat(e.target.value) }))}
-                className="accent-[color:var(--ps-accent)]"
+                className="accent-[color:var(--ps-accent-subtle)]"
               />
             </label>
             <label className="flex flex-col gap-1 text-[11px] text-[color:var(--ps-text-soft)]">
@@ -343,7 +342,7 @@ function ControlPanelBottomSheet() {
                 step={0.05}
                 value={cameraProgram.zoom_scalar}
                 onChange={(e) => setCameraProgram((c) => ({ ...c, zoom_scalar: parseFloat(e.target.value) }))}
-                className="accent-[color:var(--ps-accent)]"
+                className="accent-[color:var(--ps-accent-subtle)]"
               />
             </label>
           </section>
@@ -366,7 +365,7 @@ function ControlPanelBottomSheet() {
                   value={opt.id}
                   checked={palette === opt.id}
                   onChange={() => setPalette(opt.id)}
-                  className="h-3 w-3 accent-[color:var(--ps-accent)]"
+                  className="h-3 w-3 accent-[color:var(--ps-accent-subtle)]"
                 />
               </label>
             ))}
@@ -386,7 +385,7 @@ function ControlPanelBottomSheet() {
                   value={opt.id}
                   checked={background === opt.id}
                   onChange={() => setBackground(opt.id as "light" | "dim")}
-                  className="h-3 w-3 accent-[color:var(--ps-accent)]"
+                  className="h-3 w-3 accent-[color:var(--ps-accent-subtle)]"
                 />
               </label>
             ))}

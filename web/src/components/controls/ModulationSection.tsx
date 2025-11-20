@@ -250,7 +250,7 @@ function ModulationRow({ bus }: { bus: ModBusRuntimeState }) {
             checked={bus.bus.enabled}
             disabled={disabled}
             onChange={handleToggle}
-            className="h-4 w-4 accent-[color:var(--ps-accent)]"
+            className="h-4 w-4 accent-[color:var(--ps-accent-subtle)]"
           />
         </label>
       </div>
@@ -313,7 +313,7 @@ function ModulationRow({ bus }: { bus: ModBusRuntimeState }) {
           value={depth}
           disabled={disabled || !selectedTarget}
           onChange={(e) => handleDepthChange(parseFloat(e.target.value))}
-          className="accent-[color:var(--ps-accent)]"
+          className="accent-[color:var(--ps-accent-subtle)]"
         />
       </div>
     </div>

@@ -216,37 +216,6 @@ function lobeFocusPose(program: CameraProgram, ctx: CameraContext, t: number, zo
   return smoothPose({ position, target: center, up: [0, 1, 0] }, stability, null);
 }
 
-function macroMicroPose(program: CameraProgram, ctx: CameraContext, t: number, zoom: number, stability: number): CameraPose {
-  const cfg = program.macro_micro;
-  const phase = (t % Math.max(cfg.cycle_duration, 0.001)) / Math.max(cfg.cycle_duration, 0.001);
-  const microPhase = phase < cfg.micro_hold_fraction;
-
-  const macroCenter = ctx.centroid;
-  const macroRadius = (cfg.macro_radius * sceneRadius(ctx)) / Math.max(zoom, 0.01);
-
-  let microCenter: [number, number, number] = macroCenter;
-  if (ctx.trajectories.length > 0) {
-    const seed = ctx.randomSeed + 17;
-    const trajIdx = Math.floor(hash01(seed) * ctx.trajectories.length);
-    const traj = ctx.trajectories[trajIdx];
-    const pointIdx = Math.floor(hash01(seed * 3.1) * Math.max(1, traj.length - 1));
-    microCenter = traj[pointIdx] ?? macroCenter;
-  }
-
-  const orbit = program.orbit;
-  const localT = t * 0.9;
-  const radius = (microPhase ? cfg.micro_radius : cfg.macro_radius) * sceneRadius(ctx) / Math.max(zoom, 0.01);
-  const az = localT * orbit.azimuth_speed;
-  const polar = orbit.polar_center + orbit.polar_amplitude * Math.sin(localT * orbit.polar_speed);
-  const x = radius * Math.sin(polar) * Math.cos(az);
-  const y = radius * Math.cos(polar);
-  const z = radius * Math.sin(polar) * Math.sin(az);
-  const center = microPhase ? microCenter : macroCenter;
-  const position = vecAdd(center, [x, y, z]);
-
-  return smoothPose({ position, target: center, up: [0, 1, 0] }, stability, null);
-}
-
 function smoothPose(targetPose: CameraPose, stability: number, prevPose: CameraPose | null, biasDistance?: number): CameraPose {
   if (!prevPose || stability <= 0) {
     return targetPose;
@@ -279,8 +248,6 @@ export function computeCameraPose(program: CameraProgram, ctx: CameraContext, pr
       return droneGhostPose(program, ctx, t, zoom, stability);
     case "lobe-focus":
       return lobeFocusPose(program, ctx, t, zoom, stability);
-    case "macro-micro":
-      return macroMicroPose(program, ctx, t, zoom, stability);
     default:
       return orbitPose(program, ctx, t, zoom, stability);
   }

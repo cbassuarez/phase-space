@@ -22,7 +22,6 @@ const cameraModes = [
   { id: "grid-surface", label: "Grid" },
   { id: "drone-ghost", label: "Ghost" },
   { id: "lobe-focus", label: "Lobe" },
-  { id: "macro-micro", label: "Macro" },
 ];
 
 function CameraSlider({
@@ -53,7 +52,7 @@ function CameraSlider({
         step={step ?? 0.01}
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="accent-[color:var(--ps-accent)]"
+        className="accent-[color:var(--ps-accent-subtle)]"
       />
     </label>
   );
@@ -485,24 +484,6 @@ function ControlPanelDesktop() {
                 </div>
               )}
 
-              {cameraProgram.mode === "macro-micro" && (
-                <div className="mt-2 space-y-2">
-                  <CameraSlider
-                    label="Cycle length"
-                    min={6}
-                    max={36}
-                    value={cameraProgram.macro_micro.cycle_duration}
-                    onChange={(v) => updateCamera((c) => ({ ...c, macro_micro: { ...c.macro_micro, cycle_duration: v } }))}
-                  />
-                  <CameraSlider
-                    label="Micro depth"
-                    min={0.3}
-                    max={1.2}
-                    value={cameraProgram.macro_micro.micro_radius}
-                    onChange={(v) => updateCamera((c) => ({ ...c, macro_micro: { ...c.macro_micro, micro_radius: v } }))}
-                  />
-                </div>
-              )}
             </details>
           </div>
         )}
@@ -525,7 +506,7 @@ function ControlPanelDesktop() {
                   value={opt.id}
                   checked={palette === opt.id}
                   onChange={() => setPalette(opt.id)}
-                  className="h-3 w-3 accent-[color:var(--ps-accent)]"
+                  className="h-3 w-3 accent-[color:var(--ps-accent-subtle)]"
                 />
               </span>
             </label>
@@ -547,7 +528,7 @@ function ControlPanelDesktop() {
                 value={opt.id}
                 checked={background === opt.id}
                 onChange={() => setBackground(opt.id as "light" | "dim")}
-                className="h-3 w-3 accent-[color:var(--ps-accent)]"
+                className="h-3 w-3 accent-[color:var(--ps-accent-subtle)]"
               />
             </label>
           ))}

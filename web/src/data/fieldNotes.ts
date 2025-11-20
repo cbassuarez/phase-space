@@ -22,7 +22,7 @@ export const fieldNotes: FieldNote[] = [
     summary:
       "Pushing ρ upward spreads the wings into a noisier halo, making transitions more dramatic.",
     body:
-      "When ρ increases beyond the classic 28, the two lobes of the Lorenz attractor stretch and blur. The trajectories still hop back and forth, but the 'butterfly' begins to feel more like a cloud. This is a nice region for macro/micro camera modes: the global shape remains familiar, but local detail becomes more surprising.",
+      "When ρ increases beyond the classic 28, the two lobes of the Lorenz attractor stretch and blur. The trajectories still hop back and forth, but the 'butterfly' begins to feel more like a cloud. It’s a great place for orbit or lobe-focus modes: the global shape remains familiar, but local detail becomes more surprising.",
     thumbnail: "/images/field-notes/lorenz-high-rho.png",
     query: { system: "lorenz", preset: "high-rho" },
   },
