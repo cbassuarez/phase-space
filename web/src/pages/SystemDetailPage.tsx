@@ -148,7 +148,7 @@ export const SystemDetailPage: React.FC = () => {
     "mode": "mode3d",
     "camera": { "theta": 0.8, "phi": 0.9, "r": 25.0 },
     "palette": "plasma",
-    "background": "dark",
+    "background": "dim",
     "point_size": 1.0
   },
   "random_seed": 42

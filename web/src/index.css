@@ -23,8 +23,8 @@
   --ps-primary-yellow: #ffd600;
 
   /* Primary accents */
-  --ps-accent: #111111;
-  --ps-accent-subtle: #1f2933;
+  --ps-accent: #111827;
+  --ps-accent-subtle: rgba(17, 24, 39, 0.85);
 
   /* Trajectory palette anchors */
   --ps-traj-1: #ff1a1a;

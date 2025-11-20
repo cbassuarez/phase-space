@@ -17,6 +17,7 @@ import type {
 } from "../types";
 import { mapLegacyPalette, mapLegacyRenderStyle, normalizeViewSpec } from "../types";
 import { CustomPaletteState, loadCustomPalette, saveCustomPalette } from "../palettes";
+import { CustomBackgrounds, DEFAULT_CUSTOM_BACKGROUNDS } from "../theme/backgroundModes";
 
 interface TrajectoryMeta {
   count: number;
@@ -39,11 +40,13 @@ interface ViewerContextValue {
   palette: Palette;
   customPalette: CustomPaletteState;
   background: Background;
+  customBackgrounds: CustomBackgrounds;
   sceneJson: string;
   sceneSpec: SceneSpec | null;
   cameraProgram: CameraProgram | null;
   trajectories: Trajectories;
   trajectoryMeta: TrajectoryMeta;
+  fps: number;
   setSystem: (s: SystemId) => void;
   setResolution: (r: Resolution) => void;
   toggleAutoSpin: () => void;
@@ -56,6 +59,8 @@ interface ViewerContextValue {
   setPalette: (p: Palette) => void;
   setCustomPalette: (updates: Partial<CustomPaletteState>) => void;
   setBackground: (b: Background) => void;
+  setCustomBackgrounds: (updates: Partial<CustomBackgrounds>) => void;
+  setFps: (fps: number) => void;
   setCameraProgram: (updater: (c: CameraProgram) => CameraProgram) => void;
   requestRenderStill: () => void;
   setRenderStillHandler: (handler: (() => void) | null) => void;
@@ -108,6 +113,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const [paletteLocked, setPaletteLocked] = useState(false);
   const [customPalette, setCustomPaletteState] = useState<CustomPaletteState>(loadCustomPalette());
   const [background, setBackgroundState] = useState<Background>("light");
+  const [customBackgrounds, setCustomBackgroundsState] = useState<CustomBackgrounds>(DEFAULT_CUSTOM_BACKGROUNDS);
   const [sceneJson, setSceneJson] = useState("{}");
   const [sceneSpec, setSceneSpec] = useState<SceneSpec | null>(null);
   const [cameraProgram, setCameraProgramState] = useState<CameraProgram | null>(null);
@@ -116,6 +122,32 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [renderStillHandler, setRenderStillHandler] = useState<(() => void) | null>(null);
+  const [fps, setFps] = useState(0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const savedMode = window.localStorage.getItem("ps:bg:mode") as Background | null;
+    const savedCustom = window.localStorage.getItem("ps:bg:customs");
+
+    if (savedMode) {
+      setBackgroundState(savedMode);
+    }
+
+    if (savedCustom) {
+      try {
+        const parsed = JSON.parse(savedCustom) as Partial<CustomBackgrounds>;
+        setCustomBackgroundsState((prev) => ({ ...prev, ...parsed }));
+      } catch (err) {
+        console.warn("Failed to parse custom background colors", err);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("ps:bg:mode", background);
+    window.localStorage.setItem("ps:bg:customs", JSON.stringify(customBackgrounds));
+  }, [background, customBackgrounds]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -272,6 +304,10 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const setCustomBackgrounds = useCallback((updates: Partial<CustomBackgrounds>) => {
+    setCustomBackgroundsState((prev) => ({ ...prev, ...updates }));
+  }, []);
+
   const requestRenderStill = useCallback(() => {
     if (renderStillHandler) {
       renderStillHandler();
@@ -294,11 +330,13 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     palette,
     customPalette,
     background,
+    customBackgrounds,
     sceneJson,
     sceneSpec,
     cameraProgram,
     trajectories,
     trajectoryMeta,
+    fps,
     setSystem: setSystemState,
     setResolution: setResolutionState,
     toggleAutoSpin: () => setAutoSpin((v) => !v),
@@ -311,6 +349,8 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     setPalette,
     setCustomPalette,
     setBackground: setBackgroundState,
+    setCustomBackgrounds,
+    setFps,
     setCameraProgram,
     requestRenderStill,
     setRenderStillHandler,
@@ -331,17 +371,21 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     palette,
     customPalette,
     background,
+    customBackgrounds,
     sceneJson,
     sceneSpec,
     cameraProgram,
     trajectories,
     trajectoryMeta,
+    fps,
     setCameraProgram,
     setRenderStyle,
     setPhotonWeaveSettings,
     setCausticsSettings,
     setCustomPalette,
+    setCustomBackgrounds,
     setPalette,
+    setFps,
     requestRenderStill,
     setRenderStillHandler,
     refreshScene,
