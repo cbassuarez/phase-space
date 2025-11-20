@@ -358,6 +358,9 @@ function CanvasPanel({
   showFullTrajectory,
   lineThickness,
   renderStyle,
+  resolution,
+  photonWeaveSettings,
+  causticsSettings,
 }: CanvasPanelProps) {
   const gradientClass =
     background === "light"
@@ -416,6 +419,9 @@ function CanvasPanel({
               camera={camera}
               lineThickness={lineThickness}
               renderStyle={renderStyle}
+              resolution={resolution}
+              photonWeaveSettings={photonWeaveSettings}
+              causticsSettings={causticsSettings}
             />
           </Suspense>
         </Canvas>

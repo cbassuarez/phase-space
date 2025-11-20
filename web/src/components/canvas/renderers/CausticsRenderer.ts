@@ -142,7 +142,7 @@ const colorFragment = `
 
   void main() {
     float intensity = texture2D(uTexture, vUv).r;
-    float boosted = pow(intensity, 0.85) * uIntensity;
+    float boosted = pow(intensity * 1.2, 0.72) * uIntensity;
     boosted = clamp(boosted, 0.0, 3.0);
     vec3 color;
     if (uColorMode == 1) {
@@ -184,6 +184,27 @@ function paletteIndexFromName(name: string | undefined): number {
     default:
       return 0;
   }
+}
+
+function chooseAxisAuto(points: number[][][]): ProjectionAxis {
+  const axes: ProjectionAxis[] = ["xy", "xz", "yz"];
+  let best: ProjectionAxis = "xy";
+  let bestSpread = -Infinity;
+  axes.forEach((axis) => {
+    const bounds = computeBounds(points, axis);
+    const dx = bounds.max[0] - bounds.min[0];
+    const dy = bounds.max[1] - bounds.min[1];
+    const spread = dx * dy;
+    if (spread > bestSpread) {
+      bestSpread = spread;
+      best = axis;
+    }
+  });
+  return bestSpread <= 0 ? "xy" : best;
+}
+
+function blurSigma(value: number): number {
+  return 0.35 + value * 2.6;
 }
 
 function computeBounds(points: number[][][], axis: ProjectionAxis): { min: number[]; max: number[] } {
@@ -242,7 +263,7 @@ export class CausticsRenderer implements RendererStrategy {
     this.blurSceneH = new Scene();
     this.blurSceneV = new Scene();
 
-    const axis = this.projectionAxis === "auto" ? "xy" : this.projectionAxis;
+    const axis = this.projectionAxis === "auto" ? chooseAxisAuto(data.trajectories) : this.projectionAxis;
     const bounds = computeBounds(data.trajectories, axis);
     const pointStep = Math.max(1, Math.round(data.quality?.causticsPointStep ?? 2));
     const positions: number[] = [];
@@ -257,13 +278,17 @@ export class CausticsRenderer implements RendererStrategy {
       }
     });
 
+    if (positions.length === 0) {
+      positions.push(0, 0, 0);
+    }
+
     const splatGeom = new BufferGeometry();
     splatGeom.setAttribute("position", new BufferAttribute(new Float32Array(positions), 3));
 
     const splatMaterial = new ShaderMaterial({
       vertexShader: `
         void main() {
-          gl_PointSize = ${Math.max(3, Math.round(6 * (texSize / 512)))}.0;
+          gl_PointSize = ${Math.max(4, Math.round(8 * (texSize / 512)))}.0;
           gl_Position = vec4(position, 1.0);
         }
       `,
@@ -271,8 +296,8 @@ export class CausticsRenderer implements RendererStrategy {
         void main() {
           vec2 c = gl_PointCoord - vec2(0.5);
           float d = dot(c, c);
-          float a = exp(-d * 16.0);
-          gl_FragColor = vec4(vec3(a), a);
+          float a = exp(-d * 10.0);
+          gl_FragColor = vec4(vec3(a), a) * 1.4;
         }
       `,
       transparent: true,
@@ -290,7 +315,7 @@ export class CausticsRenderer implements RendererStrategy {
         uTexture: { value: this.splatTarget.texture },
         uDirection: { value: new Vector2(1, 0) },
         uResolution: { value: new Vector2(texSize, texSize) },
-        uRadius: { value: data.caustics?.blurRadius ?? 0.5 },
+        uRadius: { value: blurSigma(data.caustics?.blurRadius ?? 0.5) },
       },
       vertexShader: blurVertex,
       fragmentShader: blurFragment,
@@ -303,7 +328,7 @@ export class CausticsRenderer implements RendererStrategy {
         uTexture: { value: this.blurTarget.texture },
         uDirection: { value: new Vector2(0, 1) },
         uResolution: { value: new Vector2(texSize, texSize) },
-        uRadius: { value: data.caustics?.blurRadius ?? 0.5 },
+        uRadius: { value: blurSigma(data.caustics?.blurRadius ?? 0.5) },
       },
       vertexShader: blurVertex,
       fragmentShader: blurFragment,
@@ -333,7 +358,7 @@ export class CausticsRenderer implements RendererStrategy {
     const planeGeom = new PlaneGeometry(24, 24);
     const outputPlane = new Mesh(planeGeom, this.outputMaterial);
     outputPlane.position.set(0, 0, -18);
-    outputPlane.renderOrder = -5;
+    outputPlane.renderOrder = 5;
     this.outputPlane = outputPlane;
     context.camera.add(outputPlane);
 
@@ -389,8 +414,9 @@ export class CausticsRenderer implements RendererStrategy {
       this.outputMaterial.needsUpdate = true;
     }
     if (this.blurMaterialH && this.blurMaterialV) {
-      this.blurMaterialH.uniforms.uRadius.value = data.caustics?.blurRadius ?? 0.5;
-      this.blurMaterialV.uniforms.uRadius.value = data.caustics?.blurRadius ?? 0.5;
+      const radius = blurSigma(data.caustics?.blurRadius ?? 0.5);
+      this.blurMaterialH.uniforms.uRadius.value = radius;
+      this.blurMaterialV.uniforms.uRadius.value = radius;
       this.blurMaterialH.needsUpdate = true;
       this.blurMaterialV.needsUpdate = true;
     }
