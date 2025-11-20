@@ -6,12 +6,14 @@ import type {
   PhotonWeaveSettings,
   RenderStyle,
 } from "../../../types";
+import type { CustomPaletteBank } from "../../../palettes";
 import type { RenderQuality } from "../../../visual/renderQuality";
 import type { PerspectiveCamera, Scene, WebGLRenderer } from "three";
 
 export interface TrajectoryData {
   trajectories: number[][][];
   palette: Palette;
+  customPalettes: CustomPaletteBank;
   lineThickness: LineThickness;
   background: Background;
   paletteShift?: number;
