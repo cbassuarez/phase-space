@@ -30,6 +30,7 @@ function MainLayout() {
     animateHeadTail,
     showFullTrajectory,
     lineThickness,
+    renderStyle,
     cameraProgram,
     loading,
     error,
@@ -57,6 +58,7 @@ function MainLayout() {
               animateHeadTail={animateHeadTail}
               showFullTrajectory={showFullTrajectory}
               lineThickness={lineThickness}
+              renderStyle={renderStyle}
             />
           </div>
           <ControlPanelBottomSheet />
@@ -81,6 +83,7 @@ function MainLayout() {
               animateHeadTail={animateHeadTail}
               showFullTrajectory={showFullTrajectory}
               lineThickness={lineThickness}
+              renderStyle={renderStyle}
             />
           </section>
         </div>

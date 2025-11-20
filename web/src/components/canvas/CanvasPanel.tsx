@@ -1,10 +1,13 @@
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Suspense, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { motion } from "framer-motion";
 import { computeCameraPose } from "../../camera/controller";
 import type { CameraContext, CameraPose, CameraProgram } from "../../camera/types";
-import type { Background, CameraSpec, Palette, Trajectories, LineThickness } from "../../types";
+import type { Background, CameraSpec, Palette, Trajectories, LineThickness, RenderStyle } from "../../types";
+import { useViewerState } from "../../state/viewerState";
+import type { RendererStrategy } from "./renderers/base";
+import { createRendererForStyle } from "./renderers";
 
 interface CanvasPanelProps {
   ready: boolean;
@@ -20,23 +23,7 @@ interface CanvasPanelProps {
   animateHeadTail: boolean;
   showFullTrajectory: boolean;
   lineThickness: LineThickness;
-}
-
-function colorForTrajectory(idx: number, palette: Palette) {
-  if (palette === "plasma") {
-    const colors = ["#f72585", "#b5179e", "#7209b7", "#4361ee", "#4cc9f0"];
-    return colors[idx % colors.length];
-  }
-  if (palette === "viridis") {
-    const colors = ["#440154", "#482878", "#3e4989", "#26828e", "#35b779", "#90d743", "#fde725"];
-    return colors[idx % colors.length];
-  }
-  if (palette === "rainbow") {
-    const colors = ["#ff7a73", "#ffd66b", "#7cffc4", "#4f6fff", "#c084fc"];
-    return colors[idx % colors.length];
-  }
-  const base = ["#4f6fff", "#ff7a73", "#ffd66b", "#6ee7b7", "#a78bfa"];
-  return base[idx % base.length];
+  renderStyle: RenderStyle;
 }
 
 function PhaseScene({
@@ -50,11 +37,15 @@ function PhaseScene({
   randomSeed,
   camera,
   lineThickness,
+  renderStyle,
 }: Omit<CanvasPanelProps, "ready" | "loading" | "error">) {
   const groupRef = useRef<THREE.Group>(null);
-  const linesRef = useRef<THREE.Line[]>([]);
   const timeRef = useRef(0);
   const lastPoseRef = useRef<CameraPose | null>(null);
+  const strategyRef = useRef<RendererStrategy | null>(null);
+  const countsRef = useRef<number[]>([]);
+  const { scene, camera: threeCamera, gl } = useThree();
+  const { setRenderStillHandler } = useViewerState();
 
   useEffect(() => {
     if (!cameraProgram) {
@@ -99,38 +90,29 @@ function PhaseScene({
     return { bboxMin, bboxMax, centroid };
   }, [trajectories]);
 
-  const lineGeometries = useMemo(() => {
-    const lineScale = lineThickness === "thin" ? 0.8 : lineThickness === "thick" ? 1.8 : 1.3;
-    const pointSize = lineThickness === "thin" ? 0.9 : lineThickness === "thick" ? 2.4 : 1.6;
-    return trajectories.map((traj, idx) => {
-      const positions = new Float32Array(traj.length * 3);
-      traj.forEach((p, i) => {
-        positions[i * 3 + 0] = p[0];
-        positions[i * 3 + 1] = p[1];
-        positions[i * 3 + 2] = p[2];
-      });
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-      geometry.setDrawRange(0, positions.length / 3);
-      const color = new THREE.Color(colorForTrajectory(idx, palette));
-      const material = new THREE.LineBasicMaterial({
-        color,
-        linewidth: lineScale,
-        transparent: true,
-        opacity: 0.92,
-        blending: THREE.AdditiveBlending,
-      });
-      const pointsMaterial = new THREE.PointsMaterial({
-        color,
-        size: pointSize,
-        transparent: true,
-        opacity: 0.9,
-        blending: THREE.AdditiveBlending,
-        sizeAttenuation: true,
-      });
-      return { geometry, material, pointsMaterial };
-    });
-  }, [trajectories, palette, lineThickness]);
+  useEffect(() => {
+    countsRef.current = trajectories.map((t) => t.length);
+  }, [trajectories]);
+
+  useEffect(() => {
+    const ctx = { threeScene: scene, camera: threeCamera as THREE.PerspectiveCamera, renderer: gl as THREE.WebGLRenderer };
+    const data = { trajectories, palette, lineThickness, background };
+    if (!strategyRef.current || strategyRef.current.style !== renderStyle) {
+      strategyRef.current?.dispose(ctx);
+      const next = createRendererForStyle(renderStyle);
+      strategyRef.current = next;
+      next.init(ctx, data);
+      setRenderStillHandler(renderStyle === "path-trace" && next.renderStill ? () => next.renderStill!(ctx) : null);
+    } else {
+      strategyRef.current.update(ctx, data);
+    }
+
+    return () => {
+      strategyRef.current?.dispose(ctx);
+      strategyRef.current = null;
+      setRenderStillHandler(null);
+    };
+  }, [scene, threeCamera, gl, trajectories, palette, lineThickness, background, renderStyle, setRenderStillHandler]);
 
   useFrame((state, delta) => {
     const frameDelta = delta;
@@ -168,45 +150,34 @@ function PhaseScene({
       state.camera.lookAt(0, 0, 0);
     }
 
-    linesRef.current.forEach((line) => {
-      const geometry = line?.geometry as THREE.BufferGeometry;
-      const count = (geometry.getAttribute("position") as THREE.BufferAttribute).count;
-      if (showFullTrajectory) {
-        geometry.setDrawRange(0, count);
-        return;
-      }
-      const windowSize = Math.max(8, Math.floor(count * 0.35));
-      if (animateHeadTail) {
-        const head = Math.floor((t * 24) % count);
-        const start = Math.max(0, head - windowSize);
-        let drawCount = windowSize;
-        if (start + drawCount > count) {
-          drawCount = count - start;
+    const strategy = strategyRef.current;
+    if (strategy && strategy.updateDrawWindow) {
+      countsRef.current.forEach((count, idx) => {
+        if (showFullTrajectory) {
+          strategy.updateDrawWindow(idx, 0, count);
+          return;
         }
-        geometry.setDrawRange(start, drawCount);
-      } else {
-        const start = Math.max(0, count - windowSize);
-        geometry.setDrawRange(start, windowSize);
-      }
-    });
+        const windowSize = Math.max(8, Math.floor(count * 0.35));
+        if (animateHeadTail) {
+          const head = Math.floor((t * 24) % count);
+          const start = Math.max(0, head - windowSize);
+          let drawCount = windowSize;
+          if (start + drawCount > count) {
+            drawCount = count - start;
+          }
+          strategy.updateDrawWindow(idx, start, drawCount);
+        } else {
+          const start = Math.max(0, count - windowSize);
+          strategy.updateDrawWindow(idx, start, windowSize);
+        }
+      });
+    }
   });
 
   return (
     <group ref={groupRef}>
       <ambientLight intensity={0.6} />
       <pointLight position={[6, 12, 10]} intensity={0.4} />
-      {lineGeometries.map(({ geometry, material, pointsMaterial }, idx) => (
-        <group key={idx}>
-          <line
-            ref={(el) => {
-              if (el) linesRef.current[idx] = el;
-            }}
-            geometry={geometry}
-            material={material}
-          />
-          <points geometry={geometry} material={pointsMaterial} />
-        </group>
-      ))}
       <color args={[background === "dim" ? "#0e1019" : "#f8f9ff"]} attach="background" />
     </group>
   );
@@ -226,6 +197,7 @@ function CanvasPanel({
   animateHeadTail,
   showFullTrajectory,
   lineThickness,
+  renderStyle,
 }: CanvasPanelProps) {
   const gradientClass =
     background === "dim"
@@ -283,6 +255,7 @@ function CanvasPanel({
               showFullTrajectory={showFullTrajectory}
               camera={camera}
               lineThickness={lineThickness}
+              renderStyle={renderStyle}
             />
           </Suspense>
         </Canvas>

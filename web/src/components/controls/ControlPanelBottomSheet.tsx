@@ -37,6 +37,7 @@ function ControlPanelBottomSheet() {
     animateHeadTail,
     showFullTrajectory,
     lineThickness,
+    renderStyle,
     palette,
     background,
     setSystem,
@@ -45,10 +46,12 @@ function ControlPanelBottomSheet() {
     toggleAnimateHeadTail,
     toggleShowFullTrajectory,
     setLineThickness,
+    setRenderStyle,
     setPalette,
     setBackground,
     cameraProgram,
     setCameraProgram,
+    requestRenderStill,
   } = useViewerState();
 
   const [open, setOpen] = useState(false);
@@ -92,6 +95,46 @@ function ControlPanelBottomSheet() {
           <ToggleSwitch label="Auto-spin camera" checked={autoSpin} onToggle={toggleAutoSpin} />
           <ToggleSwitch label="Animate head/tail" checked={animateHeadTail} onToggle={toggleAnimateHeadTail} />
           <ToggleSwitch label="Show full trajectory" checked={showFullTrajectory} onToggle={toggleShowFullTrajectory} />
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            {[{ id: "neon-filaments", label: "Neon" }, { id: "volumetric-cloud", label: "Cloud" }, { id: "crt-scope", label: "CRT" }].map(
+              (opt) => (
+                <button
+                  key={opt.id}
+                  onClick={() => setRenderStyle(opt.id as typeof renderStyle)}
+                  className={clsx(
+                    "rounded-full px-2 py-1",
+                    renderStyle === opt.id
+                      ? "bg-[color:var(--ps-panel-alt-bg)] text-[color:var(--ps-text)] shadow-subtle"
+                      : "bg-white text-[color:var(--ps-text-soft)]"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              )
+            )}
+            {[{ id: "ribbon", label: "Ribbon" }, { id: "path-trace", label: "Path" }].map((opt) => (
+              <button
+                key={opt.id}
+                onClick={() => setRenderStyle(opt.id as typeof renderStyle)}
+                className={clsx(
+                  "rounded-full px-2 py-1",
+                  renderStyle === opt.id
+                    ? "bg-[color:var(--ps-panel-alt-bg)] text-[color:var(--ps-text)] shadow-subtle"
+                    : "bg-white text-[color:var(--ps-text-soft)]"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {renderStyle === "path-trace" && (
+            <button
+              onClick={requestRenderStill}
+              className="rounded-full bg-[color:var(--ps-panel-bg)] px-3 py-2 text-xs font-semibold text-[color:var(--ps-text)] shadow-subtle"
+            >
+              Render still
+            </button>
+          )}
           <div className="mt-1 grid grid-cols-3 gap-2 text-xs">
             {[{ id: "thin", label: "Thin" }, { id: "default", label: "Default" }, { id: "thick", label: "Thick" }].map(
               (opt) => (

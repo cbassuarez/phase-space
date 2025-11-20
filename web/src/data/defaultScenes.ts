@@ -82,6 +82,7 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       palette: "plasma",
       background: "dark",
       point_size: 1.0,
+      render_style: "neon-filaments",
     },
     random_seed: 42,
     camera: (() => {
@@ -117,6 +118,7 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       palette: "viridis",
       background: "dark",
       point_size: 1.0,
+      render_style: "neon-filaments",
     },
     random_seed: 43,
     camera: (() => {
@@ -156,6 +158,7 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       palette: "rainbow",
       background: "dark",
       point_size: 1.0,
+      render_style: "neon-filaments",
     },
     random_seed: 44,
     camera: (() => {
@@ -190,6 +193,7 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       palette: "plasma",
       background: "dark",
       point_size: 1.0,
+      render_style: "neon-filaments",
     },
     random_seed: 45,
     camera: (() => {

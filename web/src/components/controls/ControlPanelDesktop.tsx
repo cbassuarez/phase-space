@@ -71,6 +71,7 @@ function ControlPanelDesktop() {
     animateHeadTail,
     showFullTrajectory,
     lineThickness,
+    renderStyle,
     palette,
     background,
     setSystem,
@@ -79,12 +80,14 @@ function ControlPanelDesktop() {
     toggleAnimateHeadTail,
     toggleShowFullTrajectory,
     setLineThickness,
+    setRenderStyle,
     setPalette,
     setBackground,
     cameraProgram,
     setCameraProgram,
     trajectoryMeta,
     sceneJson,
+    requestRenderStill,
   } = useViewerState();
 
   const [inspectorOpen, setInspectorOpen] = useState(false);
@@ -141,6 +144,41 @@ function ControlPanelDesktop() {
         <ToggleSwitch label="Auto-spin camera" checked={autoSpin} onToggle={toggleAutoSpin} />
         <ToggleSwitch label="Animate head/tail" checked={animateHeadTail} onToggle={toggleAnimateHeadTail} />
         <ToggleSwitch label="Show full trajectory" checked={showFullTrajectory} onToggle={toggleShowFullTrajectory} />
+        <div className="space-y-2">
+          <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">Rendering</div>
+          <div className="inline-flex w-full items-center rounded-full bg-[color:var(--ps-panel-alt-bg)] p-1 text-xs">
+            {[
+              { id: "neon-filaments", label: "Neon" },
+              { id: "volumetric-cloud", label: "Cloud" },
+              { id: "crt-scope", label: "CRT" },
+              { id: "ribbon", label: "Ribbon" },
+              { id: "path-trace", label: "Path" },
+            ].map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setRenderStyle(opt.id as typeof renderStyle)}
+                className={clsx(
+                  "flex-1 rounded-full px-3 py-1 transition-all",
+                  renderStyle === opt.id
+                    ? "bg-[color:var(--ps-panel-bg)] text-[color:var(--ps-text)] border border-[color:var(--ps-accent)] shadow-[var(--ps-shadow-subtle)]"
+                    : "text-[color:var(--ps-text-soft)]"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {renderStyle === "path-trace" && (
+            <button
+              type="button"
+              onClick={requestRenderStill}
+              className="w-full rounded-full bg-[color:var(--ps-panel-bg)] px-3 py-2 text-xs font-semibold text-[color:var(--ps-text)] shadow-[var(--ps-shadow-subtle)]"
+            >
+              Render still
+            </button>
+          )}
+        </div>
         <div className="mt-1 flex flex-col gap-2">
           <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">THICKNESS</div>
           <div className="inline-flex items-center rounded-full bg-[color:var(--ps-panel-alt-bg)] p-1 text-xs">
