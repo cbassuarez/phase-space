@@ -4,7 +4,7 @@ import type { CameraProgram } from "../camera/types";
 function defaultCameraProgram(): CameraProgram {
   return {
     mode: "orbit",
-    speed_scalar: 1.0,
+    speed_scalar: 0.35,
     zoom_scalar: 1.0,
     stability: 0.25,
     orbit: {
