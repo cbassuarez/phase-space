@@ -5,5 +5,5 @@ pub mod scene;
 
 pub use vec3::Vec3;
 pub use integrator::{integrate_trajectory, IntegratorConfig};
-pub use scene::{CameraMode, CameraProgram, SceneSpec};
+pub use scene::{IntegratorSpec, SceneSpec, SystemId};
 
