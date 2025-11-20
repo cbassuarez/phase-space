@@ -1,5 +1,4 @@
 import React from "react";
-import TopBar from "../components/TopBar";
 import MainLayout from "../components/MainLayout";
 import { ViewerProvider } from "../state/viewerState";
 
@@ -7,7 +6,6 @@ export const PhaseViewerPage: React.FC = () => {
   return (
     <div className="flex min-h-screen flex-col bg-[color:var(--ps-bg)]">
       <ViewerProvider>
-        <TopBar />
         <section id="viewer" className="scroll-mt-24">
           <MainLayout />
         </section>
