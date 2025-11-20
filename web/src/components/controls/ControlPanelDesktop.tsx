@@ -87,7 +87,6 @@ function ControlPanelDesktop() {
     setCameraProgram,
     trajectoryMeta,
     sceneJson,
-    requestRenderStill,
   } = useViewerState();
 
   const [inspectorOpen, setInspectorOpen] = useState(false);
@@ -152,7 +151,7 @@ function ControlPanelDesktop() {
               { id: "volumetric-cloud", label: "Cloud" },
               { id: "crt-scope", label: "CRT" },
               { id: "ribbon", label: "Ribbon" },
-              { id: "path-trace", label: "Path" },
+              { id: "cells", label: "Cells" },
             ].map((opt) => (
               <button
                 key={opt.id}
@@ -169,15 +168,6 @@ function ControlPanelDesktop() {
               </button>
             ))}
           </div>
-          {renderStyle === "path-trace" && (
-            <button
-              type="button"
-              onClick={requestRenderStill}
-              className="w-full rounded-full bg-[color:var(--ps-panel-bg)] px-3 py-2 text-xs font-semibold text-[color:var(--ps-text)] shadow-[var(--ps-shadow-subtle)]"
-            >
-              Render still
-            </button>
-          )}
         </div>
         <div className="mt-1 flex flex-col gap-2">
           <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">THICKNESS</div>

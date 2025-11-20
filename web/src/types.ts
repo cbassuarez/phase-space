@@ -10,7 +10,7 @@ export type RenderStyle =
   | "volumetric-cloud"
   | "crt-scope"
   | "ribbon"
-  | "path-trace";
+  | "cells";
 
 export type Trajectories = number[][][];
 
@@ -55,20 +55,25 @@ export interface SceneSpec {
 }
 
 export function normalizeViewSpec(view: ViewSpec | undefined): ViewSpec {
+  const fallback: ViewSpec = {
+    mode: "mode3d",
+    plane: null,
+    camera: { theta: 0.8, phi: 0.9, r: 25 },
+    palette: "plasma",
+    background: "dark",
+    point_size: 1,
+    render_style: "neon-filaments",
+  };
+
   if (!view) {
-    return {
-      mode: "mode3d",
-      plane: null,
-      camera: { theta: 0.8, phi: 0.9, r: 25 },
-      palette: "plasma",
-      background: "dark",
-      point_size: 1,
-      render_style: "neon-filaments",
-    };
+    return fallback;
   }
 
+  const desired = view.render_style === "path-trace" ? "cells" : view.render_style;
+
   return {
+    ...fallback,
     ...view,
-    render_style: view.render_style ?? "neon-filaments",
+    render_style: (desired ?? "neon-filaments") as RenderStyle,
   };
 }

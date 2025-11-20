@@ -4,7 +4,7 @@ import { NeonFilamentsRenderer } from "./NeonFilamentsRenderer";
 import { VolumetricCloudRenderer } from "./VolumetricCloudRenderer";
 import { CrtScopeRenderer } from "./CrtScopeRenderer";
 import { RibbonRenderer } from "./RibbonRenderer";
-import { PathTraceRenderer } from "./PathTraceRenderer";
+import { CellRenderer } from "./CellRenderer";
 
 export function createRendererForStyle(style: RenderStyle): RendererStrategy {
   switch (style) {
@@ -14,8 +14,8 @@ export function createRendererForStyle(style: RenderStyle): RendererStrategy {
       return new CrtScopeRenderer();
     case "ribbon":
       return new RibbonRenderer();
-    case "path-trace":
-      return new PathTraceRenderer();
+    case "cells":
+      return new CellRenderer();
     case "neon-filaments":
     default:
       return new NeonFilamentsRenderer();

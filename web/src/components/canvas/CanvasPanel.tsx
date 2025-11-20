@@ -48,6 +48,11 @@ function PhaseScene({
   const { setRenderStillHandler } = useViewerState();
 
   useEffect(() => {
+    const clear = background === "dim" ? new THREE.Color("#0e1019") : new THREE.Color("#f8f9ff");
+    gl.setClearColor(clear, 1);
+  }, [background, gl]);
+
+  useEffect(() => {
     if (!cameraProgram) {
       lastPoseRef.current = null;
     }
@@ -102,7 +107,7 @@ function PhaseScene({
       const next = createRendererForStyle(renderStyle);
       strategyRef.current = next;
       next.init(ctx, data);
-      setRenderStillHandler(renderStyle === "path-trace" && next.renderStill ? () => next.renderStill!(ctx) : null);
+      setRenderStillHandler(next.renderStill ? () => next.renderStill!(ctx) : null);
     } else {
       strategyRef.current.update(ctx, data);
     }
@@ -116,6 +121,7 @@ function PhaseScene({
 
   useFrame((state, delta) => {
     const frameDelta = delta;
+    const elapsedTime = state.clock.getElapsedTime();
     if (cameraProgram) {
       if (autoSpin) {
         timeRef.current += frameDelta;
@@ -136,12 +142,11 @@ function PhaseScene({
       state.camera.up.set(...pose.up);
       state.camera.lookAt(...pose.target);
     } else {
-      const t = state.clock.getElapsedTime();
       const speed = 0.12;
       const baseTheta = camera?.theta ?? 0.8;
       const phi = camera?.phi ?? 0.9;
       const radius = THREE.MathUtils.clamp(camera?.r ?? 25, 6, 80);
-      const angle = autoSpin ? (baseTheta + t * speed) % (Math.PI * 2) : baseTheta;
+      const angle = autoSpin ? (baseTheta + elapsedTime * speed) % (Math.PI * 2) : baseTheta;
       state.camera.position.set(
         radius * Math.sin(phi) * Math.cos(angle),
         radius * Math.cos(phi),
@@ -159,7 +164,7 @@ function PhaseScene({
         }
         const windowSize = Math.max(8, Math.floor(count * 0.35));
         if (animateHeadTail) {
-          const head = Math.floor((t * 24) % count);
+          const head = Math.floor((elapsedTime * 24) % count);
           const start = Math.max(0, head - windowSize);
           let drawCount = windowSize;
           if (start + drawCount > count) {
