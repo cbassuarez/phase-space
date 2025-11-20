@@ -19,6 +19,7 @@ import type { CustomPaletteState } from "../../palettes";
 import { useViewerState } from "../../state/viewerState";
 import type { RendererStrategy } from "./renderers/base";
 import { createRendererForStyle } from "./renderers";
+import { normalizeTrajectories } from "./renderers/normalize";
 import { computeVisualFeatures, type VisualFeatureFrame } from "../../visual/visualFeatures";
 import { useModulation } from "../../state/modulationState";
 import { getRenderQuality, getViewportBackgroundColor } from "../../visual/renderQuality";
@@ -80,7 +81,10 @@ function PhaseScene({
   const { modEngine, audioFrameRef, modValuesRef } = useModulation();
 
   const quality = useMemo(() => getRenderQuality(resolution), [resolution]);
-
+  
+const normalized = useMemo(() => normalizeTrajectories(trajectories), [trajectories]);
+  const normalizedTrajectories = normalized.trajectories;
+  
   const backgroundColor = useMemo(
     () => getViewportBackgroundColor(renderStyle, background),
     [background, renderStyle]
@@ -99,7 +103,7 @@ function PhaseScene({
   }, [cameraProgram]);
 
   const bounds = useMemo(() => {
-    if (!trajectories.length) {
+    if (!normalizedTrajectories.length) {
       return {
         bboxMin: [-10, -10, -10] as [number, number, number],
         bboxMax: [10, 10, 10] as [number, number, number],
@@ -114,7 +118,7 @@ function PhaseScene({
     let maxY = -Infinity;
     let maxZ = -Infinity;
 
-    trajectories.forEach((traj) => {
+    normalizedTrajectories.forEach((traj) => {
       traj.forEach((p) => {
         minX = Math.min(minX, p[0]);
         minY = Math.min(minY, p[1]);
@@ -133,11 +137,11 @@ function PhaseScene({
       (minZ + maxZ) / 2,
     ];
     return { bboxMin, bboxMax, centroid };
-  }, [trajectories]);
+  }, [normalizedTrajectories]);
 
   useEffect(() => {
-    countsRef.current = trajectories.map((t) => t.length);
-  }, [trajectories]);
+   countsRef.current = normalizedTrajectories.map((t) => t.length);
+  }, [normalizedTrajectories]);
 
   useEffect(() => {
     const ctx = { threeScene: scene, camera: threeCamera as THREE.PerspectiveCamera, renderer: gl as THREE.WebGLRenderer };
@@ -161,7 +165,8 @@ function PhaseScene({
     const causticsIntensity = (modValues.causticsIntensity ?? 1) * causticsSettingsSafe.intensity;
 
     const data = {
-      trajectories,
+      trajectories: normalizedTrajectories,
+      normalized,
       palette,
       customPalette,
       lineThickness,
@@ -195,6 +200,8 @@ function PhaseScene({
     threeCamera,
     gl,
     trajectories,
+    normalized,
+    normalizedTrajectories,
     palette,
     customPalette,
     lineThickness,
@@ -270,8 +277,7 @@ function PhaseScene({
       minR: 6,
       maxR: 80,
     };
-    const visual = computeVisualFeatures({ camera: cameraState, trajectories }, visualFrameRef.current ?? undefined);
-    visualFrameRef.current = visual;
+const visual = computeVisualFeatures({ camera: cameraState, trajectories: normalizedTrajectories }, visualFrameRef.current ?? undefined);    visualFrameRef.current = visual;
     if (modEngine) {
       modEngine.step(audioFrameRef.current, visual);
     }
@@ -295,7 +301,8 @@ function PhaseScene({
       const photonBrightness = (modValues.photonWeaveBrightness ?? 1) * photonSettings.brightness;
       const causticsIntensity = (modValues.causticsIntensity ?? 1) * causticsSettingsSafe.intensity;
       strategy.applyDynamic({
-        trajectories,
+        trajectories: normalizedTrajectories,
+        normalized,
         palette,
         lineThickness,
         background,
