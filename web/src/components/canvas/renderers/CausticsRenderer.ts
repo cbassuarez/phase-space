@@ -67,15 +67,17 @@ const colorFragment = `
   }
 
   void main() {
-    vec4 sample = texture2D(uTexture, vUv);
-    float boosted = pow(sample.a, 0.85) * uIntensity;
-    float t = clamp(boosted, 0.0, 1.0);
-    vec3 color = samplePaletteColor(uPalette, t);
+    vec3 light = texture2D(uTexture, vUv).rgb * uIntensity;
+    vec3 mapped = light / (vec3(1.0) + light);
+    mapped = pow(mapped, vec3(1.0 / 2.2));
+    float t = clamp(max(max(mapped.r, mapped.g), mapped.b), 0.0, 1.0);
+    vec3 paletteColor = samplePaletteColor(uPalette, t);
     if (uColorMode == 1) {
-      color = samplePaletteColor(uPaletteWarm, t);
+      paletteColor = samplePaletteColor(uPaletteWarm, t);
     } else if (uColorMode == 2) {
-      color = samplePaletteColor(uPaletteCool, t);
+      paletteColor = samplePaletteColor(uPaletteCool, t);
     }
+    vec3 color = paletteColor * (0.6 + mapped * 0.95);
     gl_FragColor = vec4(color, 1.0);
   }
 `;
@@ -129,6 +131,11 @@ function blurSigma(value: number): number {
   return 0.35 + value * 2.6;
 }
 
+function computeEnergyGain(pointCount: number, intensity: number): number {
+  const baseGain = 70;
+  return (baseGain * intensity) / Math.sqrt(Math.max(pointCount, 1));
+}
+
 function computeBounds(points: number[][][], axis: ProjectionAxis): { min: number[]; max: number[] } {
   const [a, b] = projectionComponents(axis);
   const min = [Infinity, Infinity];
@@ -145,11 +152,6 @@ function computeBounds(points: number[][][], axis: ProjectionAxis): { min: numbe
     return { min: [-1, -1], max: [1, 1] };
   }
   return { min, max };
-}
-
-function normalize(value: number, min: number, max: number): number {
-  if (max - min < 1e-5) return 0.5;
-  return (value - min) / (max - min);
 }
 
 export class CausticsRenderer implements RendererStrategy {
@@ -172,6 +174,10 @@ export class CausticsRenderer implements RendererStrategy {
   private paletteTexture: DataTexture | null = null;
   private warmPaletteTexture: DataTexture | null = null;
   private coolPaletteTexture: DataTexture | null = null;
+  private splatMaterial: ShaderMaterial | null = null;
+  private energyGain = 1;
+  private pointCount = 0;
+  private projectionScale = 1;
 
   init(context: RenderContext, data: TrajectoryData) {
     this.context = context;
@@ -189,16 +195,22 @@ export class CausticsRenderer implements RendererStrategy {
     this.blurSceneV = new Scene();
 
     const axis = this.projectionAxis === "auto" ? chooseAxisAuto(data.trajectories) : this.projectionAxis;
-    const bounds = computeBounds(data.trajectories, axis);
     const pointStep = Math.max(1, Math.round(data.quality?.causticsPointStep ?? 2));
     const positions: number[] = [];
+    const totalPoints =
+      data.normalized?.pointCount ?? data.trajectories.reduce((sum, traj) => sum + traj.length, 0);
+    this.pointCount = totalPoints;
+    this.energyGain = computeEnergyGain(totalPoints, data.caustics?.intensity ?? 1);
+    const radius = data.normalized?.bounds.radius ?? 6;
+    this.projectionScale = 1 / Math.max(radius * 1.05, 1e-3);
+    const clampRange = 1.35;
 
     data.trajectories.forEach((traj) => {
       for (let i = 0; i < traj.length; i += pointStep) {
         const p = traj[i];
         const [a, b] = projectionComponents(axis);
-        const u = normalize(p[a], bounds.min[0], bounds.max[0]) * 2 - 1;
-        const v = normalize(p[b], bounds.min[1], bounds.max[1]) * 2 - 1;
+        const u = Math.max(-clampRange, Math.min(clampRange, p[a] * this.projectionScale));
+        const v = Math.max(-clampRange, Math.min(clampRange, p[b] * this.projectionScale));
         positions.push(u, v, 0);
       }
     });
@@ -211,18 +223,23 @@ export class CausticsRenderer implements RendererStrategy {
     splatGeom.setAttribute("position", new BufferAttribute(new Float32Array(positions), 3));
 
     const splatMaterial = new ShaderMaterial({
+      uniforms: {
+        uEnergyGain: { value: this.energyGain },
+      },
       vertexShader: `
         void main() {
-          gl_PointSize = ${Math.max(4, Math.round(8 * (texSize / 512)))}.0;
+          gl_PointSize = ${Math.max(6, Math.round(10 * (texSize / 512)))}.0;
           gl_Position = vec4(position, 1.0);
         }
       `,
       fragmentShader: `
+        uniform float uEnergyGain;
         void main() {
           vec2 c = gl_PointCoord - vec2(0.5);
           float d = dot(c, c);
-          float a = exp(-d * 10.0);
-          gl_FragColor = vec4(vec3(a), a) * 1.4;
+          float base = exp(-d * 10.0);
+          float energy = base * uEnergyGain;
+          gl_FragColor = vec4(vec3(energy), energy);
         }
       `,
       transparent: true,
@@ -232,6 +249,7 @@ export class CausticsRenderer implements RendererStrategy {
     });
 
     const points = new Points(splatGeom, splatMaterial);
+    this.splatMaterial = splatMaterial;
     this.splatScene.add(points);
 
     const quadGeom = new PlaneGeometry(2, 2);
@@ -352,8 +370,14 @@ export class CausticsRenderer implements RendererStrategy {
   applyDynamic(data: TrajectoryData) {
     this.data = { ...this.data, ...data };
     this.refreshPalettes(data.palette as Palette, data.customPalette);
+    const intensity = data.caustics?.intensity ?? 1;
+    this.energyGain = computeEnergyGain(this.pointCount, intensity);
+    if (this.splatMaterial) {
+      this.splatMaterial.uniforms.uEnergyGain.value = this.energyGain;
+      this.splatMaterial.needsUpdate = true;
+    }
     if (this.outputMaterial) {
-      this.outputMaterial.uniforms.uIntensity.value = data.caustics?.intensity ?? 1;
+      this.outputMaterial.uniforms.uIntensity.value = intensity;
       this.outputMaterial.uniforms.uColorMode.value = data.caustics?.colorMode === "warm" ? 1 : data.caustics?.colorMode === "cool" ? 2 : 0;
       this.outputMaterial.needsUpdate = true;
     }
@@ -389,6 +413,10 @@ export class CausticsRenderer implements RendererStrategy {
     this.blurMaterialH = null;
     this.blurMaterialV = null;
     this.outputMaterial = null;
+    if (this.splatMaterial) {
+      this.splatMaterial.dispose();
+    }
+    this.splatMaterial = null;
     this.orthoCamera = null;
     this.data = null;
     this.context = null;

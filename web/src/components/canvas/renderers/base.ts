@@ -9,9 +9,11 @@ import type {
 import type { CustomPaletteState } from "../../../palettes";
 import type { RenderQuality } from "../../../visual/renderQuality";
 import type { PerspectiveCamera, Scene, WebGLRenderer } from "three";
+import type { NormalizedTrajectories } from "./normalize";
 
 export interface TrajectoryData {
   trajectories: number[][][];
+  normalized?: NormalizedTrajectories;
   palette: Palette;
   customPalette: CustomPaletteState;
   lineThickness: LineThickness;

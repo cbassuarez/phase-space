@@ -61,6 +61,8 @@ export class PhotonWeaveRenderer implements RendererStrategy {
   private material: ShaderMaterial | null = null;
   private data: TrajectoryData | null = null;
   private pointSize = 6;
+  private brightnessScale = 1;
+  private totalPoints = 0;
 
   init({ threeScene }: RenderContext, data: TrajectoryData) {
     this.group = new Group();
@@ -73,10 +75,15 @@ export class PhotonWeaveRenderer implements RendererStrategy {
     const density = data.photonWeave?.filamentDensity ?? "medium";
     const step = densityStep(density, quality ?? { filamentSampleStep: 2, filamentTrajectoryFraction: 0.9, causticsPointStep: 2, causticsTextureSize: 512 });
     const strands = density === "high" ? 3 : density === "low" ? 1 : 2;
-    const basePointSize = Math.max(4.5, 7 - step * 0.8);
+    const basePointSize = Math.max(5, 7 - step * 0.65);
     this.pointSize = basePointSize;
+    const totalPoints = data.normalized?.pointCount ?? data.trajectories.reduce((sum, t) => sum + t.length, 0);
+    this.totalPoints = totalPoints;
+    const densityBoost = 0.85 + Math.sqrt(step) * 0.5;
+    const pointBoost = Math.max(0.9, Math.min(2.2, 1800 / Math.max(totalPoints, 1)));
+    this.brightnessScale = 1.8 * densityBoost * pointBoost;
     const sharedUniforms = {
-      uBrightness: { value: data.photonWeave?.brightness ?? 1 },
+      uBrightness: { value: (data.photonWeave?.brightness ?? 1) * this.brightnessScale },
       uTrailPower: { value: data.photonWeave?.trailLength ?? 1 },
       uTime: { value: 0 },
       uShimmer: { value: data.photonWeave?.shimmer ? 1 : 0 },
@@ -159,13 +166,14 @@ export class PhotonWeaveRenderer implements RendererStrategy {
 
   applyDynamic(data: TrajectoryData) {
     this.data = { ...this.data, ...data };
-    const brightness = Math.max(0, data.photonWeave?.brightness ?? 1);
+    const brightness = Math.max(0, (data.photonWeave?.brightness ?? 1) * this.brightnessScale);
     const trail = data.photonWeave?.trailLength ?? 1;
     if (this.material) {
       this.material.uniforms.uBrightness.value = brightness;
       this.material.uniforms.uTrailPower.value = trail;
       this.material.uniforms.uShimmer.value = data.photonWeave?.shimmer ? 1 : 0;
       this.material.uniforms.uTime.value = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
+      this.material.uniforms.uPointSize.value = this.pointSize;
       this.material.needsUpdate = true;
     }
 
