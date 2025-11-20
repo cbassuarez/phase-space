@@ -4,6 +4,13 @@ import { PageHeader } from "../components/PageHeader";
 import { Section } from "../components/Section";
 import { systems } from "../data/systems";
 import { SystemCard } from "../components/SystemCard";
+import VersionBadge from "../components/VersionBadge";
+import {
+  PHASE_SPACE_VERSION,
+  PHASECORE_VERSION,
+  PHASEWASM_VERSION,
+  PLATFORM_BADGES,
+} from "../version";
 
 export const AboutPage: React.FC = () => {
   return (
@@ -13,6 +20,14 @@ export const AboutPage: React.FC = () => {
         title="What is Phase Space?"
         subtitle="Phase Space is a small instrument panel for exploring chaotic dynamical systems as moving points in three-dimensional space."
       >
+        <div className="mb-3 flex flex-wrap gap-2">
+          <VersionBadge label={`phase-space v${PHASE_SPACE_VERSION}`} />
+          <VersionBadge label={`phasecore v${PHASECORE_VERSION}`} />
+          <VersionBadge label={`phasewasm v${PHASEWASM_VERSION}`} />
+          {PLATFORM_BADGES.map((badge) => (
+            <VersionBadge key={badge} label={badge} />
+          ))}
+        </div>
         <p className="max-w-2xl text-xs text-slate-600">
           It’s designed both as a mesmerizing toy to stare at and as a reusable
           engine for other tools and artworks that need attractors, trajectories,

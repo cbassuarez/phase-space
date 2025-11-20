@@ -3,8 +3,7 @@ export type CameraMode =
   | "path-rider"
   | "grid-surface"
   | "drone-ghost"
-  | "lobe-focus"
-  | "macro-micro";
+  | "lobe-focus";
 
 export interface OrbitCameraConfig {
   base_radius: number;
@@ -60,16 +59,6 @@ export interface LobeFocusCameraConfig {
   cycle_mode: LobeFocusCycleMode;
 }
 
-export type MacroMicroPatchSelection = "random" | "density" | "seeded";
-
-export interface MacroMicroCameraConfig {
-  cycle_duration: number;
-  micro_hold_fraction: number;
-  macro_radius: number;
-  micro_radius: number;
-  patch_selection: MacroMicroPatchSelection;
-}
-
 export interface CameraProgram {
   mode: CameraMode;
   speed_scalar: number;
@@ -81,7 +70,6 @@ export interface CameraProgram {
   grid_surface: GridSurfaceCameraConfig;
   drone_ghost: DroneGhostCameraConfig;
   lobe_focus: LobeFocusCameraConfig;
-  macro_micro: MacroMicroCameraConfig;
 }
 
 export interface CameraPose {

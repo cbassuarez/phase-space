@@ -16,7 +16,7 @@ function ToggleSwitch({ label, checked, onToggle }: ToggleSwitchProps) {
         className={clsx(
           "relative inline-flex h-5 w-9 items-center rounded-full transition",
           checked
-            ? "bg-[color:var(--ps-accent)] shadow-md"
+            ? "bg-[color:var(--ps-accent-subtle)] shadow-md"
             : "bg-[color:var(--ps-panel-alt-bg)]"
         )}
       >

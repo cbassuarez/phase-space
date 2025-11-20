@@ -29,7 +29,7 @@ function ResolutionSlider({ value, onChange }: ResolutionSliderProps) {
         }}
       >
         <motion.div
-          className="absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border border-[color:var(--ps-accent)] bg-white shadow-soft"
+          className="absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border border-[color:var(--ps-accent-subtle)] bg-white shadow-soft"
           initial={false}
           animate={{ left: activeStop.position }}
           transition={{ type: "spring", stiffness: 360, damping: 22, mass: 0.55 }}

@@ -46,13 +46,6 @@ function defaultCameraProgram(): CameraProgram {
       zoom_outer: 1.4,
       cycle_mode: "alternate",
     },
-    macro_micro: {
-      cycle_duration: 24.0,
-      micro_hold_fraction: 0.4,
-      macro_radius: 1.3,
-      micro_radius: 0.6,
-      patch_selection: "random",
-    },
   };
 }
 
@@ -123,9 +116,8 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
     random_seed: 43,
     camera: (() => {
       const cam = defaultCameraProgram();
-      cam.mode = "macro-micro";
-      cam.zoom_scalar = 1.15;
-      cam.macro_micro.micro_radius = 0.55;
+      cam.mode = "grid-surface";
+      cam.zoom_scalar = 1.1;
       return cam;
     })(),
   },
