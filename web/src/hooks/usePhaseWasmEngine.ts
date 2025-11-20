@@ -74,12 +74,25 @@ export function usePhaseWasmEngine() {
             case "lorenz":
               return engine.default_lorenz_scene?.();
             case "rossler":
-              return engine.default_rossler_scene?.();
+              if (engine.default_rossler_scene) {
+                return engine.default_rossler_scene();
+              }
+              console.warn("phasewasm missing default_rossler_scene; using Lorenz scene instead");
+              return engine.default_lorenz_scene?.();
             case "aizawa":
-              return engine.default_aizawa_scene?.();
+              if (engine.default_aizawa_scene) {
+                return engine.default_aizawa_scene();
+              }
+              console.warn("phasewasm missing default_aizawa_scene; using Lorenz scene instead");
+              return engine.default_lorenz_scene?.();
             case "thomas":
+              if (engine.default_thomas_scene) {
+                return engine.default_thomas_scene();
+              }
+              console.warn("phasewasm missing default_thomas_scene; using Lorenz scene instead");
+              return engine.default_lorenz_scene?.();
             default:
-              return engine.default_thomas_scene?.();
+              return engine.default_lorenz_scene?.();
           }
         })();
 
