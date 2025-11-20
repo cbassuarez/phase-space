@@ -139,8 +139,23 @@ function PhaseScene({
   useEffect(() => {
     const ctx = { threeScene: scene, camera: threeCamera as THREE.PerspectiveCamera, renderer: gl as THREE.WebGLRenderer };
     const modValues = modValuesRef.current;
-    const photonBrightness = (modValues.photonWeaveBrightness ?? 1) * photonWeaveSettings.brightness;
-    const causticsIntensity = (modValues.causticsIntensity ?? 1) * causticsSettings.intensity;
+    const photonSettings =
+      photonWeaveSettings ?? {
+        brightness: 1,
+        trailLength: 1,
+        filamentDensity: "medium" as const,
+        shimmer: true,
+      };
+    const causticsSettingsSafe =
+      causticsSettings ?? {
+        blurRadius: 0.35,
+        intensity: 1,
+        projectionAxis: "auto" as const,
+        colorMode: "global" as const,
+      };
+
+    const photonBrightness = (modValues.photonWeaveBrightness ?? 1) * photonSettings.brightness;
+    const causticsIntensity = (modValues.causticsIntensity ?? 1) * causticsSettingsSafe.intensity;
 
     const data = {
       trajectories,
@@ -153,8 +168,8 @@ function PhaseScene({
       cloudDensity: modValues.cloudDensity,
       backgroundBrightness: modValues.backgroundBrightness,
       quality,
-      photonWeave: { ...photonWeaveSettings, brightness: photonBrightness },
-      caustics: { ...causticsSettings, intensity: causticsIntensity },
+      photonWeave: { ...photonSettings, brightness: photonBrightness },
+      caustics: { ...causticsSettingsSafe, intensity: causticsIntensity },
     };
     if (!strategyRef.current || strategyRef.current.style !== renderStyle) {
       strategyRef.current?.dispose(ctx);
@@ -181,8 +196,8 @@ function PhaseScene({
     background,
     renderStyle,
     quality,
-    photonWeaveSettings.filamentDensity,
-    causticsSettings.projectionAxis,
+    photonWeaveSettings?.filamentDensity,
+    causticsSettings?.projectionAxis,
     setRenderStillHandler,
   ]);
 
@@ -257,8 +272,23 @@ function PhaseScene({
     }
 
     if (strategy?.applyDynamic) {
-      const photonBrightness = (modValues.photonWeaveBrightness ?? 1) * photonWeaveSettings.brightness;
-      const causticsIntensity = (modValues.causticsIntensity ?? 1) * causticsSettings.intensity;
+      const photonSettings =
+        photonWeaveSettings ?? {
+          brightness: 1,
+          trailLength: 1,
+          filamentDensity: "medium" as const,
+          shimmer: true,
+        };
+      const causticsSettingsSafe =
+        causticsSettings ?? {
+          blurRadius: 0.35,
+          intensity: 1,
+          projectionAxis: "auto" as const,
+          colorMode: "global" as const,
+        };
+
+      const photonBrightness = (modValues.photonWeaveBrightness ?? 1) * photonSettings.brightness;
+      const causticsIntensity = (modValues.causticsIntensity ?? 1) * causticsSettingsSafe.intensity;
       strategy.applyDynamic({
         trajectories,
         palette,
@@ -270,8 +300,8 @@ function PhaseScene({
         cloudDensity: modValues.cloudDensity,
         backgroundBrightness: modValues.backgroundBrightness,
         quality,
-        photonWeave: { ...photonWeaveSettings, brightness: photonBrightness },
-        caustics: { ...causticsSettings, intensity: causticsIntensity },
+        photonWeave: { ...photonSettings, brightness: photonBrightness },
+        caustics: { ...causticsSettingsSafe, intensity: causticsIntensity },
       });
     }
 
