@@ -1,4 +1,5 @@
 import {
+  AdditiveBlending,
   CatmullRomCurve3,
   Group,
   Mesh,
@@ -25,17 +26,23 @@ export class NeonFilamentsRenderer implements RendererStrategy {
       if (traj.length < 2) return;
       const points = traj.map(([x, y, z]) => new Vector3(x, y, z));
       const curve = new CatmullRomCurve3(points);
-      const tubularSegments = Math.max(64, traj.length);
-      const radius = data.lineThickness === "thick" ? 0.12 : data.lineThickness === "thin" ? 0.04 : 0.07;
-      const radialSegments = 8;
-      const geom = new TubeGeometry(curve, tubularSegments, radius, radialSegments, false);
+      const tubularSegments = Math.max(96, traj.length * 1.25);
+      const radiusBase = data.lineThickness === "thick" ? 0.018 : data.lineThickness === "thin" ? 0.008 : 0.012;
+      const radialSegments = 12;
+      const geom = new TubeGeometry(curve, tubularSegments, radiusBase, radialSegments, false);
       const color = colorForTrajectory(idx, data.palette);
+      const densityGlow = Math.min(2.4, 0.9 + traj.length / 1800);
       const mat = new MeshStandardMaterial({
         color,
         emissive: color,
-        emissiveIntensity: 1.2,
-        roughness: 0.35,
-        metalness: 0.05,
+        emissiveIntensity: densityGlow,
+        roughness: 0.12,
+        metalness: 0.0,
+        transparent: true,
+        opacity: 0.85,
+        blending: AdditiveBlending,
+        depthWrite: false,
+        toneMapped: false,
       });
       const mesh = new Mesh(geom, mat);
       this.meshes.push(mesh);

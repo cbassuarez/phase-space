@@ -47,6 +47,17 @@ function PhaseScene({
   const { scene, camera: threeCamera, gl } = useThree();
   const { setRenderStillHandler } = useViewerState();
 
+  const backgroundColor = useMemo(
+    () => (background === "dark" || background === "dim" ? "#0e1019" : "#f8f9ff"),
+    [background]
+  );
+
+  useEffect(() => {
+    gl.setClearAlpha(1);
+    gl.setClearColor(new THREE.Color(backgroundColor), 1);
+    gl.autoClear = true;
+  }, [gl, backgroundColor]);
+
   useEffect(() => {
     if (!cameraProgram) {
       lastPoseRef.current = null;
@@ -102,7 +113,7 @@ function PhaseScene({
       const next = createRendererForStyle(renderStyle);
       strategyRef.current = next;
       next.init(ctx, data);
-      setRenderStillHandler(renderStyle === "path-trace" && next.renderStill ? () => next.renderStill!(ctx) : null);
+      setRenderStillHandler(null);
     } else {
       strategyRef.current.update(ctx, data);
     }
@@ -116,6 +127,7 @@ function PhaseScene({
 
   useFrame((state, delta) => {
     const frameDelta = delta;
+    const elapsedTime = state.clock.getElapsedTime();
     if (cameraProgram) {
       if (autoSpin) {
         timeRef.current += frameDelta;
@@ -136,12 +148,11 @@ function PhaseScene({
       state.camera.up.set(...pose.up);
       state.camera.lookAt(...pose.target);
     } else {
-      const t = state.clock.getElapsedTime();
       const speed = 0.12;
       const baseTheta = camera?.theta ?? 0.8;
       const phi = camera?.phi ?? 0.9;
       const radius = THREE.MathUtils.clamp(camera?.r ?? 25, 6, 80);
-      const angle = autoSpin ? (baseTheta + t * speed) % (Math.PI * 2) : baseTheta;
+      const angle = autoSpin ? (baseTheta + elapsedTime * speed) % (Math.PI * 2) : baseTheta;
       state.camera.position.set(
         radius * Math.sin(phi) * Math.cos(angle),
         radius * Math.cos(phi),
@@ -159,7 +170,7 @@ function PhaseScene({
         }
         const windowSize = Math.max(8, Math.floor(count * 0.35));
         if (animateHeadTail) {
-          const head = Math.floor((t * 24) % count);
+          const head = Math.floor((elapsedTime * 24) % count);
           const start = Math.max(0, head - windowSize);
           let drawCount = windowSize;
           if (start + drawCount > count) {
@@ -178,7 +189,7 @@ function PhaseScene({
     <group ref={groupRef}>
       <ambientLight intensity={0.6} />
       <pointLight position={[6, 12, 10]} intensity={0.4} />
-      <color args={[background === "dim" ? "#0e1019" : "#f8f9ff"]} attach="background" />
+      <color args={[backgroundColor]} attach="background" />
     </group>
   );
 }
@@ -200,9 +211,9 @@ function CanvasPanel({
   renderStyle,
 }: CanvasPanelProps) {
   const gradientClass =
-    background === "dim"
-      ? "bg-gradient-to-br from-[#13162b] to-[#0b0d18]"
-      : "bg-[radial-gradient(circle_at_center,#fbfcff_0%,#e5ebff_70%)]";
+    background === "light"
+      ? "bg-[radial-gradient(circle_at_center,#fbfcff_0%,#e5ebff_70%)]"
+      : "bg-gradient-to-br from-[#13162b] to-[#0b0d18]";
 
   const initialCamera = useMemo(() => {
     const theta = camera?.theta ?? 0.8;
@@ -261,7 +272,7 @@ function CanvasPanel({
         </Canvas>
       <motion.div
         className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-white/60 to-transparent"
-        animate={{ opacity: background === "dim" ? 0.15 : 0.3 }}
+        animate={{ opacity: background === "light" ? 0.3 : 0.15 }}
       />
     </motion.section>
   );
