@@ -15,6 +15,7 @@ import type {
   PhotonWeaveSettings,
   CausticsSettings,
 } from "../../types";
+import type { CustomPaletteBank } from "../../palettes";
 import { useViewerState } from "../../state/viewerState";
 import type { RendererStrategy } from "./renderers/base";
 import { createRendererForStyle } from "./renderers";
@@ -40,6 +41,7 @@ interface CanvasPanelProps {
   resolution: Resolution;
   photonWeaveSettings: PhotonWeaveSettings;
   causticsSettings: CausticsSettings;
+  customPalettes: CustomPaletteBank;
 }
 
 function PhaseScene({
@@ -57,6 +59,7 @@ function PhaseScene({
   resolution,
   photonWeaveSettings,
   causticsSettings,
+  customPalettes,
 }: Omit<CanvasPanelProps, "ready" | "loading" | "error">) {
   const groupRef = useRef<THREE.Group>(null);
   const timeRef = useRef(0);
@@ -170,6 +173,7 @@ function PhaseScene({
       quality,
       photonWeave: { ...photonSettings, brightness: photonBrightness },
       caustics: { ...causticsSettingsSafe, intensity: causticsIntensity },
+      customPalettes,
     };
     if (!strategyRef.current || strategyRef.current.style !== renderStyle) {
       strategyRef.current?.dispose(ctx);
@@ -196,6 +200,7 @@ function PhaseScene({
     background,
     renderStyle,
     quality,
+    customPalettes,
     photonWeaveSettings?.filamentDensity,
     causticsSettings?.projectionAxis,
     setRenderStillHandler,
@@ -302,6 +307,7 @@ function PhaseScene({
         quality,
         photonWeave: { ...photonSettings, brightness: photonBrightness },
         caustics: { ...causticsSettingsSafe, intensity: causticsIntensity },
+        customPalettes,
       });
     }
 

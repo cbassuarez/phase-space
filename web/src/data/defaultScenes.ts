@@ -155,7 +155,7 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       mode: "mode3d",
       plane: null,
       camera: { theta: 1.2, phi: 0.9, r: 22.0 },
-      palette: "rainbow",
+      palette: "prism",
       background: "dark",
       point_size: 1.0,
       render_style: "photon-weave",

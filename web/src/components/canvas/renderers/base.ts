@@ -8,6 +8,7 @@ import type {
 } from "../../../types";
 import type { RenderQuality } from "../../../visual/renderQuality";
 import type { PerspectiveCamera, Scene, WebGLRenderer } from "three";
+import type { CustomPaletteBank } from "../../../palettes";
 
 export interface TrajectoryData {
   trajectories: number[][][];
@@ -22,6 +23,7 @@ export interface TrajectoryData {
   photonWeave?: PhotonWeaveSettings;
   caustics?: CausticsSettings;
   quality?: RenderQuality;
+  customPalettes: CustomPaletteBank;
 }
 
 export interface RenderContext {

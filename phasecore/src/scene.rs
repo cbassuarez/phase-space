@@ -86,10 +86,24 @@ pub struct PlaneSpec {
 pub enum Palette {
     Plasma,
     Viridis,
-    Rainbow,
-    Inferno,
-    Magma,
-    Cividis,
+    Prism,
+    Solar,
+    Abyss,
+    Mono,
+    Custom1,
+    Custom2,
+    Custom3,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PaletteStopSpec {
+    pub t: f32,
+    pub color: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PaletteSpec {
+    pub stops: Vec<PaletteStopSpec>,
 }
 
 /// Background style.
@@ -124,6 +138,8 @@ pub struct ViewSpec {
     pub plane: Option<PlaneSpec>,
     pub camera: CameraSpec,
     pub palette: Palette,
+    #[serde(default)]
+    pub palette_spec: Option<PaletteSpec>,
     pub background: Background,
     pub point_size: f32,
     #[serde(default = "default_render_style")]
@@ -400,6 +416,7 @@ impl SceneSpec {
                     r: 25.0,
                 },
                 palette: Palette::Plasma,
+                palette_spec: None,
                 background: Background::Dark,
                 point_size: 1.0,
                 render_style: RenderStyle::NeonFilaments,
@@ -448,6 +465,7 @@ impl SceneSpec {
                     r: 18.0,
                 },
                 palette: Palette::Viridis,
+                palette_spec: None,
                 background: Background::Dark,
                 point_size: 1.0,
                 render_style: RenderStyle::NeonFilaments,
@@ -499,7 +517,8 @@ impl SceneSpec {
                     phi: 0.9,
                     r: 22.0,
                 },
-                palette: Palette::Rainbow,
+                palette: Palette::Prism,
+                palette_spec: None,
                 background: Background::Dark,
                 point_size: 1.0,
                 render_style: RenderStyle::NeonFilaments,
@@ -553,6 +572,7 @@ impl SceneSpec {
                 },
                 // Bias toward "pretty" palettes.
                 palette: Palette::Plasma,
+                palette_spec: None,
                 background: Background::Dark,
                 point_size: 1.0,
                 render_style: RenderStyle::NeonFilaments,

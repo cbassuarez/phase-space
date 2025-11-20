@@ -22,6 +22,7 @@ export class VolumetricCloudRenderer implements RendererStrategy {
     this.data = data;
     threeScene.add(this.group);
 
+    const total = data.trajectories.length;
     data.trajectories.forEach((traj, idx) => {
       const positions: number[] = [];
       for (let i = 0; i < traj.length; i += 3) {
@@ -40,7 +41,7 @@ export class VolumetricCloudRenderer implements RendererStrategy {
         opacity: Math.max(0.15, 0.7 * (0.4 + density * 0.8)),
         depthWrite: false,
         blending: useAdditive ? AdditiveBlending : NormalBlending,
-        color: colorForTrajectory(idx, data.palette, data.paletteShift ?? 0),
+        color: colorForTrajectory(idx, total, data.palette, data.customPalettes, data.paletteShift ?? 0),
       });
       const cloud = new Points(geom, mat);
       this.points.push(cloud);
@@ -58,10 +59,17 @@ export class VolumetricCloudRenderer implements RendererStrategy {
     this.data = { ...this.data, ...data };
     const density = this.data.cloudDensity ?? 1;
     const useAdditive = this.data.background !== "light";
+    const total = this.data.trajectories.length;
 
     this.points.forEach((cloud, idx) => {
       const mat = cloud.material as PointsMaterial;
-      mat.color = colorForTrajectory(idx, this.data!.palette, this.data?.paletteShift ?? 0);
+      mat.color = colorForTrajectory(
+        idx,
+        total,
+        this.data!.palette,
+        this.data.customPalettes,
+        this.data?.paletteShift ?? 0
+      );
       mat.opacity = Math.max(0.15, 0.7 * (0.4 + density * 0.8));
       mat.size *= 1; // keep base size
       mat.size =

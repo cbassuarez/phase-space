@@ -25,6 +25,7 @@ function MainLayout() {
     trajectories,
     sceneSpec,
     palette,
+    customPalettes,
     background,
     autoSpin,
     animateHeadTail,
@@ -63,6 +64,7 @@ function MainLayout() {
               lineThickness={lineThickness}
               renderStyle={renderStyle}
               resolution={resolution}
+              customPalettes={customPalettes}
               photonWeaveSettings={photonWeaveSettings}
               causticsSettings={causticsSettings}
             />
@@ -91,6 +93,7 @@ function MainLayout() {
               lineThickness={lineThickness}
               renderStyle={renderStyle}
               resolution={resolution}
+              customPalettes={customPalettes}
               photonWeaveSettings={photonWeaveSettings}
               causticsSettings={causticsSettings}
             />

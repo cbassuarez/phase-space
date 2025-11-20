@@ -1,8 +1,11 @@
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useViewerState } from "../../state/viewerState";
-import type { Palette, SystemId } from "../../types";
+import type { SystemId } from "../../types";
+import { paletteOptionsWithLabels } from "../../palettes";
+import type { CustomPaletteId } from "../../palettes";
+import CustomPaletteEditor from "./CustomPaletteEditor";
 import ResolutionSlider from "./ResolutionSlider";
 import ToggleSwitch from "./ToggleSwitch";
 import ModulationSection from "./ModulationSection";
@@ -14,13 +17,6 @@ const systemLabels: { id: SystemId; label: string }[] = [
   { id: "thomas", label: "Thomas" },
 ];
 
-const paletteOptions: { id: Palette; label: string; swatch: string }[] = [
-  { id: "system", label: "System default", swatch: "bg-gradient-to-r from-[#4f6fff] via-[#ff7a73] to-[#ffd66b]" },
-  { id: "plasma", label: "Plasma", swatch: "bg-gradient-to-r from-pink-500 via-purple-500 to-yellow-300" },
-  { id: "viridis", label: "Viridis", swatch: "bg-gradient-to-r from-[#440154] via-[#21908C] to-[#fde725]" },
-  { id: "rainbow", label: "Rainbow", swatch: "bg-gradient-to-r from-[#ff7a73] via-[#4f6fff] to-[#7cffc4]" },
-];
-
 const cameraModes = [
   { id: "orbit", label: "Orbit" },
   { id: "path-rider", label: "Path" },
@@ -29,6 +25,12 @@ const cameraModes = [
   { id: "lobe-focus", label: "Lobe" },
   { id: "macro-micro", label: "Macro" },
 ];
+
+const swatchStyle = (stops: { t: number; color: string }[]) => ({
+  background: `linear-gradient(90deg, ${stops
+    .map((stop) => `${stop.color} ${Math.round(stop.t * 100)}%`)
+    .join(", ")})`,
+});
 
 function CameraSlider({
   label,
@@ -77,6 +79,7 @@ function ControlPanelDesktop() {
     setPhotonWeaveSettings,
     causticsSettings,
     setCausticsSettings,
+    customPalettes,
     palette,
     background,
     setSystem,
@@ -87,6 +90,7 @@ function ControlPanelDesktop() {
     setLineThickness,
     setRenderStyle,
     setPalette,
+    updateCustomPalette,
     setBackground,
     cameraProgram,
     setCameraProgram,
@@ -95,6 +99,7 @@ function ControlPanelDesktop() {
   } = useViewerState();
 
   const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [activeCustom, setActiveCustom] = useState<CustomPaletteId>("custom-1");
 
   const copySceneJson = async () => {
     try {
@@ -108,6 +113,14 @@ function ControlPanelDesktop() {
     if (!cameraProgram) return;
     setCameraProgram((prev) => mutate(prev ?? cameraProgram));
   };
+
+  const paletteOptions = paletteOptionsWithLabels(customPalettes);
+
+  useEffect(() => {
+    if (palette.startsWith("custom")) {
+      setActiveCustom(palette as CustomPaletteId);
+    }
+  }, [palette]);
 
   return (
     <aside className="flex w-full max-w-xs flex-col gap-4 rounded-[18px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-bg)] p-4 shadow-[var(--ps-shadow-soft)]">
@@ -495,24 +508,44 @@ function ControlPanelDesktop() {
 
       <section className="mt-2 flex flex-col gap-3">
         <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">COLOR</div>
-        <div className="space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] px-3 py-2">
+        <div className="space-y-3 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] px-3 py-2">
           <p className="text-[11px] uppercase tracking-[0.12em] text-[color:var(--ps-text-muted)]">Palette</p>
-          {paletteOptions.map((opt) => (
-            <label key={opt.id} className="flex items-center justify-between py-1 text-xs text-[color:var(--ps-text-soft)]">
-              <span>{opt.label}</span>
-              <span className="inline-flex items-center gap-2">
-                <span className={clsx("h-2 w-8 rounded-full", opt.swatch)} />
-                <input
-                  type="radio"
-                  name="palette"
-                  value={opt.id}
-                  checked={palette === opt.id}
-                  onChange={() => setPalette(opt.id)}
-                  className="h-3 w-3 accent-[color:var(--ps-accent)]"
-                />
-              </span>
-            </label>
-          ))}
+          <div className="space-y-1">
+            {paletteOptions.map((opt) => (
+              <label
+                key={opt.id}
+                className={clsx(
+                  "flex items-center justify-between rounded-md px-2 py-1 text-xs text-[color:var(--ps-text-soft)] transition-colors",
+                  palette === opt.id ? "bg-[color:var(--ps-panel-bg)] text-[color:var(--ps-text)]" : undefined
+                )}
+              >
+                <span>{opt.label}</span>
+                <span className="inline-flex items-center gap-2">
+                  <span
+                    className="h-2 w-12 rounded-full border border-[color:var(--ps-border-subtle)]"
+                    style={swatchStyle(opt.stops)}
+                  />
+                  <input
+                    type="radio"
+                    name="palette"
+                    value={opt.id}
+                    checked={palette === opt.id}
+                    onChange={() => setPalette(opt.id)}
+                    className="h-3 w-3 accent-[color:var(--ps-accent)]"
+                  />
+                </span>
+              </label>
+            ))}
+          </div>
+
+          <div className="border-t border-[color:var(--ps-border-subtle)] pt-2">
+            <CustomPaletteEditor
+              activeId={activeCustom}
+              bank={customPalettes}
+              onSelect={(id) => setActiveCustom(id)}
+              onChange={(id, updates) => updateCustomPalette(id, updates)}
+            />
+          </div>
         </div>
 
         <div className="space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] px-3 py-2">

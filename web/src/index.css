@@ -17,18 +17,18 @@
   --ps-text-soft: #5b6074;
   --ps-text-muted: #8b90a5;
 
-  /* Soft tricolor primaries (light theme) */
-  --ps-primary-red: #ff7a73;
-  --ps-primary-blue: #4f6fff;
-  --ps-primary-yellow: #ffd66b;
+  /* Tri-primary accents */
+  --ps-primary-red: #ff00ff;
+  --ps-primary-blue: #00ffff;
+  --ps-primary-yellow: #ffff00;
 
   /* Primary accent */
-  --ps-accent: var(--ps-primary-blue);
+  --ps-accent: var(--ps-primary-red);
 
   /* Trajectory palette anchors */
-  --ps-traj-1: #4f6fff;
-  --ps-traj-2: #ff7a73;
-  --ps-traj-3: #ffd66b;
+  --ps-traj-1: #00ffff;
+  --ps-traj-2: #ff00ff;
+  --ps-traj-3: #ffff00;
 
   /* Shadows / elevation */
   --ps-shadow-soft: 0 14px 35px rgba(10, 24, 64, 0.12);

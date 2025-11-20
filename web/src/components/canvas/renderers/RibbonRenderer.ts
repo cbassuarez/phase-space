@@ -22,6 +22,7 @@ export class RibbonRenderer implements RendererStrategy {
     this.data = data;
     threeScene.add(this.group);
 
+    const total = data.trajectories.length;
     data.trajectories.forEach((traj, idx) => {
       if (traj.length < 2) return;
       const up = new Vector3(0, 1, 0);
@@ -60,7 +61,7 @@ export class RibbonRenderer implements RendererStrategy {
       geometry.setAttribute("normal", new BufferAttribute(new Float32Array(normals), 3));
       geometry.computeVertexNormals();
       const material = new MeshStandardMaterial({
-        color: colorForTrajectory(idx, data.palette, data.paletteShift ?? 0),
+        color: colorForTrajectory(idx, total, data.palette, data.customPalettes, data.paletteShift ?? 0),
         side: DoubleSide,
         roughness: 0.45,
         metalness: 0.05,
@@ -81,10 +82,17 @@ export class RibbonRenderer implements RendererStrategy {
     if (!this.data) return;
     this.data = { ...this.data, ...data };
     const widthScale = this.data.ribbonWidth ?? 1;
+    const total = this.data.trajectories.length;
     this.meshes.forEach((mesh, idx) => {
       mesh.scale.setScalar(Math.max(0.5, Math.min(2.5, widthScale)));
       const mat = mesh.material as MeshStandardMaterial;
-      mat.color = colorForTrajectory(idx, this.data!.palette, this.data?.paletteShift ?? 0);
+      mat.color = colorForTrajectory(
+        idx,
+        total,
+        this.data!.palette,
+        this.data.customPalettes,
+        this.data?.paletteShift ?? 0
+      );
       mat.emissiveIntensity = 0.3 * (this.data.emissiveBoost ?? 1);
       mat.needsUpdate = true;
     });

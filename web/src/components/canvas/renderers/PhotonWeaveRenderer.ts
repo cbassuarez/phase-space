@@ -84,6 +84,7 @@ export class PhotonWeaveRenderer implements RendererStrategy {
       uPointSize: { value: basePointSize },
     };
 
+    const total = data.trajectories.length;
     data.trajectories.forEach((traj, idx) => {
       if (traj.length < 2) return;
       const maxPoints = Math.max(8, Math.floor(traj.length * (quality?.filamentTrajectoryFraction ?? 1)));
@@ -107,7 +108,13 @@ export class PhotonWeaveRenderer implements RendererStrategy {
           const t = Math.min(1, i / Math.max(1, maxPoints - 1));
           tAttr.push(t);
           strandAttr.push(s);
-          const baseColor = colorForTrajectory(idx, data.palette, data.paletteShift ?? 0);
+          const baseColor = colorForTrajectory(
+            idx,
+            total,
+            data.palette,
+            data.customPalettes,
+            data.paletteShift ?? 0
+          );
           const mixColor = baseColor.clone().lerp(baseColor.clone().offsetHSL(0, 0, 0.14), 0.35 + 0.35 * (1 - t));
           colors.push(mixColor.r, mixColor.g, mixColor.b);
         }
@@ -166,10 +173,11 @@ export class PhotonWeaveRenderer implements RendererStrategy {
     }
 
     const paletteShift = data.paletteShift ?? 0;
+    const total = this.data?.trajectories.length ?? data.trajectories.length;
     this.points.forEach((pointCloud, idx) => {
       const colorAttr = pointCloud.geometry.getAttribute("color") as BufferAttribute;
       if (!colorAttr) return;
-      const base = colorForTrajectory(idx, data.palette, paletteShift);
+      const base = colorForTrajectory(idx, total, data.palette, data.customPalettes, paletteShift);
       for (let i = 0; i < colorAttr.count; i++) {
         const t = i / Math.max(1, colorAttr.count - 1);
         const mix = base.clone().lerp(base.clone().offsetHSL(0, 0, 0.14), 0.35 + 0.35 * (1 - t));
