@@ -1,33 +1,36 @@
+import { Link, NavLink } from "react-router-dom";
+
 const githubUrl = "https://github.com/phase-space/phase-space";
 
-function TopBar() {
-  const scrollToSection = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  };
+const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+  `relative text-xs font-medium transition-colors hover:text-[color:var(--ps-text)] md:text-sm ${
+    isActive ? "text-[color:var(--ps-text)]" : "text-[color:var(--ps-text-soft)]"
+  }`;
 
+function TopBar() {
   return (
     <header className="w-full border-b border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-bg)]">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 md:h-16">
-        <div className="text-lg font-semibold tracking-tight text-[color:var(--ps-text)]">
+        <Link to="/" className="text-lg font-semibold tracking-tight text-[color:var(--ps-text)]">
           <span className="font-normal">phase</span>
           <span className="font-semibold">-space</span>
-        </div>
+        </Link>
         <nav className="flex items-center gap-4 text-xs text-[color:var(--ps-text-soft)] md:text-sm">
-          <button
-            className="text-[color:var(--ps-accent)] underline decoration-2 underline-offset-4"
-            onClick={() => scrollToSection("viewer")}
-          >
+          <NavLink to="/" className={navLinkClass}>
             Viewer
-          </button>
-          <button className="hidden md:inline hover:text-[color:var(--ps-text)]" onClick={() => scrollToSection("systems")}>
+          </NavLink>
+          <NavLink to="/systems" className={navLinkClass}>
             Systems
-          </button>
-          <button className="hidden md:inline hover:text-[color:var(--ps-text)]" onClick={() => scrollToSection("about")}>
-            About
-          </button>
+          </NavLink>
+          <NavLink to="/presets" className={navLinkClass}>
+            Presets
+          </NavLink>
+          <NavLink to="/field-notes" className={navLinkClass}>
+            Field Notes
+          </NavLink>
+          <NavLink to="/credits" className={navLinkClass}>
+            Credits
+          </NavLink>
           <a
             href={githubUrl}
             target="_blank"
