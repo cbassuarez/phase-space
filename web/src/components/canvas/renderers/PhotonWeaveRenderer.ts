@@ -8,6 +8,11 @@ const vert = `
   attribute float t;
   attribute vec3 offset;
   attribute float strand;
+  attribute vec3 color;
+  uniform float uTrailPower;
+  uniform float uTime;
+  uniform float uShimmer;
+  uniform float uPointSize;
   varying float vT;
   varying vec3 vColor;
   void main() {
