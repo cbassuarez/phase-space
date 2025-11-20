@@ -2,10 +2,9 @@ import { Group, Points, PointsMaterial, BufferGeometry, Float32BufferAttribute }
 import { colorForTrajectory } from "./utils";
 import type { RendererStrategy, RenderContext, TrajectoryData } from "./base";
 
-export class PathTraceRenderer implements RendererStrategy {
-  readonly style = "path-trace" as const;
+export class CellsRenderer implements RendererStrategy {
+  readonly style = "cells" as const;
   private group: Group | null = null;
-  private stillInProgress = false;
 
   init({ threeScene }: RenderContext, data: TrajectoryData) {
     this.group = new Group();
@@ -33,22 +32,6 @@ export class PathTraceRenderer implements RendererStrategy {
   update(context: RenderContext, data: TrajectoryData) {
     this.dispose(context);
     this.init(context, data);
-  }
-
-  renderStill({ renderer }: RenderContext) {
-    if (this.stillInProgress) return;
-    this.stillInProgress = true;
-    setTimeout(() => {
-      try {
-        const url = renderer.domElement.toDataURL("image/png");
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "phase-space-still.png";
-        link.click();
-      } finally {
-        this.stillInProgress = false;
-      }
-    }, 10);
   }
 
   dispose({ threeScene }: RenderContext) {

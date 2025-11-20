@@ -51,7 +51,6 @@ function ControlPanelBottomSheet() {
     setBackground,
     cameraProgram,
     setCameraProgram,
-    requestRenderStill,
   } = useViewerState();
 
   const [open, setOpen] = useState(false);
@@ -112,7 +111,7 @@ function ControlPanelBottomSheet() {
                 </button>
               )
             )}
-            {[{ id: "ribbon", label: "Ribbon" }, { id: "path-trace", label: "Path" }].map((opt) => (
+            {[{ id: "ribbon", label: "Ribbon" }, { id: "cells", label: "Cells" }].map((opt) => (
               <button
                 key={opt.id}
                 onClick={() => setRenderStyle(opt.id as typeof renderStyle)}
@@ -127,14 +126,6 @@ function ControlPanelBottomSheet() {
               </button>
             ))}
           </div>
-          {renderStyle === "path-trace" && (
-            <button
-              onClick={requestRenderStill}
-              className="rounded-full bg-[color:var(--ps-panel-bg)] px-3 py-2 text-xs font-semibold text-[color:var(--ps-text)] shadow-subtle"
-            >
-              Render still
-            </button>
-          )}
           <div className="mt-1 grid grid-cols-3 gap-2 text-xs">
             {[{ id: "thin", label: "Thin" }, { id: "default", label: "Default" }, { id: "thick", label: "Thick" }].map(
               (opt) => (
