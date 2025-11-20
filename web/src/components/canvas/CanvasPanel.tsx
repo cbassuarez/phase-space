@@ -15,6 +15,7 @@ import type {
   PhotonWeaveSettings,
   CausticsSettings,
 } from "../../types";
+import type { CustomPaletteBank } from "../../palettes";
 import { useViewerState } from "../../state/viewerState";
 import type { RendererStrategy } from "./renderers/base";
 import { createRendererForStyle } from "./renderers";
@@ -28,6 +29,7 @@ interface CanvasPanelProps {
   error: string | null;
   trajectories: Trajectories;
   palette: Palette;
+  customPalettes: CustomPaletteBank;
   background: Background;
   camera?: CameraSpec;
   cameraProgram?: CameraProgram | null;
@@ -45,6 +47,7 @@ interface CanvasPanelProps {
 function PhaseScene({
   trajectories,
   palette,
+  customPalettes,
   background,
   autoSpin,
   animateHeadTail,
@@ -160,6 +163,7 @@ function PhaseScene({
     const data = {
       trajectories,
       palette,
+      customPalettes,
       lineThickness,
       background,
       paletteShift: modValues.paletteShift,
@@ -192,6 +196,7 @@ function PhaseScene({
     gl,
     trajectories,
     palette,
+    customPalettes,
     lineThickness,
     background,
     renderStyle,

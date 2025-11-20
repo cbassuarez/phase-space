@@ -1,8 +1,9 @@
 import type { CameraProgram } from "./camera/types";
+import type { PaletteId } from "./palettes";
 
 export type SystemId = "lorenz" | "rossler" | "aizawa" | "thomas";
 export type Resolution = "fast" | "default" | "high" | "ultra";
-export type Palette = "system" | "plasma" | "viridis" | "rainbow" | "inferno" | "magma" | "cividis";
+export type Palette = PaletteId;
 export type Background = "dark" | "light" | "dim";
 export type LineThickness = "thin" | "default" | "thick";
 export type RenderStyle =
@@ -50,11 +51,21 @@ export interface PlaneSpec {
   offset?: number;
 }
 
+export interface PaletteStopSpec {
+  t?: number;
+  color?: string;
+}
+
+export interface PaletteSpec {
+  stops?: PaletteStopSpec[];
+}
+
 export interface ViewSpec {
   mode?: "mode3d" | "plane";
   plane?: PlaneSpec | null;
   camera?: CameraSpec;
   palette?: Palette;
+  palette_spec?: PaletteSpec | null;
   background?: Background;
   point_size?: number;
   render_style?: RenderStyle;
@@ -76,6 +87,31 @@ function mapLegacyRenderStyle(style: RenderStyle | string | undefined | null): R
       return "cells";
     default:
       return "cells";
+  }
+}
+
+function mapLegacyPalette(palette: Palette | string | undefined | null): Palette {
+  switch (palette) {
+    case "rainbow":
+      return "prism";
+    case "inferno":
+      return "solar";
+    case "magma":
+      return "solar";
+    case "cividis":
+      return "mono";
+    case "plasma":
+    case "viridis":
+    case "prism":
+    case "solar":
+    case "abyss":
+    case "mono":
+    case "custom-1":
+    case "custom-2":
+    case "custom-3":
+      return palette;
+    default:
+      return "plasma";
   }
 }
 
@@ -106,8 +142,10 @@ export function normalizeViewSpec(view: ViewSpec | undefined): ViewSpec {
 
   return {
     ...view,
+    palette: mapLegacyPalette(view.palette),
     render_style: mapLegacyRenderStyle(view.render_style),
   };
 }
 
 export { mapLegacyRenderStyle };
+export { mapLegacyPalette };

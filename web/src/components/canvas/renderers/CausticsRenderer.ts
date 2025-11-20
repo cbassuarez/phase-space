@@ -3,6 +3,7 @@ import {
   BufferAttribute,
   BufferGeometry,
   Color,
+  DataTexture,
   Mesh,
   MeshBasicMaterial,
   OrthographicCamera,
@@ -10,11 +11,14 @@ import {
   Points,
   Scene,
   ShaderMaterial,
+  SRGBColorSpace,
   Vector2,
   Vector3,
   WebGLRenderTarget,
 } from "three";
-import type { ProjectionAxis } from "../../../types";
+import { samplePalette } from "../../../palettes";
+import type { CustomPaletteBank } from "../../../palettes";
+import type { Palette, ProjectionAxis } from "../../../types";
 import type { RendererStrategy, RenderContext, TrajectoryData } from "./base";
 
 const blurVertex = `
@@ -52,109 +56,45 @@ const colorVertex = blurVertex;
 const colorFragment = `
   varying vec2 vUv;
   uniform sampler2D uTexture;
+  uniform sampler2D uPalette;
+  uniform sampler2D uPaletteWarm;
+  uniform sampler2D uPaletteCool;
   uniform float uIntensity;
-  uniform int uPaletteIndex;
   uniform int uColorMode;
 
-  vec3 lerp3(vec3 a, vec3 b, float t) {
-    return a + (b - a) * t;
-  }
-
-  vec3 paletteViridis(float t) {
-    vec3 c1 = vec3(0.267, 0.005, 0.329);
-    vec3 c2 = vec3(0.282, 0.239, 0.457);
-    vec3 c3 = vec3(0.254, 0.506, 0.541);
-    vec3 c4 = vec3(0.993, 0.906, 0.144);
-    if (t < 0.33) return lerp3(c1, c2, t / 0.33);
-    if (t < 0.66) return lerp3(c2, c3, (t - 0.33) / 0.33);
-    return lerp3(c3, c4, (t - 0.66) / 0.34);
-  }
-
-  vec3 palettePlasma(float t) {
-    vec3 c1 = vec3(0.050, 0.029, 0.527);
-    vec3 c2 = vec3(0.468, 0.012, 0.705);
-    vec3 c3 = vec3(0.928, 0.325, 0.369);
-    vec3 c4 = vec3(0.983, 0.904, 0.145);
-    if (t < 0.33) return lerp3(c1, c2, t / 0.33);
-    if (t < 0.66) return lerp3(c2, c3, (t - 0.33) / 0.33);
-    return lerp3(c3, c4, (t - 0.66) / 0.34);
-  }
-
-  vec3 paletteRainbow(float t) {
-    vec3 c1 = vec3(0.980, 0.478, 0.455);
-    vec3 c2 = vec3(0.308, 0.435, 0.996);
-    vec3 c3 = vec3(0.490, 0.996, 0.768);
-    if (t < 0.5) return lerp3(c1, c2, t * 2.0);
-    return lerp3(c2, c3, (t - 0.5) * 2.0);
-  }
-
-  vec3 paletteInferno(float t) {
-    vec3 c1 = vec3(0.0, 0.0, 0.015);
-    vec3 c2 = vec3(0.431, 0.062, 0.294);
-    vec3 c3 = vec3(0.913, 0.332, 0.097);
-    vec3 c4 = vec3(0.987, 0.930, 0.324);
-    if (t < 0.33) return lerp3(c1, c2, t / 0.33);
-    if (t < 0.66) return lerp3(c2, c3, (t - 0.33) / 0.33);
-    return lerp3(c3, c4, (t - 0.66) / 0.34);
-  }
-
-  vec3 paletteMagma(float t) {
-    vec3 c1 = vec3(0.050, 0.035, 0.080);
-    vec3 c2 = vec3(0.403, 0.094, 0.361);
-    vec3 c3 = vec3(0.974, 0.870, 0.234);
-    if (t < 0.5) return lerp3(c1, c2, t * 2.0);
-    return lerp3(c2, c3, (t - 0.5) * 2.0);
-  }
-
-  vec3 paletteCividis(float t) {
-    vec3 c1 = vec3(0.0, 0.126, 0.298);
-    vec3 c2 = vec3(0.365, 0.521, 0.255);
-    vec3 c3 = vec3(0.780, 0.788, 0.349);
-    if (t < 0.5) return lerp3(c1, c2, t * 2.0);
-    return lerp3(c2, c3, (t - 0.5) * 2.0);
-  }
-
-  vec3 causticWarm(float t) {
-    vec3 c1 = vec3(0.992, 0.820, 0.298);
-    vec3 c2 = vec3(0.992, 0.580, 0.196);
-    vec3 c3 = vec3(0.902, 0.274, 0.223);
-    if (t < 0.5) return lerp3(c1, c2, t * 2.0);
-    return lerp3(c2, c3, (t - 0.5) * 2.0);
-  }
-
-  vec3 causticCool(float t) {
-    vec3 c1 = vec3(0.0, 0.635, 0.643);
-    vec3 c2 = vec3(0.235, 0.423, 0.988);
-    vec3 c3 = vec3(0.643, 0.356, 0.992);
-    if (t < 0.5) return lerp3(c1, c2, t * 2.0);
-    return lerp3(c2, c3, (t - 0.5) * 2.0);
-  }
-
-  vec3 paletteForIndex(int idx, float t) {
-    if (idx == 0) return palettePlasma(t);
-    if (idx == 1) return paletteViridis(t);
-    if (idx == 2) return paletteRainbow(t);
-    if (idx == 3) return paletteInferno(t);
-    if (idx == 4) return paletteMagma(t);
-    if (idx == 5) return paletteCividis(t);
-    return palettePlasma(t);
+  vec3 samplePaletteColor(sampler2D tex, float t) {
+    return texture2D(tex, vec2(clamp(t, 0.0, 1.0), 0.5)).rgb;
   }
 
   void main() {
-    float intensity = texture2D(uTexture, vUv).r;
-    float boosted = pow(intensity * 1.2, 0.72) * uIntensity;
-    boosted = clamp(boosted, 0.0, 3.0);
-    vec3 color;
+    vec4 sample = texture2D(uTexture, vUv);
+    float boosted = pow(sample.a, 0.85) * uIntensity;
+    float t = clamp(boosted, 0.0, 1.0);
+    vec3 color = samplePaletteColor(uPalette, t);
     if (uColorMode == 1) {
-      color = causticWarm(clamp(boosted * 0.8, 0.0, 1.0));
+      color = samplePaletteColor(uPaletteWarm, t);
     } else if (uColorMode == 2) {
-      color = causticCool(clamp(boosted * 0.85, 0.0, 1.0));
-    } else {
-      color = paletteForIndex(uPaletteIndex, clamp(boosted, 0.0, 1.0));
+      color = samplePaletteColor(uPaletteCool, t);
     }
     gl_FragColor = vec4(color, 1.0);
   }
 `;
+
+function buildPaletteTexture(id: Palette, customPalettes: CustomPaletteBank): DataTexture {
+  const size = 256;
+  const data = new Uint8Array(size * 3);
+  for (let i = 0; i < size; i++) {
+    const t = size === 1 ? 0 : i / (size - 1);
+    const color = samplePalette(id, t, customPalettes).clone().convertLinearToSRGB();
+    data[i * 3 + 0] = Math.round(color.r * 255);
+    data[i * 3 + 1] = Math.round(color.g * 255);
+    data[i * 3 + 2] = Math.round(color.b * 255);
+  }
+  const tex = new DataTexture(data, size, 1);
+  tex.colorSpace = SRGBColorSpace;
+  tex.needsUpdate = true;
+  return tex;
+}
 
 function projectionComponents(axis: ProjectionAxis): [number, number] {
   switch (axis) {
@@ -165,24 +105,6 @@ function projectionComponents(axis: ProjectionAxis): [number, number] {
     case "xy":
     default:
       return [0, 1];
-  }
-}
-
-function paletteIndexFromName(name: string | undefined): number {
-  switch (name) {
-    case "viridis":
-      return 1;
-    case "rainbow":
-      return 2;
-    case "inferno":
-      return 3;
-    case "magma":
-      return 4;
-    case "cividis":
-      return 5;
-    case "plasma":
-    default:
-      return 0;
   }
 }
 
@@ -247,6 +169,9 @@ export class CausticsRenderer implements RendererStrategy {
   private outputMaterial: ShaderMaterial | null = null;
   private projectionAxis: ProjectionAxis = "auto";
   private backdrop: Mesh | null = null;
+  private paletteTexture: DataTexture | null = null;
+  private warmPaletteTexture: DataTexture | null = null;
+  private coolPaletteTexture: DataTexture | null = null;
 
   init(context: RenderContext, data: TrajectoryData) {
     this.context = context;
@@ -340,12 +265,16 @@ export class CausticsRenderer implements RendererStrategy {
     this.blurSceneH.add(new Mesh(quadGeom, this.blurMaterialH));
     this.blurSceneV.add(new Mesh(quadGeom, this.blurMaterialV));
 
-    const paletteIndex = paletteIndexFromName(data.palette);
+    this.paletteTexture = buildPaletteTexture(data.palette as Palette, data.customPalettes);
+    this.warmPaletteTexture = buildPaletteTexture("solar", data.customPalettes);
+    this.coolPaletteTexture = buildPaletteTexture("abyss", data.customPalettes);
     this.outputMaterial = new ShaderMaterial({
       uniforms: {
         uTexture: { value: this.finalTarget.texture },
         uIntensity: { value: data.caustics?.intensity ?? 1 },
-        uPaletteIndex: { value: paletteIndex },
+        uPalette: { value: this.paletteTexture },
+        uPaletteWarm: { value: this.warmPaletteTexture },
+        uPaletteCool: { value: this.coolPaletteTexture },
         uColorMode: { value: data.caustics?.colorMode === "warm" ? 1 : data.caustics?.colorMode === "cool" ? 2 : 0 },
       },
       vertexShader: colorVertex,
@@ -400,6 +329,21 @@ export class CausticsRenderer implements RendererStrategy {
     }
   }
 
+  private refreshPalettes(palette: Palette, customPalettes: CustomPaletteBank) {
+    this.paletteTexture?.dispose();
+    this.warmPaletteTexture?.dispose();
+    this.coolPaletteTexture?.dispose();
+    this.paletteTexture = buildPaletteTexture(palette, customPalettes);
+    this.warmPaletteTexture = buildPaletteTexture("solar", customPalettes);
+    this.coolPaletteTexture = buildPaletteTexture("abyss", customPalettes);
+    if (this.outputMaterial) {
+      this.outputMaterial.uniforms.uPalette.value = this.paletteTexture;
+      this.outputMaterial.uniforms.uPaletteWarm.value = this.warmPaletteTexture;
+      this.outputMaterial.uniforms.uPaletteCool.value = this.coolPaletteTexture;
+      this.outputMaterial.needsUpdate = true;
+    }
+  }
+
   update(context: RenderContext, data: TrajectoryData) {
     this.dispose(context);
     this.init(context, data);
@@ -407,10 +351,10 @@ export class CausticsRenderer implements RendererStrategy {
 
   applyDynamic(data: TrajectoryData) {
     this.data = { ...this.data, ...data };
+    this.refreshPalettes(data.palette as Palette, data.customPalettes);
     if (this.outputMaterial) {
       this.outputMaterial.uniforms.uIntensity.value = data.caustics?.intensity ?? 1;
       this.outputMaterial.uniforms.uColorMode.value = data.caustics?.colorMode === "warm" ? 1 : data.caustics?.colorMode === "cool" ? 2 : 0;
-      this.outputMaterial.uniforms.uPaletteIndex.value = paletteIndexFromName(data.palette);
       this.outputMaterial.needsUpdate = true;
     }
     if (this.blurMaterialH && this.blurMaterialV) {
@@ -454,6 +398,12 @@ export class CausticsRenderer implements RendererStrategy {
       (this.backdrop.material as MeshBasicMaterial).dispose();
     }
     this.backdrop = null;
+    this.paletteTexture?.dispose();
+    this.warmPaletteTexture?.dispose();
+    this.coolPaletteTexture?.dispose();
+    this.paletteTexture = null;
+    this.warmPaletteTexture = null;
+    this.coolPaletteTexture = null;
     if (threeScene && this.outputPlane) {
       threeScene.remove(this.outputPlane);
     }

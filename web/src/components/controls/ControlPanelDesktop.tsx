@@ -1,24 +1,20 @@
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useViewerState } from "../../state/viewerState";
 import type { Palette, SystemId } from "../../types";
 import ResolutionSlider from "./ResolutionSlider";
 import ToggleSwitch from "./ToggleSwitch";
 import ModulationSection from "./ModulationSection";
+import { builtinPalettes } from "../../palettes";
+import type { CustomPaletteId } from "../../palettes";
+import CustomPaletteEditor from "./CustomPaletteEditor";
 
 const systemLabels: { id: SystemId; label: string }[] = [
   { id: "lorenz", label: "Lorenz" },
   { id: "rossler", label: "Rössler" },
   { id: "aizawa", label: "Aizawa" },
   { id: "thomas", label: "Thomas" },
-];
-
-const paletteOptions: { id: Palette; label: string; swatch: string }[] = [
-  { id: "system", label: "System default", swatch: "bg-gradient-to-r from-[#4f6fff] via-[#ff7a73] to-[#ffd66b]" },
-  { id: "plasma", label: "Plasma", swatch: "bg-gradient-to-r from-pink-500 via-purple-500 to-yellow-300" },
-  { id: "viridis", label: "Viridis", swatch: "bg-gradient-to-r from-[#440154] via-[#21908C] to-[#fde725]" },
-  { id: "rainbow", label: "Rainbow", swatch: "bg-gradient-to-r from-[#ff7a73] via-[#4f6fff] to-[#7cffc4]" },
 ];
 
 const cameraModes = [
@@ -78,6 +74,7 @@ function ControlPanelDesktop() {
     causticsSettings,
     setCausticsSettings,
     palette,
+    customPalettes,
     background,
     setSystem,
     setResolution,
@@ -87,6 +84,7 @@ function ControlPanelDesktop() {
     setLineThickness,
     setRenderStyle,
     setPalette,
+    setCustomPalette,
     setBackground,
     cameraProgram,
     setCameraProgram,
@@ -95,6 +93,30 @@ function ControlPanelDesktop() {
   } = useViewerState();
 
   const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [activeCustom, setActiveCustom] = useState<CustomPaletteId>("custom-1");
+
+  const paletteOptions: { id: Palette; label: string; swatch: string }[] = useMemo(() => {
+    const base = builtinPalettes.map((p) => {
+      const stops = p.stops;
+      const a = stops[0]?.color ?? "#ffffff";
+      const b = stops[Math.floor(stops.length / 2)]?.color ?? a;
+      const c = stops[stops.length - 1]?.color ?? b;
+      return {
+        id: p.id,
+        label: p.label,
+        swatch: `linear-gradient(90deg, ${a}, ${b}, ${c})`,
+      };
+    });
+    const customs = (Object.keys(customPalettes) as CustomPaletteId[]).map((id) => {
+      const spec = customPalettes[id];
+      return {
+        id: id as Palette,
+        label: `Custom ${id.split("-")[1]}`,
+        swatch: `linear-gradient(90deg, ${spec.low}, ${spec.mid}, ${spec.high})`,
+      };
+    });
+    return [...base, ...customs];
+  }, [customPalettes]);
 
   const copySceneJson = async () => {
     try {
@@ -501,7 +523,7 @@ function ControlPanelDesktop() {
             <label key={opt.id} className="flex items-center justify-between py-1 text-xs text-[color:var(--ps-text-soft)]">
               <span>{opt.label}</span>
               <span className="inline-flex items-center gap-2">
-                <span className={clsx("h-2 w-8 rounded-full", opt.swatch)} />
+                <span className="h-2 w-8 rounded-full" style={{ background: opt.swatch }} />
                 <input
                   type="radio"
                   name="palette"
@@ -513,6 +535,12 @@ function ControlPanelDesktop() {
               </span>
             </label>
           ))}
+          <CustomPaletteEditor
+            bank={customPalettes}
+            activeId={activeCustom}
+            onSelect={setActiveCustom}
+            onUpdate={setCustomPalette}
+          />
         </div>
 
         <div className="space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] px-3 py-2">

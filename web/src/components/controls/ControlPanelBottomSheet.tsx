@@ -1,24 +1,20 @@
 import clsx from "clsx";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useViewerState } from "../../state/viewerState";
 import type { Palette, SystemId } from "../../types";
 import ResolutionSlider from "./ResolutionSlider";
 import ToggleSwitch from "./ToggleSwitch";
 import ModulationSection from "./ModulationSection";
+import { builtinPalettes } from "../../palettes";
+import type { CustomPaletteId } from "../../palettes";
+import CustomPaletteEditor from "./CustomPaletteEditor";
 
 const systemLabels: { id: SystemId; label: string }[] = [
   { id: "lorenz", label: "Lorenz" },
   { id: "rossler", label: "Rössler" },
   { id: "aizawa", label: "Aizawa" },
   { id: "thomas", label: "Thomas" },
-];
-
-const paletteOptions: { id: Palette; label: string }[] = [
-  { id: "system", label: "System default" },
-  { id: "plasma", label: "Plasma" },
-  { id: "viridis", label: "Viridis" },
-  { id: "rainbow", label: "Rainbow" },
 ];
 
 const cameraModes = [
@@ -44,6 +40,7 @@ function ControlPanelBottomSheet() {
     setPhotonWeaveSettings,
     setCausticsSettings,
     palette,
+    customPalettes,
     background,
     setSystem,
     setResolution,
@@ -53,10 +50,27 @@ function ControlPanelBottomSheet() {
     setLineThickness,
     setRenderStyle,
     setPalette,
+    setCustomPalette,
     setBackground,
     cameraProgram,
     setCameraProgram,
   } = useViewerState();
+
+  const [activeCustom, setActiveCustom] = useState<CustomPaletteId>("custom-1");
+  const paletteOptions: { id: Palette; label: string; swatch: string }[] = useMemo(() => {
+    const base = builtinPalettes.map((p) => {
+      const stops = p.stops;
+      const a = stops[0]?.color ?? "#ffffff";
+      const b = stops[Math.floor(stops.length / 2)]?.color ?? a;
+      const c = stops[stops.length - 1]?.color ?? b;
+      return { id: p.id, label: p.label, swatch: `linear-gradient(90deg, ${a}, ${b}, ${c})` };
+    });
+    const customs = (Object.keys(customPalettes) as CustomPaletteId[]).map((id) => {
+      const spec = customPalettes[id];
+      return { id: id as Palette, label: `Custom ${id.split("-")[1]}`, swatch: `linear-gradient(90deg, ${spec.low}, ${spec.mid}, ${spec.high})` };
+    });
+    return [...base, ...customs];
+  }, [customPalettes]);
 
   const [open, setOpen] = useState(false);
 
@@ -343,7 +357,10 @@ function ControlPanelBottomSheet() {
             <p className="text-[11px] uppercase tracking-[0.12em] text-[color:var(--ps-text-muted)]">Palette</p>
             {paletteOptions.map((opt) => (
               <label key={opt.id} className="flex items-center justify-between py-1 text-xs text-[color:var(--ps-text-soft)]">
-                <span>{opt.label}</span>
+                <span className="flex items-center gap-2">
+                  <span className="h-2 w-6 rounded-full" style={{ background: opt.swatch }} />
+                  <span>{opt.label}</span>
+                </span>
                 <input
                   type="radio"
                   name="palette-mobile"
@@ -376,6 +393,15 @@ function ControlPanelBottomSheet() {
             ))}
           </div>
         </section>
+
+        <div className="mt-3">
+          <CustomPaletteEditor
+            bank={customPalettes}
+            activeId={activeCustom}
+            onSelect={setActiveCustom}
+            onUpdate={setCustomPalette}
+          />
+        </div>
       </div>
     </motion.div>
   );
