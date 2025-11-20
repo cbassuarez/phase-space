@@ -1,6 +1,8 @@
 import { motion } from "framer-motion";
 import type { Resolution } from "../../types";
-import { TRI_PRIMARY_ACCENTS } from "../../palettes";
+
+const STRESS_GRADIENT =
+  "linear-gradient(to right, #111827, #22c55e, #facc15, #ef4444)";
 
 const resolutionStops: { id: Resolution; label: string; position: string }[] = [
   { id: "fast", label: "Fast", position: "0%" },
@@ -23,11 +25,11 @@ function ResolutionSlider({ value, onChange }: ResolutionSliderProps) {
       <div
         className="relative mt-1 h-3 rounded-full shadow-[var(--ps-shadow-inner)]"
         style={{
-          background: `linear-gradient(90deg, ${TRI_PRIMARY_ACCENTS.a}, ${TRI_PRIMARY_ACCENTS.b}, ${TRI_PRIMARY_ACCENTS.c})`,
+          background: STRESS_GRADIENT,
         }}
       >
         <motion.div
-          className="absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border border-[color:var(--ps-border-subtle)] bg-white shadow-soft"
+          className="absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border border-[color:var(--ps-accent)] bg-white shadow-soft"
           initial={false}
           animate={{ left: activeStop.position }}
           transition={{ type: "spring", stiffness: 360, damping: 22, mass: 0.55 }}

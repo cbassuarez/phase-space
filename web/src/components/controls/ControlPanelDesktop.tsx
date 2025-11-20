@@ -7,7 +7,6 @@ import ResolutionSlider from "./ResolutionSlider";
 import ToggleSwitch from "./ToggleSwitch";
 import ModulationSection from "./ModulationSection";
 import { builtinPalettes } from "../../palettes";
-import type { CustomPaletteId } from "../../palettes";
 import CustomPaletteEditor from "./CustomPaletteEditor";
 
 const systemLabels: { id: SystemId; label: string }[] = [
@@ -74,7 +73,7 @@ function ControlPanelDesktop() {
     causticsSettings,
     setCausticsSettings,
     palette,
-    customPalettes,
+    customPalette,
     background,
     setSystem,
     setResolution,
@@ -93,7 +92,6 @@ function ControlPanelDesktop() {
   } = useViewerState();
 
   const [inspectorOpen, setInspectorOpen] = useState(false);
-  const [activeCustom, setActiveCustom] = useState<CustomPaletteId>("custom-1");
 
   const paletteOptions: { id: Palette; label: string; swatch: string }[] = useMemo(() => {
     const base = builtinPalettes.map((p) => {
@@ -107,16 +105,13 @@ function ControlPanelDesktop() {
         swatch: `linear-gradient(90deg, ${a}, ${b}, ${c})`,
       };
     });
-    const customs = (Object.keys(customPalettes) as CustomPaletteId[]).map((id) => {
-      const spec = customPalettes[id];
-      return {
-        id: id as Palette,
-        label: `Custom ${id.split("-")[1]}`,
-        swatch: `linear-gradient(90deg, ${spec.low}, ${spec.mid}, ${spec.high})`,
-      };
-    });
-    return [...base, ...customs];
-  }, [customPalettes]);
+    const customOption = {
+      id: "custom" as Palette,
+      label: "Custom",
+      swatch: `linear-gradient(90deg, ${customPalette.low}, ${customPalette.mid}, ${customPalette.high})`,
+    };
+    return [...base, customOption];
+  }, [customPalette]);
 
   const copySceneJson = async () => {
     try {
@@ -535,12 +530,7 @@ function ControlPanelDesktop() {
               </span>
             </label>
           ))}
-          <CustomPaletteEditor
-            bank={customPalettes}
-            activeId={activeCustom}
-            onSelect={setActiveCustom}
-            onUpdate={setCustomPalette}
-          />
+          {palette === "custom" && <CustomPaletteEditor state={customPalette} onChange={setCustomPalette} />}
         </div>
 
         <div className="space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] px-3 py-2">

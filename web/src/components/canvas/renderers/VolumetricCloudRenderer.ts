@@ -40,7 +40,7 @@ export class VolumetricCloudRenderer implements RendererStrategy {
         opacity: Math.max(0.15, 0.7 * (0.4 + density * 0.8)),
         depthWrite: false,
         blending: useAdditive ? AdditiveBlending : NormalBlending,
-        color: colorForTrajectory(idx, data.palette, data.customPalettes, data.paletteShift ?? 0),
+        color: colorForTrajectory(idx, data.palette, data.customPalette, data.paletteShift ?? 0),
       });
       const cloud = new Points(geom, mat);
       this.points.push(cloud);
@@ -64,7 +64,7 @@ export class VolumetricCloudRenderer implements RendererStrategy {
       mat.color = colorForTrajectory(
         idx,
         this.data!.palette,
-        this.data!.customPalettes,
+        this.data!.customPalette,
         this.data?.paletteShift ?? 0
       );
       mat.opacity = Math.max(0.15, 0.7 * (0.4 + density * 0.8));

@@ -22,7 +22,7 @@ export class CellsRenderer implements RendererStrategy {
       const geom = new BufferGeometry();
       geom.setAttribute("position", new Float32BufferAttribute(positions, 3));
       const mat = new PointsMaterial({
-        color: colorForTrajectory(idx, data.palette, data.customPalettes, data.paletteShift ?? 0),
+        color: colorForTrajectory(idx, data.palette, data.customPalette, data.paletteShift ?? 0),
         size: 0.1,
         transparent: true,
         opacity: 0.9,
@@ -46,7 +46,7 @@ export class CellsRenderer implements RendererStrategy {
         mat.color = colorForTrajectory(
           idx,
           this.data!.palette,
-          this.data!.customPalettes,
+          this.data!.customPalette,
           this.data?.paletteShift ?? 0
         );
         mat.needsUpdate = true;

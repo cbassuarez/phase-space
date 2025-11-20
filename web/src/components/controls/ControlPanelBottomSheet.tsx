@@ -7,7 +7,6 @@ import ResolutionSlider from "./ResolutionSlider";
 import ToggleSwitch from "./ToggleSwitch";
 import ModulationSection from "./ModulationSection";
 import { builtinPalettes } from "../../palettes";
-import type { CustomPaletteId } from "../../palettes";
 import CustomPaletteEditor from "./CustomPaletteEditor";
 
 const systemLabels: { id: SystemId; label: string }[] = [
@@ -40,7 +39,7 @@ function ControlPanelBottomSheet() {
     setPhotonWeaveSettings,
     setCausticsSettings,
     palette,
-    customPalettes,
+    customPalette,
     background,
     setSystem,
     setResolution,
@@ -56,7 +55,6 @@ function ControlPanelBottomSheet() {
     setCameraProgram,
   } = useViewerState();
 
-  const [activeCustom, setActiveCustom] = useState<CustomPaletteId>("custom-1");
   const paletteOptions: { id: Palette; label: string; swatch: string }[] = useMemo(() => {
     const base = builtinPalettes.map((p) => {
       const stops = p.stops;
@@ -65,12 +63,13 @@ function ControlPanelBottomSheet() {
       const c = stops[stops.length - 1]?.color ?? b;
       return { id: p.id, label: p.label, swatch: `linear-gradient(90deg, ${a}, ${b}, ${c})` };
     });
-    const customs = (Object.keys(customPalettes) as CustomPaletteId[]).map((id) => {
-      const spec = customPalettes[id];
-      return { id: id as Palette, label: `Custom ${id.split("-")[1]}`, swatch: `linear-gradient(90deg, ${spec.low}, ${spec.mid}, ${spec.high})` };
-    });
-    return [...base, ...customs];
-  }, [customPalettes]);
+    const customOption = {
+      id: "custom" as Palette,
+      label: "Custom",
+      swatch: `linear-gradient(90deg, ${customPalette.low}, ${customPalette.mid}, ${customPalette.high})`,
+    };
+    return [...base, customOption];
+  }, [customPalette]);
 
   const [open, setOpen] = useState(false);
 
@@ -395,12 +394,7 @@ function ControlPanelBottomSheet() {
         </section>
 
         <div className="mt-3">
-          <CustomPaletteEditor
-            bank={customPalettes}
-            activeId={activeCustom}
-            onSelect={setActiveCustom}
-            onUpdate={setCustomPalette}
-          />
+          {palette === "custom" && <CustomPaletteEditor state={customPalette} onChange={setCustomPalette} />}
         </div>
       </div>
     </motion.div>
