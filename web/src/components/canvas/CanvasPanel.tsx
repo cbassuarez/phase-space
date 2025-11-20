@@ -8,12 +8,14 @@ import type {
   Background,
   CameraSpec,
   Palette,
+  PaletteSpec,
   Trajectories,
   LineThickness,
   RenderStyle,
   Resolution,
   PhotonWeaveSettings,
   CausticsSettings,
+  CustomPaletteSlotId,
 } from "../../types";
 import { useViewerState } from "../../state/viewerState";
 import type { RendererStrategy } from "./renderers/base";
@@ -21,6 +23,7 @@ import { createRendererForStyle } from "./renderers";
 import { computeVisualFeatures, type VisualFeatureFrame } from "../../visual/visualFeatures";
 import { useModulation } from "../../state/modulationState";
 import { getRenderQuality, getViewportBackgroundColor } from "../../visual/renderQuality";
+import { CustomPaletteBank, getPaletteDefinition } from "../../palettes";
 
 interface CanvasPanelProps {
   ready: boolean;
@@ -28,6 +31,9 @@ interface CanvasPanelProps {
   error: string | null;
   trajectories: Trajectories;
   palette: Palette;
+  paletteSpec?: PaletteSpec;
+  customPaletteSlot: CustomPaletteSlotId;
+  customPalettes: CustomPaletteBank;
   background: Background;
   camera?: CameraSpec;
   cameraProgram?: CameraProgram | null;
@@ -45,6 +51,9 @@ interface CanvasPanelProps {
 function PhaseScene({
   trajectories,
   palette,
+  paletteSpec,
+  customPaletteSlot,
+  customPalettes,
   background,
   autoSpin,
   animateHeadTail,
@@ -77,6 +86,10 @@ function PhaseScene({
   const { modEngine, audioFrameRef, modValuesRef } = useModulation();
 
   const quality = useMemo(() => getRenderQuality(resolution), [resolution]);
+  const paletteDef = useMemo(
+    () => getPaletteDefinition(palette, { customSlot: customPaletteSlot, customPalettes, paletteSpec }),
+    [palette, customPaletteSlot, customPalettes, paletteSpec]
+  );
 
   const backgroundColor = useMemo(
     () => getViewportBackgroundColor(renderStyle, background),
@@ -160,6 +173,8 @@ function PhaseScene({
     const data = {
       trajectories,
       palette,
+      paletteSpec,
+      paletteDef,
       lineThickness,
       background,
       paletteShift: modValues.paletteShift,
@@ -192,6 +207,8 @@ function PhaseScene({
     gl,
     trajectories,
     palette,
+    paletteDef,
+    paletteSpec,
     lineThickness,
     background,
     renderStyle,
@@ -349,6 +366,9 @@ function CanvasPanel({
   error,
   trajectories,
   palette,
+  paletteSpec,
+  customPaletteSlot,
+  customPalettes,
   background,
   camera,
   cameraProgram,
@@ -410,6 +430,9 @@ function CanvasPanel({
             <PhaseScene
               trajectories={trajectories}
               palette={palette}
+              paletteSpec={paletteSpec}
+              customPaletteSlot={customPaletteSlot}
+              customPalettes={customPalettes}
               background={background}
               cameraProgram={cameraProgram}
               randomSeed={randomSeed}

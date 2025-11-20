@@ -147,7 +147,7 @@ export const SystemDetailPage: React.FC = () => {
   "view": {
     "mode": "mode3d",
     "camera": { "theta": 0.8, "phi": 0.9, "r": 25.0 },
-    "palette": "plasma",
+    "palette": "prism",
     "background": "dark",
     "point_size": 1.0
   },

@@ -84,12 +84,18 @@ pub struct PlaneSpec {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Palette {
+    #[serde(alias = "magma")]
+    #[serde(alias = "cividis")]
+    #[serde(alias = "system")]
     Plasma,
     Viridis,
-    Rainbow,
-    Inferno,
-    Magma,
-    Cividis,
+    #[serde(alias = "rainbow")]
+    Prism,
+    #[serde(alias = "inferno")]
+    Solar,
+    Abyss,
+    Mono,
+    Custom,
 }
 
 /// Background style.
@@ -124,6 +130,8 @@ pub struct ViewSpec {
     pub plane: Option<PlaneSpec>,
     pub camera: CameraSpec,
     pub palette: Palette,
+    #[serde(default)]
+    pub palette_spec: Option<PaletteSpec>,
     pub background: Background,
     pub point_size: f32,
     #[serde(default = "default_render_style")]
@@ -360,6 +368,17 @@ pub struct SceneSpec {
     pub camera: CameraProgram,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PaletteStop {
+    pub t: f32,
+    pub color: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PaletteSpec {
+    pub stops: Vec<PaletteStop>,
+}
+
 impl SceneSpec {
     /// Canonical default Lorenz scene (balanced, classic butterfly).
     pub fn default_lorenz() -> Self {
@@ -399,7 +418,8 @@ impl SceneSpec {
                     phi: 0.9,
                     r: 25.0,
                 },
-                palette: Palette::Plasma,
+                palette: Palette::Prism,
+                palette_spec: None,
                 background: Background::Dark,
                 point_size: 1.0,
                 render_style: RenderStyle::NeonFilaments,
@@ -448,6 +468,7 @@ impl SceneSpec {
                     r: 18.0,
                 },
                 palette: Palette::Viridis,
+                palette_spec: None,
                 background: Background::Dark,
                 point_size: 1.0,
                 render_style: RenderStyle::NeonFilaments,
@@ -499,7 +520,8 @@ impl SceneSpec {
                     phi: 0.9,
                     r: 22.0,
                 },
-                palette: Palette::Rainbow,
+                palette: Palette::Solar,
+                palette_spec: None,
                 background: Background::Dark,
                 point_size: 1.0,
                 render_style: RenderStyle::NeonFilaments,
@@ -553,6 +575,7 @@ impl SceneSpec {
                 },
                 // Bias toward "pretty" palettes.
                 palette: Palette::Plasma,
+                palette_spec: None,
                 background: Background::Dark,
                 point_size: 1.0,
                 render_style: RenderStyle::NeonFilaments,

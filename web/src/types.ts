@@ -2,7 +2,9 @@ import type { CameraProgram } from "./camera/types";
 
 export type SystemId = "lorenz" | "rossler" | "aizawa" | "thomas";
 export type Resolution = "fast" | "default" | "high" | "ultra";
-export type Palette = "system" | "plasma" | "viridis" | "rainbow" | "inferno" | "magma" | "cividis";
+export type PaletteId = "plasma" | "viridis" | "prism" | "solar" | "abyss" | "mono" | "custom";
+export type CustomPaletteSlotId = "custom-1" | "custom-2" | "custom-3";
+export type Palette = PaletteId;
 export type Background = "dark" | "light" | "dim";
 export type LineThickness = "thin" | "default" | "thick";
 export type RenderStyle =
@@ -45,6 +47,15 @@ export interface CameraSpec {
   r?: number;
 }
 
+export interface PaletteStop {
+  t: number;
+  color: string;
+}
+
+export interface PaletteSpec {
+  stops: PaletteStop[];
+}
+
 export interface PlaneSpec {
   normal?: [number, number, number];
   offset?: number;
@@ -55,6 +66,7 @@ export interface ViewSpec {
   plane?: PlaneSpec | null;
   camera?: CameraSpec;
   palette?: Palette;
+  palette_spec?: PaletteSpec;
   background?: Background;
   point_size?: number;
   render_style?: RenderStyle;
@@ -92,12 +104,15 @@ export interface SceneSpec {
 }
 
 export function normalizeViewSpec(view: ViewSpec | undefined): ViewSpec {
+  const palette = view?.palette ? mapLegacyPalette(view.palette) : undefined;
+  const paletteSpec = view?.palette_spec;
   if (!view) {
     return {
       mode: "mode3d",
       plane: null,
       camera: { theta: 0.8, phi: 0.9, r: 25 },
-      palette: "plasma",
+      palette: palette ?? "prism",
+      palette_spec: paletteSpec,
       background: "dark",
       point_size: 1,
       render_style: "photon-weave",
@@ -106,8 +121,32 @@ export function normalizeViewSpec(view: ViewSpec | undefined): ViewSpec {
 
   return {
     ...view,
+    palette: palette ?? "prism",
+    palette_spec: paletteSpec,
     render_style: mapLegacyRenderStyle(view.render_style),
   };
 }
 
 export { mapLegacyRenderStyle };
+
+export function mapLegacyPalette(palette?: Palette | string | null): Palette {
+  switch (palette) {
+    case "viridis":
+    case "prism":
+    case "plasma":
+    case "solar":
+    case "abyss":
+    case "mono":
+    case "custom":
+      return palette;
+    case "rainbow":
+      return "prism";
+    case "inferno":
+      return "solar";
+    case "magma":
+    case "cividis":
+    case "system":
+    default:
+      return "plasma";
+  }
+}

@@ -19,7 +19,10 @@ function ResolutionSlider({ value, onChange }: ResolutionSliderProps) {
   return (
     <div className="mt-3 flex flex-col gap-2">
       <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">RESOLUTION</div>
-      <div className="relative mt-1 h-3 rounded-full bg-gradient-to-r from-[rgba(79,111,255,0.18)] via-[rgba(255,214,107,0.45)] to-[rgba(255,122,115,0.65)] shadow-[var(--ps-shadow-inner)]">
+      <div
+        className="relative mt-1 h-3 rounded-full shadow-[var(--ps-shadow-inner)]"
+        style={{ background: "linear-gradient(90deg, #ff0000 0%, #00ff00 50%, #0000ff 100%)" }}
+      >
         <motion.div
           className="absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border border-[color:var(--ps-border-subtle)] bg-white shadow-soft"
           initial={false}

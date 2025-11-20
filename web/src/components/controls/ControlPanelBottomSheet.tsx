@@ -2,23 +2,17 @@ import clsx from "clsx";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { useViewerState } from "../../state/viewerState";
-import type { Palette, SystemId } from "../../types";
+import type { SystemId } from "../../types";
 import ResolutionSlider from "./ResolutionSlider";
 import ToggleSwitch from "./ToggleSwitch";
 import ModulationSection from "./ModulationSection";
+import PaletteControls from "./PaletteControls";
 
 const systemLabels: { id: SystemId; label: string }[] = [
   { id: "lorenz", label: "Lorenz" },
   { id: "rossler", label: "Rössler" },
   { id: "aizawa", label: "Aizawa" },
   { id: "thomas", label: "Thomas" },
-];
-
-const paletteOptions: { id: Palette; label: string }[] = [
-  { id: "system", label: "System default" },
-  { id: "plasma", label: "Plasma" },
-  { id: "viridis", label: "Viridis" },
-  { id: "rainbow", label: "Rainbow" },
 ];
 
 const cameraModes = [
@@ -43,7 +37,6 @@ function ControlPanelBottomSheet() {
     causticsSettings,
     setPhotonWeaveSettings,
     setCausticsSettings,
-    palette,
     background,
     setSystem,
     setResolution,
@@ -52,7 +45,6 @@ function ControlPanelBottomSheet() {
     toggleShowFullTrajectory,
     setLineThickness,
     setRenderStyle,
-    setPalette,
     setBackground,
     cameraProgram,
     setCameraProgram,
@@ -338,24 +330,8 @@ function ControlPanelBottomSheet() {
 
         <ModulationSection compact />
 
-        <section className="mt-2 grid grid-cols-2 gap-3">
-          <div className="space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] px-3 py-2">
-            <p className="text-[11px] uppercase tracking-[0.12em] text-[color:var(--ps-text-muted)]">Palette</p>
-            {paletteOptions.map((opt) => (
-              <label key={opt.id} className="flex items-center justify-between py-1 text-xs text-[color:var(--ps-text-soft)]">
-                <span>{opt.label}</span>
-                <input
-                  type="radio"
-                  name="palette-mobile"
-                  value={opt.id}
-                  checked={palette === opt.id}
-                  onChange={() => setPalette(opt.id)}
-                  className="h-3 w-3 accent-[color:var(--ps-accent)]"
-                />
-              </label>
-            ))}
-          </div>
-
+        <section className="mt-2 flex flex-col gap-3">
+          <PaletteControls />
           <div className="space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] px-3 py-2">
             <p className="text-[11px] uppercase tracking-[0.12em] text-[color:var(--ps-text-muted)]">Background</p>
             {[

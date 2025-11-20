@@ -1,4 +1,12 @@
-import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+  useRef,
+} from "react";
 import { usePhaseWasmEngine } from "../hooks/usePhaseWasmEngine";
 import type { CameraProgram } from "../camera/types";
 import { getDefaultSceneSpec } from "../data/defaultScenes";
@@ -6,6 +14,7 @@ import type {
   Background,
   IntegratorSpec,
   Palette,
+  PaletteSpec,
   PhotonWeaveSettings,
   Resolution,
   SceneSpec,
@@ -14,8 +23,14 @@ import type {
   LineThickness,
   RenderStyle,
   CausticsSettings,
+  CustomPaletteSlotId,
 } from "../types";
 import { mapLegacyRenderStyle, normalizeViewSpec } from "../types";
+import {
+  CustomPaletteBank,
+  CustomPaletteState,
+  defaultCustomPaletteBank,
+} from "../palettes";
 
 interface TrajectoryMeta {
   count: number;
@@ -36,6 +51,9 @@ interface ViewerContextValue {
   photonWeaveSettings: PhotonWeaveSettings;
   causticsSettings: CausticsSettings;
   palette: Palette;
+  paletteSpec: PaletteSpec | undefined;
+  customPaletteSlot: CustomPaletteSlotId;
+  customPalettes: CustomPaletteBank;
   background: Background;
   sceneJson: string;
   sceneSpec: SceneSpec | null;
@@ -52,6 +70,8 @@ interface ViewerContextValue {
   setPhotonWeaveSettings: (updates: Partial<PhotonWeaveSettings>) => void;
   setCausticsSettings: (updates: Partial<CausticsSettings>) => void;
   setPalette: (p: Palette) => void;
+  setCustomPaletteSlot: (slot: CustomPaletteSlotId) => void;
+  updateCustomPalette: (slot: CustomPaletteSlotId, updates: Partial<CustomPaletteState>) => void;
   setBackground: (b: Background) => void;
   setCameraProgram: (updater: (c: CameraProgram) => CameraProgram) => void;
   requestRenderStill: () => void;
@@ -67,6 +87,49 @@ const resolutionPresets: Record<Resolution, IntegratorSpec> = {
   high: { dt: 0.007, steps: 3200, discard_initial: 360 },
   ultra: { dt: 0.0055, steps: 4200, discard_initial: 420 },
 };
+
+const CUSTOM_PALETTE_STORAGE_KEY = "phase-space.custom-palettes";
+
+function slotToPaletteSpec(slotId: CustomPaletteSlotId, bank: CustomPaletteBank): PaletteSpec {
+  const slot = bank[slotId];
+  return {
+    stops: [
+      { t: 0, color: slot.low },
+      { t: 0.5, color: slot.mid },
+      { t: 1, color: slot.high },
+    ],
+  };
+}
+
+function specToCustomState(spec: PaletteSpec, prev?: CustomPaletteState): CustomPaletteState {
+  const sorted = [...spec.stops].sort((a, b) => a.t - b.t);
+  const first = sorted[0]?.color ?? prev?.low ?? "#ff0000";
+  const last = sorted[sorted.length - 1]?.color ?? prev?.high ?? "#ffffff";
+  const mid = sorted[Math.floor(sorted.length / 2)]?.color ?? prev?.mid ?? first;
+  return {
+    low: first,
+    mid,
+    high: last,
+    triPrimary: prev?.triPrimary ?? false,
+    gamma: prev?.gamma ?? 1,
+  };
+}
+
+function loadStoredPaletteBank(): CustomPaletteBank {
+  if (typeof window === "undefined") return defaultCustomPaletteBank;
+  try {
+    const stored = window.localStorage.getItem(CUSTOM_PALETTE_STORAGE_KEY);
+    if (!stored) return defaultCustomPaletteBank;
+    const parsed = JSON.parse(stored) as CustomPaletteBank;
+    return {
+      ...defaultCustomPaletteBank,
+      ...parsed,
+    };
+  } catch (err) {
+    console.warn("Failed to parse stored palettes", err);
+    return defaultCustomPaletteBank;
+  }
+}
 
 function applyResolution(sceneJson: string, resolution: Resolution): string {
   try {
@@ -101,7 +164,10 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     projectionAxis: "auto",
     colorMode: "global",
   });
-  const [palette, setPaletteState] = useState<Palette>("system");
+  const [palette, setPaletteState] = useState<Palette>("prism");
+  const [paletteSpec, setPaletteSpecState] = useState<PaletteSpec | undefined>(undefined);
+  const [customPalettes, setCustomPalettes] = useState<CustomPaletteBank>(defaultCustomPaletteBank);
+  const [customPaletteSlot, setCustomPaletteSlotState] = useState<CustomPaletteSlotId>("custom-1");
   const [background, setBackgroundState] = useState<Background>("light");
   const [sceneJson, setSceneJson] = useState("{}");
   const [sceneSpec, setSceneSpec] = useState<SceneSpec | null>(null);
@@ -122,6 +188,27 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    setCustomPalettes(loadStoredPaletteBank());
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(CUSTOM_PALETTE_STORAGE_KEY, JSON.stringify(customPalettes));
+  }, [customPalettes]);
+
+  const customPaletteBankRef = useRef(customPalettes);
+  const customPaletteSlotRef = useRef(customPaletteSlot);
+
+  useEffect(() => {
+    customPaletteBankRef.current = customPalettes;
+  }, [customPalettes]);
+
+  useEffect(() => {
+    customPaletteSlotRef.current = customPaletteSlot;
+  }, [customPaletteSlot]);
+
+  useEffect(() => {
     if (!engineError) return;
     setError(engineError);
   }, [engineError]);
@@ -135,7 +222,25 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
         const tunedScene = applyResolution(baseScene, res);
         const { trajectories: traj, scene } = api.integrateScene(tunedScene);
         const normalizedView = normalizeViewSpec(scene.view);
-        const normalizedScene = { ...scene, view: normalizedView } as SceneSpec;
+        const slot = customPaletteSlotRef.current;
+        const bank = customPaletteBankRef.current;
+        const effectivePaletteSpec =
+          normalizedView.palette === "custom"
+            ? normalizedView.palette_spec ?? slotToPaletteSpec(slot, bank)
+            : normalizedView.palette_spec;
+        const normalizedScene = {
+          ...scene,
+          view: { ...normalizedView, palette_spec: effectivePaletteSpec },
+        } as SceneSpec;
+        setPaletteState(normalizedView.palette ?? "prism");
+        setPaletteSpecState(effectivePaletteSpec);
+        setBackgroundState(normalizedView.background ?? "dark");
+        if (normalizedView.palette === "custom" && normalizedView.palette_spec) {
+          setCustomPalettes((prev) => ({
+            ...prev,
+            [slot]: specToCustomState(normalizedView.palette_spec as PaletteSpec, prev[slot]),
+          }));
+        }
         setSceneJson(JSON.stringify({ ...normalizedScene }, null, 2));
         setSceneSpec(normalizedScene);
         setRenderStyleState(normalizedView.render_style ?? "photon-weave");
@@ -215,6 +320,51 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     [setSceneJson]
   );
 
+  const applyPaletteToScene = useCallback(
+    (nextPalette: Palette, specOverride?: PaletteSpec) => {
+      const slot = customPaletteSlotRef.current;
+      const bank = customPaletteBankRef.current;
+      const effectiveSpec =
+        nextPalette === "custom" ? specOverride ?? slotToPaletteSpec(slot, bank) : undefined;
+      setPaletteState(nextPalette);
+      setPaletteSpecState(effectiveSpec);
+      setSceneSpec((prev) => {
+        if (!prev) return prev;
+        const updatedView = normalizeViewSpec(prev.view);
+        const nextScene = {
+          ...prev,
+          view: { ...updatedView, palette: nextPalette, palette_spec: effectiveSpec },
+        } as SceneSpec;
+        setSceneJson(JSON.stringify(nextScene, null, 2));
+        return nextScene;
+      });
+    },
+    [setSceneJson]
+  );
+
+  const setCustomPaletteSlot = useCallback(
+    (slot: CustomPaletteSlotId) => {
+      setCustomPaletteSlotState(slot);
+      if (palette === "custom") {
+        applyPaletteToScene("custom");
+      }
+    },
+    [applyPaletteToScene, palette]
+  );
+
+  const updateCustomPalette = useCallback(
+    (slot: CustomPaletteSlotId, updates: Partial<CustomPaletteState>) => {
+      setCustomPalettes((prev) => {
+        const next = { ...prev, [slot]: { ...prev[slot], ...updates } };
+        if (palette === "custom" && slot === customPaletteSlotRef.current) {
+          applyPaletteToScene("custom", slotToPaletteSpec(slot, next));
+        }
+        return next;
+      });
+    },
+    [applyPaletteToScene, palette]
+  );
+
   const setPhotonWeaveSettings = useCallback((updates: Partial<PhotonWeaveSettings>) => {
     setPhotonWeaveSettingsState((prev) => ({ ...prev, ...updates }));
   }, []);
@@ -243,6 +393,9 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     photonWeaveSettings,
     causticsSettings,
     palette,
+    paletteSpec,
+    customPaletteSlot,
+    customPalettes,
     background,
     sceneJson,
     sceneSpec,
@@ -258,7 +411,9 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     setRenderStyle,
     setPhotonWeaveSettings,
     setCausticsSettings,
-    setPalette: setPaletteState,
+    setPalette: applyPaletteToScene,
+    setCustomPaletteSlot,
+    updateCustomPalette,
     setBackground: setBackgroundState,
     setCameraProgram,
     requestRenderStill,
@@ -278,6 +433,9 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     photonWeaveSettings,
     causticsSettings,
     palette,
+    paletteSpec,
+    customPaletteSlot,
+    customPalettes,
     background,
     sceneJson,
     sceneSpec,
@@ -288,6 +446,9 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     setRenderStyle,
     setPhotonWeaveSettings,
     setCausticsSettings,
+    applyPaletteToScene,
+    setCustomPaletteSlot,
+    updateCustomPalette,
     requestRenderStill,
     setRenderStillHandler,
     refreshScene,

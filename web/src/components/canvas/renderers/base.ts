@@ -3,15 +3,19 @@ import type {
   CausticsSettings,
   LineThickness,
   Palette,
+  PaletteSpec,
   PhotonWeaveSettings,
   RenderStyle,
 } from "../../../types";
+import type { PaletteDef } from "../../../palettes";
 import type { RenderQuality } from "../../../visual/renderQuality";
 import type { PerspectiveCamera, Scene, WebGLRenderer } from "three";
 
 export interface TrajectoryData {
   trajectories: number[][][];
   palette: Palette;
+  paletteSpec?: PaletteSpec;
+  paletteDef: PaletteDef;
   lineThickness: LineThickness;
   background: Background;
   paletteShift?: number;

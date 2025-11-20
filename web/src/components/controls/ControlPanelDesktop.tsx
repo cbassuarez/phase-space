@@ -2,23 +2,17 @@ import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { useViewerState } from "../../state/viewerState";
-import type { Palette, SystemId } from "../../types";
+import type { SystemId } from "../../types";
 import ResolutionSlider from "./ResolutionSlider";
 import ToggleSwitch from "./ToggleSwitch";
 import ModulationSection from "./ModulationSection";
+import PaletteControls from "./PaletteControls";
 
 const systemLabels: { id: SystemId; label: string }[] = [
   { id: "lorenz", label: "Lorenz" },
   { id: "rossler", label: "Rössler" },
   { id: "aizawa", label: "Aizawa" },
   { id: "thomas", label: "Thomas" },
-];
-
-const paletteOptions: { id: Palette; label: string; swatch: string }[] = [
-  { id: "system", label: "System default", swatch: "bg-gradient-to-r from-[#4f6fff] via-[#ff7a73] to-[#ffd66b]" },
-  { id: "plasma", label: "Plasma", swatch: "bg-gradient-to-r from-pink-500 via-purple-500 to-yellow-300" },
-  { id: "viridis", label: "Viridis", swatch: "bg-gradient-to-r from-[#440154] via-[#21908C] to-[#fde725]" },
-  { id: "rainbow", label: "Rainbow", swatch: "bg-gradient-to-r from-[#ff7a73] via-[#4f6fff] to-[#7cffc4]" },
 ];
 
 const cameraModes = [
@@ -77,7 +71,6 @@ function ControlPanelDesktop() {
     setPhotonWeaveSettings,
     causticsSettings,
     setCausticsSettings,
-    palette,
     background,
     setSystem,
     setResolution,
@@ -86,7 +79,6 @@ function ControlPanelDesktop() {
     toggleShowFullTrajectory,
     setLineThickness,
     setRenderStyle,
-    setPalette,
     setBackground,
     cameraProgram,
     setCameraProgram,
@@ -494,27 +486,7 @@ function ControlPanelDesktop() {
       <ModulationSection />
 
       <section className="mt-2 flex flex-col gap-3">
-        <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">COLOR</div>
-        <div className="space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] px-3 py-2">
-          <p className="text-[11px] uppercase tracking-[0.12em] text-[color:var(--ps-text-muted)]">Palette</p>
-          {paletteOptions.map((opt) => (
-            <label key={opt.id} className="flex items-center justify-between py-1 text-xs text-[color:var(--ps-text-soft)]">
-              <span>{opt.label}</span>
-              <span className="inline-flex items-center gap-2">
-                <span className={clsx("h-2 w-8 rounded-full", opt.swatch)} />
-                <input
-                  type="radio"
-                  name="palette"
-                  value={opt.id}
-                  checked={palette === opt.id}
-                  onChange={() => setPalette(opt.id)}
-                  className="h-3 w-3 accent-[color:var(--ps-accent)]"
-                />
-              </span>
-            </label>
-          ))}
-        </div>
-
+        <PaletteControls />
         <div className="space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] px-3 py-2">
           <p className="text-[11px] uppercase tracking-[0.12em] text-[color:var(--ps-text-muted)]">Background</p>
           {[
