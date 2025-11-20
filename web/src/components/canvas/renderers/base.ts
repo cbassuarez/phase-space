@@ -1,4 +1,12 @@
-import type { Background, LineThickness, Palette, RenderStyle } from "../../../types";
+import type {
+  Background,
+  CausticsSettings,
+  LineThickness,
+  Palette,
+  PhotonWeaveSettings,
+  RenderStyle,
+} from "../../../types";
+import type { RenderQuality } from "../../../visual/renderQuality";
 import type { PerspectiveCamera, Scene, WebGLRenderer } from "three";
 
 export interface TrajectoryData {
@@ -7,11 +15,13 @@ export interface TrajectoryData {
   lineThickness: LineThickness;
   background: Background;
   paletteShift?: number;
-  neonEmissive?: number | null;
+  emissiveBoost?: number | null;
   ribbonWidth?: number | null;
   cloudDensity?: number | null;
-  crtScanDepth?: number | null;
   backgroundBrightness?: number;
+  photonWeave?: PhotonWeaveSettings;
+  caustics?: CausticsSettings;
+  quality?: RenderQuality;
 }
 
 export interface RenderContext {

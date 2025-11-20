@@ -79,14 +79,14 @@ const targetOptions: TargetOption[] = [
     depthFromRange: (target) => clamp01(target.range[1]),
   },
   {
-    value: "render.neon.emissiveIntensity",
-    label: "Neon brightness",
+    value: "render.photonWeave.brightness",
+    label: "Photon brightness",
     group: "Rendering",
     curve: "exp",
     makeTarget: (depth) => {
       const min = Math.max(0.2, 0.8 - depth * 0.5);
       const max = Math.min(3.5, 1.2 + depth * 1.8);
-      return { path: "render.neon.emissiveIntensity", range: [min, max], curve: "exp", lag: 0.5 };
+      return { path: "render.photonWeave.brightness", range: [min, max], curve: "exp", lag: 0.5 };
     },
     depthFromRange: (target) => clamp01((target.range[1] - target.range[0] - 0.4) / 2.4),
   },
@@ -111,15 +111,15 @@ const targetOptions: TargetOption[] = [
     depthFromRange: (target) => clamp01((target.range[1] - 0.7) / 0.3),
   },
   {
-    value: "render.crt.scanlineDepth",
-    label: "CRT scan depth",
+    value: "render.caustics.intensity",
+    label: "Caustic intensity",
     group: "Rendering",
     makeTarget: (depth) => ({
-      path: "render.crt.scanlineDepth",
-      range: [0.2, Math.min(1, 0.6 + depth * 0.4)],
+      path: "render.caustics.intensity",
+      range: [0.2, Math.min(2.2, 0.8 + depth * 1.4)],
       curve: "linear",
     }),
-    depthFromRange: (target) => clamp01((target.range[1] - 0.6) / 0.4),
+    depthFromRange: (target) => clamp01((target.range[1] - 0.8) / 1.4),
   },
   {
     value: "audio.voice_0.pitch",
@@ -180,7 +180,7 @@ const sourceOptions = [
 
 const groupedTargets = [
   { label: "Camera", values: ["view.camera.r", "view.camera.theta", "view.camera.phi"] },
-  { label: "Rendering", values: ["render.neon.emissiveIntensity", "render.ribbon.width", "render.cloud.density", "render.crt.scanlineDepth"] },
+  { label: "Rendering", values: ["render.photonWeave.brightness", "render.ribbon.width", "render.cloud.density", "render.caustics.intensity"] },
   { label: "Color", values: ["view.palette_shift", "view.background_brightness"] },
   { label: "Sound output", values: ["audio.voice_0.pitch", "audio.voice_0.pan", "audio.voice_0.brightness", "audio.master.gain"] },
 ];

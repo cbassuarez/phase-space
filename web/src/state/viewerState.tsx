@@ -6,14 +6,16 @@ import type {
   Background,
   IntegratorSpec,
   Palette,
+  PhotonWeaveSettings,
   Resolution,
   SceneSpec,
   SystemId,
   Trajectories,
   LineThickness,
   RenderStyle,
+  CausticsSettings,
 } from "../types";
-import { normalizeViewSpec } from "../types";
+import { mapLegacyRenderStyle, normalizeViewSpec } from "../types";
 
 interface TrajectoryMeta {
   count: number;
@@ -31,6 +33,8 @@ interface ViewerContextValue {
   showFullTrajectory: boolean;
   lineThickness: LineThickness;
   renderStyle: RenderStyle;
+  photonWeaveSettings: PhotonWeaveSettings;
+  causticsSettings: CausticsSettings;
   palette: Palette;
   background: Background;
   sceneJson: string;
@@ -45,6 +49,8 @@ interface ViewerContextValue {
   toggleShowFullTrajectory: () => void;
   setLineThickness: (t: LineThickness) => void;
   setRenderStyle: (s: RenderStyle) => void;
+  setPhotonWeaveSettings: (updates: Partial<PhotonWeaveSettings>) => void;
+  setCausticsSettings: (updates: Partial<CausticsSettings>) => void;
   setPalette: (p: Palette) => void;
   setBackground: (b: Background) => void;
   setCameraProgram: (updater: (c: CameraProgram) => CameraProgram) => void;
@@ -81,7 +87,20 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const [animateHeadTail, setAnimateHeadTail] = useState(true);
   const [showFullTrajectory, setShowFullTrajectory] = useState(true);
   const [lineThickness, setLineThickness] = useState<LineThickness>("default");
-  const [renderStyle, setRenderStyleState] = useState<RenderStyle>("neon-filaments");
+  const [renderStyle, setRenderStyleState] = useState<RenderStyle>("photon-weave");
+  const [photonWeaveSettings, setPhotonWeaveSettingsState] =
+    useState<PhotonWeaveSettings>({
+      brightness: 1,
+      trailLength: 1.1,
+      filamentDensity: "medium",
+      shimmer: true,
+    });
+  const [causticsSettings, setCausticsSettingsState] = useState<CausticsSettings>({
+    blurRadius: 0.35,
+    intensity: 1.1,
+    projectionAxis: "auto",
+    colorMode: "global",
+  });
   const [palette, setPaletteState] = useState<Palette>("system");
   const [background, setBackgroundState] = useState<Background>("light");
   const [sceneJson, setSceneJson] = useState("{}");
@@ -119,7 +138,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
         const normalizedScene = { ...scene, view: normalizedView } as SceneSpec;
         setSceneJson(JSON.stringify({ ...normalizedScene }, null, 2));
         setSceneSpec(normalizedScene);
-        setRenderStyleState(normalizedView.render_style ?? "neon-filaments");
+        setRenderStyleState(normalizedView.render_style ?? "photon-weave");
         const fallbackCamera =
           (scene.camera as CameraProgram | undefined) ??
           (getDefaultSceneSpec(nextSystem).camera as CameraProgram | undefined) ??
@@ -185,13 +204,24 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
       setSceneSpec((prev) => {
         if (!prev) return prev;
         const updatedView = normalizeViewSpec(prev.view);
-        const nextScene = { ...prev, view: { ...updatedView, render_style: style } } as SceneSpec;
+        const nextScene = {
+          ...prev,
+          view: { ...updatedView, render_style: mapLegacyRenderStyle(style) },
+        } as SceneSpec;
         setSceneJson(JSON.stringify(nextScene, null, 2));
         return nextScene;
       });
     },
     [setSceneJson]
   );
+
+  const setPhotonWeaveSettings = useCallback((updates: Partial<PhotonWeaveSettings>) => {
+    setPhotonWeaveSettingsState((prev) => ({ ...prev, ...updates }));
+  }, []);
+
+  const setCausticsSettings = useCallback((updates: Partial<CausticsSettings>) => {
+    setCausticsSettingsState((prev) => ({ ...prev, ...updates }));
+  }, []);
 
   const requestRenderStill = useCallback(() => {
     if (renderStillHandler) {
@@ -210,6 +240,8 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     showFullTrajectory,
     lineThickness,
     renderStyle,
+    photonWeaveSettings,
+    causticsSettings,
     palette,
     background,
     sceneJson,
@@ -224,6 +256,8 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     toggleShowFullTrajectory: () => setShowFullTrajectory((v) => !v),
     setLineThickness,
     setRenderStyle,
+    setPhotonWeaveSettings,
+    setCausticsSettings,
     setPalette: setPaletteState,
     setBackground: setBackgroundState,
     setCameraProgram,
@@ -241,6 +275,8 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     showFullTrajectory,
     lineThickness,
     renderStyle,
+    photonWeaveSettings,
+    causticsSettings,
     palette,
     background,
     sceneJson,
@@ -250,6 +286,8 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     trajectoryMeta,
     setCameraProgram,
     setRenderStyle,
+    setPhotonWeaveSettings,
+    setCausticsSettings,
     requestRenderStill,
     setRenderStillHandler,
     refreshScene,
