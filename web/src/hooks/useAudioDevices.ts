@@ -10,7 +10,10 @@ export interface AudioDevice {
 }
 
 export type ChannelMode =
-  | "stereo-1-2"
+  | {
+      type: "stereo";
+      channels: [number, number];
+    }
   | {
       type: "mono";
       channel: number;
@@ -19,6 +22,7 @@ export type ChannelMode =
 const INPUT_KEY = "phaseSpace.audio.inputDeviceId";
 const OUTPUT_KEY = "phaseSpace.audio.outputDeviceId";
 const CHANNEL_MODE_KEY = "phaseSpace.audio.channelMode";
+const DEFAULT_CHANNEL_MODE: ChannelMode = { type: "stereo", channels: [1, 2] };
 
 export interface AudioDevicesState {
   inputs: AudioDevice[];
@@ -47,22 +51,29 @@ export interface UseAudioDevicesResult extends AudioDevicesState {
 }
 
 function parseStoredChannelMode(raw: string | null): ChannelMode {
-  if (!raw) return "stereo-1-2";
+  if (!raw) return DEFAULT_CHANNEL_MODE;
   try {
     const parsed = JSON.parse(raw);
-    if (parsed === "stereo-1-2") return "stereo-1-2";
-    if (
-      parsed &&
-      typeof parsed === "object" &&
-      parsed.type === "mono" &&
-      typeof parsed.channel === "number"
-    ) {
-      return { type: "mono", channel: parsed.channel };
+    if (parsed === "stereo-1-2") return DEFAULT_CHANNEL_MODE; // legacy string
+    if (parsed && typeof parsed === "object") {
+      if (parsed.type === "mono" && typeof parsed.channel === "number") {
+        return { type: "mono", channel: parsed.channel };
+      }
+      if (
+        parsed.type === "stereo" &&
+        Array.isArray(parsed.channels) &&
+        parsed.channels.length === 2
+      ) {
+        const [l, r] = parsed.channels;
+        if (typeof l === "number" && typeof r === "number") {
+          return { type: "stereo", channels: [l, r] };
+        }
+      }
     }
   } catch (err) {
     console.warn("Failed to parse stored channel mode", err);
   }
-  return "stereo-1-2";
+  return DEFAULT_CHANNEL_MODE;
 }
 
 export function useAudioDevices(): UseAudioDevicesResult {

@@ -37,6 +37,7 @@ interface ModulationContextValue {
   toggleMic: () => Promise<void>;
   micLevel: number;
   channelCount: number;
+  outputChannelCount: number;
   channelMode: ChannelMode;
   setChannelMode: (mode: ChannelMode) => void;
 }
@@ -129,6 +130,7 @@ export function ModulationProvider({ children }: { children: React.ReactNode }) 
   const [micEnabled, setMicEnabled] = useState(false);
   const [micLevel, setMicLevel] = useState(0);
   const [channelCount, setChannelCount] = useState(2);
+  const [outputChannelCount, setOutputChannelCount] = useState(2);
   const audioIO = useMemo(() => new AudioIO(), []);
   const synth = useMemo(() => new InternalSynth(audioIO.getContext() ?? undefined), [audioIO]);
   const [monitorDestination, setMonitorDestination] = useState<MediaStreamAudioDestinationNode | null>(null);
@@ -172,6 +174,9 @@ export function ModulationProvider({ children }: { children: React.ReactNode }) 
     const destination = ctx.createMediaStreamDestination();
     synth.connectMonitorDestination(destination);
     setMonitorDestination(destination);
+    const dest = synth.getContext().destination;
+    const reportedCount = dest.maxChannelCount || dest.channelCount || dest.numberOfOutputs || 2;
+    setOutputChannelCount(Math.max(1, Math.min(8, reportedCount)));
   }, [synth]);
 
   useEffect(() => {
@@ -281,6 +286,7 @@ export function ModulationProvider({ children }: { children: React.ReactNode }) 
     toggleMic,
     micLevel,
     channelCount,
+    outputChannelCount,
     channelMode,
     setChannelMode,
   };
