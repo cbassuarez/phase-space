@@ -5,6 +5,7 @@ import { Section } from "../components/Section";
 import { getSystem, SystemId } from "../data/systems";
 import { presets } from "../data/presets";
 import { PresetCard } from "../components/PresetCard";
+import { getSystemHeroImage } from "../assets/systemHeroImages";
 
 export const SystemDetailPage: React.FC = () => {
   const params = useParams<{ systemId: string }>();
@@ -28,9 +29,21 @@ export const SystemDetailPage: React.FC = () => {
   }
 
   const systemPresets = presets.filter((p) => p.system === system.id);
+  const heroUrl = getSystemHeroImage(system.id);
 
   return (
     <div className="space-y-10">
+      {heroUrl && (
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-900">
+          <img
+            src={heroUrl}
+            alt={`${system.name} attractor visualization`}
+            className="h-56 w-full object-cover md:h-72"
+            loading="lazy"
+          />
+        </div>
+      )}
+
       <PageHeader
         eyebrow="System"
         title={system.name}
@@ -41,21 +54,6 @@ export const SystemDetailPage: React.FC = () => {
           use it as a starting point for your own explorations.
         </p>
       </PageHeader>
-
-      {system.heroImage && (
-        <Section title="Figure">
-          <figure className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-900">
-            <img
-              src={system.heroImage}
-              alt={system.name}
-              className="h-full w-full object-cover"
-            />
-            <figcaption className="border-t border-slate-800 bg-slate-950/40 px-4 py-2 text-[10px] font-mono uppercase tracking-[0.18em] text-slate-200">
-              Fig. 01 — {system.name} — default scene.
-            </figcaption>
-          </figure>
-        </Section>
-      )}
 
       <Section
         title="Presets for this system"
