@@ -310,6 +310,7 @@ export class CausticsRenderer implements RendererStrategy {
       },
       vertexShader: `
         varying vec2 vUv;
+        uniform float uPointSize;
         void main() {
           vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
           vec4 clipPosition = projectionMatrix * mvPosition;
