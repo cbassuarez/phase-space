@@ -1,3 +1,4 @@
+# NOTE (Codex): npm ci runs only in web/ during the build job (no root usage).
 name: Deploy web to GitHub Pages
 
 on:
@@ -20,6 +21,7 @@ jobs:
     defaults:
       run:
         working-directory: web
+        shell: bash
 
     steps:
       - name: Checkout
