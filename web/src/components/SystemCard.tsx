@@ -1,20 +1,24 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import type { SystemMeta } from "../data/systems";
+import { getSystemHeroImage } from "../assets/systemHeroImages";
 
 type SystemCardProps = {
   system: SystemMeta;
 };
 
 export const SystemCard: React.FC<SystemCardProps> = ({ system }) => {
+  const heroUrl = getSystemHeroImage(system.id);
+
   return (
     <article className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      {system.heroImage && (
+      {heroUrl && (
         <div className="aspect-[4/3] w-full overflow-hidden bg-slate-900">
           <img
-            src={system.heroImage}
-            alt={system.name}
+            src={heroUrl}
+            alt={`${system.name} attractor visualization`}
             className="h-full w-full object-cover"
+            loading="lazy"
           />
         </div>
       )}

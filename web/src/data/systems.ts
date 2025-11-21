@@ -7,7 +7,6 @@ export type SystemMeta = {
   tagline: string;
   descriptionShort: string;
   tags: string[];
-  heroImage?: string;
   parameterSummary: { name: string; range: string; effect: string }[];
   recommendedCameraModes: { id: string; label: string; description: string }[];
 };
@@ -21,7 +20,6 @@ export const systems: SystemMeta[] = [
     descriptionShort:
       "A two-lobed chaotic system whose trajectories swirl between 'wings' in phase space.",
     tags: ["chaotic", "two-lobed", "butterfly"],
-    heroImage: "/docs/media/lorenz-hero.png",
     parameterSummary: [
       {
         name: "σ (sigma)",
@@ -65,7 +63,6 @@ export const systems: SystemMeta[] = [
     descriptionShort:
       "Trajectories wind around a core and peel off into a warped, spiraling surface.",
     tags: ["spiral", "sheet", "loop"],
-    heroImage: "/docs/media/rossler-hero.png",
     parameterSummary: [
       {
         name: "a",
@@ -104,7 +101,6 @@ export const systems: SystemMeta[] = [
     descriptionShort:
       "Trajectories weave into a dense, flower-like volume with twisting filaments.",
     tags: ["knot", "volumetric", "flower"],
-    heroImage: "/docs/media/aizawa-hero.png",
     parameterSummary: [
       { name: "a", range: "≈ 0.95", effect: "Helps shape the core of the attractor." },
       { name: "b", range: "≈ 0.7", effect: "Influences how trajectories wrap around the center." },
@@ -140,7 +136,6 @@ export const systems: SystemMeta[] = [
     descriptionShort:
       "Trajectories trace out loop-like shapes that feel like soft, drifting rings.",
     tags: ["torus-like", "cyclic", "ghost"],
-    heroImage: "/docs/media/thomas-hero.png",
     parameterSummary: [
       {
         name: "b",
