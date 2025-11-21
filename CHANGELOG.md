@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/cbassuarez/phase-space/compare/v1.0.1...v1.0.2) (2025-11-21)
+
+
+### Bug Fixes
+
+* versioning ([65991bc](https://github.com/cbassuarez/phase-space/commit/65991bcc80df7973946dbd17734d1624fc1fbe0f))
+
 ## [1.0.1](https://github.com/cbassuarez/phase-space/compare/v1.0.0...v1.0.1) (2025-11-21)
 
 
