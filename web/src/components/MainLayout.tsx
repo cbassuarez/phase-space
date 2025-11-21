@@ -49,6 +49,7 @@ function MainLayout() {
 
     if (!renderStyle || renderStyle === "photon-weave") {
       setRenderStyle(DEFAULT_RENDER_MODE);
+      return;
     }
 
     hasAlignedRenderStyle.current = true;
