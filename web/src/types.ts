@@ -13,7 +13,8 @@ export type RenderStyle =
   | "ribbon"
   | "cells";
 
-export const DEFAULT_RENDER_STYLE: RenderStyle = "volumetric-cloud";
+export const DEFAULT_RENDER_MODE: RenderStyle = "volumetric-cloud";
+export const DEFAULT_RENDER_STYLE: RenderStyle = DEFAULT_RENDER_MODE;
 export const DEFAULT_CAMERA_MODE: CameraProgram["mode"] = "orbit";
 export const DEFAULT_PALETTE: Palette = "prism";
 
