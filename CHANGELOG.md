@@ -1,3 +1,10 @@
+## [1.0.5](https://github.com/cbassuarez/phase-space/compare/v1.0.4...v1.0.5) (2025-11-21)
+
+
+### Bug Fixes
+
+* github link in header ([f7dca10](https://github.com/cbassuarez/phase-space/commit/f7dca10fc4d1dd4d48fd4e7214fd655ed70d2639))
+
 ## [1.0.4](https://github.com/cbassuarez/phase-space/compare/v1.0.3...v1.0.4) (2025-11-21)
 
 
