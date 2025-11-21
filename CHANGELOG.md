@@ -1,3 +1,10 @@
+## [1.0.6](https://github.com/cbassuarez/phase-space/compare/v1.0.5...v1.0.6) (2025-11-21)
+
+
+### Bug Fixes
+
+* attractor renders on systems page ([f97da03](https://github.com/cbassuarez/phase-space/commit/f97da0306471ed42ff8253beb31e612b609315e0))
+
 ## [1.0.5](https://github.com/cbassuarez/phase-space/compare/v1.0.4...v1.0.5) (2025-11-21)
 
 
