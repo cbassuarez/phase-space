@@ -56,7 +56,7 @@ function migrateViewerPrefs(persisted: unknown): ViewerPrefs {
   const shouldNormalizeRenderStyle =
     next.renderStyle == null ||
     !VALID_RENDER_STYLES.includes(next.renderStyle) ||
-    (prevVersion < VIEWER_PREFS_VERSION && next.renderStyle === "photon-weave");
+    next.renderStyle === "photon-weave";
 
   if (shouldNormalizeRenderStyle) {
     next = { ...next, renderStyle: DEFAULT_RENDER_MODE };
