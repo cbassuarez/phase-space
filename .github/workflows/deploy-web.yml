@@ -48,7 +48,7 @@ jobs:
 
       - name: SPA fallback for GitHub Pages
         run: |
-          cd web/dist
+          cd dist
           cp index.html 404.html
 
       - name: Upload artifact
