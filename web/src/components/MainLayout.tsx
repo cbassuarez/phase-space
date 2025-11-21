@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import CanvasPanel from "./canvas/CanvasPanel";
 import ControlPanelDesktop from "./controls/ControlPanelDesktop";
 import ControlPanelBottomSheet from "./controls/ControlPanelBottomSheet";
@@ -42,17 +42,12 @@ function MainLayout() {
     error,
   } = useViewerState();
 
-  const hasAlignedRenderStyle = useRef(false);
-
   useEffect(() => {
-    if (hasAlignedRenderStyle.current) return;
-
+    // Hard guarantee: ensure the viewer always starts in Cloud mode on mount
+    // and whenever a legacy/stale Photon Weave value sneaks in.
     if (!renderStyle || renderStyle === "photon-weave") {
       setRenderStyle(DEFAULT_RENDER_MODE);
-      return;
     }
-
-    hasAlignedRenderStyle.current = true;
   }, [renderStyle, setRenderStyle]);
 
   const viewCamera = sceneSpec?.view?.camera;
