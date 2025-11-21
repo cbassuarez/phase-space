@@ -1,36 +1,31 @@
 // scripts/apply-version.js
-//
-// Usage (semantic-release):
-//   node scripts/apply-version.js 1.2.3
-//
-// Writes the given version into:
-//   - package.json
-//   - web/package.json
+const fs = require("fs");
+const path = require("path");
 
-const fs = require('fs');
-const path = require('path');
+function updatePackageJson(pkgPath, version) {
+    const fullPath = path.resolve(pkgPath);
+    const raw = fs.readFileSync(fullPath, "utf8");
+    const pkg = JSON.parse(raw);
 
-const newVersion = process.argv[2];
+    pkg.version = version;
 
-if (!newVersion) {
-  console.error('Usage: node scripts/apply-version.js <version>');
-  process.exit(1);
+    fs.writeFileSync(fullPath, JSON.stringify(pkg, null, 2) + "\n", "utf8");
+    console.log(`Updated ${pkgPath} to version ${version}`);
 }
 
-function updatePackageJson(relativePath) {
-  const filePath = path.join(__dirname, '..', relativePath);
-  const raw = fs.readFileSync(filePath, 'utf8');
-  const pkg = JSON.parse(raw);
+function main() {
+    const version = process.argv[2];
 
-  pkg.version = newVersion;
+    if (!version) {
+        console.error("Usage: node scripts/apply-version.js <version>");
+        process.exit(1);
+    }
 
-  fs.writeFileSync(filePath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
-  console.log(`Updated ${relativePath} to version ${newVersion}`);
+    // Root package.json
+    updatePackageJson("package.json", version);
+
+    // Web app package.json (used by version.ts / header badge)
+    updatePackageJson("web/package.json", version);
 }
 
-// Root package.json
-updatePackageJson('package.json');
-
-// Web app package.json
-updatePackageJson('web/package.json');
-
+main();
