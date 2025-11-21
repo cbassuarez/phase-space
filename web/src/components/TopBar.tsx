@@ -4,7 +4,7 @@ import VersionBadge from "./VersionBadge";
 import { PHASE_SPACE_VERSION } from "../version";
 import { useAudioDevicesContext } from "../state/audioDevicesState";
 
-const githubUrl = "https://github.com/phase-space/phase-space";
+const githubUrl = "https://github.com/cbassuarez/phase-space";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `relative text-xs font-medium transition-colors hover:text-[color:var(--ps-text)] md:text-sm ${
