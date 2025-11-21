@@ -1,6 +1,7 @@
 export class InternalSynth {
   private context: AudioContext;
   private master: GainNode;
+  private monitorConnected = false;
   private voices: {
     osc: OscillatorNode;
     gain: GainNode;
@@ -68,6 +69,12 @@ export class InternalSynth {
     if (!voice) return;
     const gain = Math.max(0, Math.min(1, v));
     voice.gain.gain.linearRampToValueAtTime(gain, this.context.currentTime + 0.05);
+  }
+
+  connectMonitorDestination(node: AudioNode) {
+    if (this.monitorConnected) return;
+    this.master.connect(node);
+    this.monitorConnected = true;
   }
 
   getContext(): AudioContext {

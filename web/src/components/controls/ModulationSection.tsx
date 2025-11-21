@@ -1,9 +1,10 @@
 import clsx from "clsx";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Curve } from "../../modulation/types";
 import type { ModBus, ModBusRuntimeState, ModTarget } from "../../modulation/types";
 import type { TargetPath } from "../../modulation/modEngine";
 import { useModulation } from "../../state/modulationState";
+import { useAudioDevicesContext } from "../../state/audioDevicesState";
 
 interface TargetOption {
   value: TargetPath;
@@ -321,27 +322,136 @@ function ModulationRow({ bus }: { bus: ModBusRuntimeState }) {
 }
 
 function ModulationSection({ compact = false }: { compact?: boolean }) {
-  const { buses, modEngine, micEnabled, toggleMic } = useModulation();
+  const { buses, modEngine, micEnabled, toggleMic, micLevel, channelCount, channelMode, setChannelMode } =
+    useModulation();
+  const audioDevices = useAudioDevicesContext();
+  const [notice, setNotice] = useState<string | null>(null);
 
   const sortedBuses = useMemo(() => buses.slice().sort((a, b) => a.bus.id.localeCompare(b.bus.id)), [buses]);
+
+  const channelOptions = useMemo(() => {
+    const opts = [{ label: "Stereo (1–2)", value: "stereo-1-2" }];
+    const max = Math.max(1, channelCount);
+    for (let i = 1; i <= max; i++) {
+      opts.push({ label: `Mono ${i}`, value: `mono-${i}` });
+    }
+    return opts;
+  }, [channelCount]);
+
+  useEffect(() => {
+    const next = audioDevices.inputFallbackMessage || audioDevices.outputFallbackMessage || audioDevices.errorMessage;
+    if (!next) return;
+    setNotice(next);
+    const timer = window.setTimeout(() => {
+      setNotice(null);
+      audioDevices.clearInputFallbackMessage();
+      audioDevices.clearOutputFallbackMessage();
+      audioDevices.clearErrorMessage();
+    }, 5000);
+    return () => window.clearTimeout(timer);
+  }, [
+    audioDevices.clearErrorMessage,
+    audioDevices.clearInputFallbackMessage,
+    audioDevices.clearOutputFallbackMessage,
+    audioDevices.errorMessage,
+    audioDevices.inputFallbackMessage,
+    audioDevices.outputFallbackMessage,
+  ]);
+
+  const handleChannelChange = (value: string) => {
+    if (value === "stereo-1-2") {
+      setChannelMode("stereo-1-2");
+      return;
+    }
+    const channel = parseInt(value.replace("mono-", ""), 10);
+    if (!Number.isNaN(channel)) {
+      setChannelMode({ type: "mono", channel });
+    }
+  };
+
+  const currentChannelValue = channelMode === "stereo-1-2" ? "stereo-1-2" : `mono-${channelMode.channel}`;
+  const levelHeight = Math.round(Math.min(1, Math.max(0, micLevel)) * 100);
 
   return (
     <section className="mt-2 flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">MODULATION</div>
-        <button
-          type="button"
-          onClick={toggleMic}
-          className={clsx(
-            "rounded-full px-3 py-1 text-[11px] transition",
-            micEnabled
-              ? "bg-[color:var(--ps-panel-alt-bg)] text-[color:var(--ps-text)]"
-              : "border border-[color:var(--ps-border-subtle)] text-[color:var(--ps-text-soft)]"
-          )}
-        >
-          Mic: {micEnabled ? "On" : "Off"}
-        </button>
+        <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">
+          I/O & ROUTING
+        </div>
       </div>
+
+      <div className="rounded-[10px] border border-[color:var(--ps-border-subtle)] bg-white px-3 py-3 shadow-sm">
+        {notice && (
+          <div className="mb-2 rounded-md bg-amber-100/80 px-2 py-1 text-xs text-amber-800/90 dark:bg-amber-900/40 dark:text-amber-100">
+            {notice}
+          </div>
+        )}
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.14em]">Audio</div>
+          <button
+            type="button"
+            onClick={toggleMic}
+            className={clsx(
+              "rounded-full px-3 py-1 text-[11px] transition",
+              micEnabled
+                ? "bg-[color:var(--ps-panel-alt-bg)] text-[color:var(--ps-text)]"
+                : "border border-[color:var(--ps-border-subtle)] text-[color:var(--ps-text-soft)]"
+            )}
+          >
+            Audio: {micEnabled ? "On" : "Off"}
+          </button>
+        </div>
+        {!audioDevices.hasPermission && (
+          <p className="mt-1 text-[11px] text-[color:var(--ps-text-muted)]">Allow audio to choose device.</p>
+        )}
+
+        <div className="mt-3 grid grid-cols-2 gap-3 text-[11px]">
+          <label className="flex flex-col gap-1">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em]">Device</span>
+            <select
+              value={audioDevices.selectedInputId}
+              onChange={(e) => audioDevices.setInputDevice(e.target.value)}
+              disabled={!audioDevices.hasPermission}
+              className="rounded-lg border border-[color:var(--ps-border-subtle)] bg-white px-2 py-1 text-[11px] text-[color:var(--ps-text)] disabled:text-[color:var(--ps-text-muted)]"
+            >
+              <option value="default">Default (System)</option>
+              {audioDevices.inputs.map((device) => (
+                <option key={device.id} value={device.id}>
+                  {device.label || "Audio input"}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em]">Channels</span>
+            <select
+              value={currentChannelValue}
+              onChange={(e) => handleChannelChange(e.target.value)}
+              className="rounded-lg border border-[color:var(--ps-border-subtle)] bg-white px-2 py-1 text-[11px] text-[color:var(--ps-text)]"
+            >
+              {channelOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--ps-text-muted)]">
+              Level
+            </span>
+            <div className="relative h-10 w-1.5 overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-800/80">
+              <div
+                className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-red-500 via-yellow-400 to-blue-500 opacity-60"
+                style={{ height: `${levelHeight}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
       {!modEngine && (
         <div className="rounded-[10px] border border-[color:var(--ps-border-subtle)] bg-white px-3 py-2 text-[11px] text-[color:var(--ps-text-soft)]">
           Loading modulation routing…

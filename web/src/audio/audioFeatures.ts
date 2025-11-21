@@ -1,3 +1,5 @@
+import type { ChannelMode } from "../hooks/useAudioDevices";
+
 export interface AudioFeatureFrame {
   level: number; // 0..1, RMS / loudness
   brightness: number; // 0..1, normalized spectral centroid
@@ -10,63 +12,139 @@ export interface AudioFeatureFrame {
 
 type AudioFeatureListener = (frame: AudioFeatureFrame) => void;
 
+const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+
 export class AudioIO {
   private context: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
+  private splitter: ChannelSplitterNode | null = null;
+  private merger: ChannelMergerNode | null = null;
   private data: Uint8Array | null = null;
   private listeners = new Set<AudioFeatureListener>();
   private running = false;
   private lastLevel = 0;
   private lastOnsetLevel = 0;
-  private ownsContext = false;
+  private channelMode: ChannelMode = "stereo-1-2";
+  private channelCount = 2;
+  private micStream: MediaStream | null = null;
 
-  async startMic(context?: AudioContext): Promise<void> {
-    if (this.context) return;
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const ctx = context ?? new AudioContext();
-    this.ownsContext = !context;
-    const src = ctx.createMediaStreamSource(stream);
-    const analyser = ctx.createAnalyser();
+  async startMic(
+    context: AudioContext,
+    deviceId: string,
+    channelMode: ChannelMode
+  ): Promise<number> {
+    await this.stop();
+    this.context = context;
+    this.channelMode = channelMode;
 
+    const constraints =
+      deviceId === "default"
+        ? { audio: true }
+        : {
+            audio: {
+              deviceId: { exact: deviceId },
+            },
+          };
+
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    const track = stream.getAudioTracks()[0];
+    const inferredChannelCount = track?.getSettings()?.channelCount;
+    this.channelCount = clamp(inferredChannelCount ?? 2, 1, 8);
+
+    const src = context.createMediaStreamSource(stream);
+    const analyser = context.createAnalyser();
     analyser.fftSize = 2048;
-    src.connect(analyser);
 
-    this.context = ctx;
+    const splitter = context.createChannelSplitter(Math.max(2, this.channelCount));
+    const merger = context.createChannelMerger(2);
+
+    src.connect(splitter);
+    this.applyChannelMode(splitter, merger, this.channelMode);
+    merger.connect(analyser);
+
+    this.context = context;
     this.source = src;
+    this.splitter = splitter;
+    this.merger = merger;
     this.analyser = analyser;
     this.data = new Uint8Array(analyser.frequencyBinCount);
     this.running = true;
+    this.micStream = stream;
     this.tick();
+
+    return this.channelCount;
   }
 
-  stop(): void {
+  async stop(): Promise<void> {
     this.running = false;
     if (this.source) {
       this.source.disconnect();
     }
+    if (this.splitter) {
+      this.splitter.disconnect();
+    }
+    if (this.merger) {
+      this.merger.disconnect();
+    }
     if (this.analyser) {
       this.analyser.disconnect();
     }
-    if (this.context) {
-      if (this.ownsContext) {
-        this.context.close();
-      }
+    if (this.micStream) {
+      this.micStream.getTracks().forEach((track) => track.stop());
     }
     this.context = null;
     this.analyser = null;
     this.source = null;
     this.data = null;
-    this.ownsContext = false;
+    this.micStream = null;
+    this.splitter = null;
+    this.merger = null;
+    this.lastLevel = 0;
   }
 
   getContext(): AudioContext | null {
     return this.context;
   }
 
+  getChannelCount(): number {
+    return this.channelCount;
+  }
+
+  getLastLevel(): number {
+    return this.lastLevel;
+  }
+
+  updateChannelMode(mode: ChannelMode) {
+    this.channelMode = mode;
+    if (!this.splitter || !this.merger) return;
+    this.splitter.disconnect();
+    this.merger.disconnect();
+    this.applyChannelMode(this.splitter, this.merger, mode);
+    if (this.analyser) {
+      this.merger.connect(this.analyser);
+    }
+  }
+
   subscribe(listener: AudioFeatureListener): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
+  }
+
+  private applyChannelMode(
+    splitter: ChannelSplitterNode,
+    merger: ChannelMergerNode,
+    mode: ChannelMode
+  ) {
+    const ensureChannel = (index: number) => clamp(index, 0, splitter.numberOfOutputs - 1);
+    if (mode === "stereo-1-2") {
+      splitter.connect(merger, ensureChannel(0), 0);
+      splitter.connect(merger, ensureChannel(1), 1);
+    } else {
+      const channelIdx = ensureChannel((mode.channel ?? 1) - 1);
+      splitter.connect(merger, channelIdx, 0);
+      splitter.connect(merger, channelIdx, 1);
+    }
   }
 
   private tick = () => {
