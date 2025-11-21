@@ -2,6 +2,7 @@ import { Link, NavLink } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import VersionBadge from "./VersionBadge";
 import { PHASE_SPACE_VERSION } from "../version";
+import { useAudioDevicesContext } from "../state/audioDevicesState";
 
 const githubUrl = "https://github.com/phase-space/phase-space";
 
@@ -30,6 +31,7 @@ function TopBar() {
   const [useShortWordmark, setUseShortWordmark] = useState(false);
   const mobilePortrait = useMediaQuery("(max-width: 768px) and (orientation: portrait)");
   const versionLabel = `phase-space v${PHASE_SPACE_VERSION} • beta`;
+  const audioDevices = useAudioDevicesContext();
 
   useEffect(() => {
     if (!mobilePortrait) {
@@ -94,6 +96,25 @@ function TopBar() {
               Credits
             </NavLink>
           </nav>
+          {audioDevices.supportsSetSinkId ? (
+            <div className="flex items-center gap-1 text-xs">
+              <span className="text-slate-500 dark:text-slate-400">Output:</span>
+              <select
+                value={audioDevices.selectedOutputId}
+                onChange={(e) => audioDevices.setOutputDevice(e.target.value)}
+                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+              >
+                <option value="default">Default (System)</option>
+                {audioDevices.outputs.map((dev) => (
+                  <option key={dev.id} value={dev.id}>
+                    {dev.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <span className="text-xs text-slate-500 dark:text-slate-400">Output: System default</span>
+          )}
           {!mobilePortrait && <VersionBadge label={versionLabel} />}
           <a
             href={githubUrl}

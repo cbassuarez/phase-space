@@ -1,8 +1,18 @@
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { AudioIO, type AudioFeatureFrame } from "../audio/audioFeatures";
 import { InternalSynth } from "../audio/internalSynth";
 import { ModulationEngine, type TargetPath, type TargetRegistry } from "../modulation/modEngine";
 import type { ModBus, ModBusRuntimeState } from "../modulation/types";
+import type { ChannelMode } from "../hooks/useAudioDevices";
+import { useAudioDevicesContext } from "./audioDevicesState";
 
 interface ModValues {
   camera: { r: number | null; theta: number | null; phi: number | null };
@@ -25,6 +35,11 @@ interface ModulationContextValue {
   synth: InternalSynth;
   micEnabled: boolean;
   toggleMic: () => Promise<void>;
+  micLevel: number;
+  channelCount: number;
+  outputChannelCount: number;
+  channelMode: ChannelMode;
+  setChannelMode: (mode: ChannelMode) => void;
 }
 
 const ModulationContext = createContext<ModulationContextValue | null>(null);
@@ -96,11 +111,31 @@ const createTargetRegistry = (
 };
 
 export function ModulationProvider({ children }: { children: React.ReactNode }) {
+  const audioDevices = useAudioDevicesContext();
+  const {
+    selectedInputId,
+    selectedOutputId,
+    channelMode,
+    hasPermission,
+    requestPermission,
+    setInputDevice,
+    setChannelMode,
+    setOutputDevice,
+    supportsSetSinkId,
+    setInputFallbackMessage,
+    setOutputFallbackMessage,
+  } = audioDevices;
   const [modEngine, setModEngine] = useState<ModulationEngine | null>(null);
   const [buses, setBuses] = useState<ModBusRuntimeState[]>([]);
   const [micEnabled, setMicEnabled] = useState(false);
+  const [micLevel, setMicLevel] = useState(0);
+  const [channelCount, setChannelCount] = useState(2);
+  const [outputChannelCount, setOutputChannelCount] = useState(2);
   const audioIO = useMemo(() => new AudioIO(), []);
   const synth = useMemo(() => new InternalSynth(audioIO.getContext() ?? undefined), [audioIO]);
+  const [monitorDestination, setMonitorDestination] = useState<MediaStreamAudioDestinationNode | null>(null);
+  const monitorAudioRef = useRef<HTMLAudioElement | null>(null);
+  const activeInputRef = useRef<string | null>(null);
   const audioFrameRef = useRef<AudioFeatureFrame | null>(null);
   const modValuesRef = useRef<ModValues>({
     camera: { r: null, theta: null, phi: null },
@@ -121,8 +156,35 @@ export function ModulationProvider({ children }: { children: React.ReactNode }) 
   }, [audioIO]);
 
   useEffect(() => {
+    let raf: number;
+    const tick = () => {
+      setMicLevel(audioIO.getLastLevel());
+      raf = requestAnimationFrame(tick);
+    };
+    tick();
+    return () => cancelAnimationFrame(raf);
+  }, [audioIO]);
+
+  useEffect(() => {
     synth.setMasterGain(0.15);
   }, [synth]);
+
+  useEffect(() => {
+    const ctx = synth.getContext();
+    const destination = ctx.createMediaStreamDestination();
+    synth.connectMonitorDestination(destination);
+    setMonitorDestination(destination);
+    const dest = synth.getContext().destination;
+    const reportedCount = dest.maxChannelCount || dest.channelCount || dest.numberOfOutputs || 2;
+    setOutputChannelCount(Math.max(1, Math.min(8, reportedCount)));
+  }, [synth]);
+
+  useEffect(() => {
+    const audioEl = monitorAudioRef.current;
+    if (!audioEl || !monitorDestination) return;
+    audioEl.srcObject = monitorDestination.stream;
+    audioEl.play().catch(() => undefined);
+  }, [monitorDestination]);
 
   const registry = useMemo(() => createTargetRegistry(modValuesRef, synth), [modValuesRef, synth]);
 
@@ -133,29 +195,84 @@ export function ModulationProvider({ children }: { children: React.ReactNode }) 
     });
   }, [registry]);
 
+  useEffect(() => () => {
+    audioIO.stop();
+  }, [audioIO]);
+
   const updateBuses = (updater: (buses: ModBus[]) => ModBus[]) => {
     if (!modEngine) return;
     modEngine.updateBusConfig(updater);
     setBuses(modEngine.getBuses());
   };
 
+  const startMicWithDevice = useCallback(
+    async (deviceId: string) => {
+      try {
+        const count = await audioIO.startMic(synth.getContext(), deviceId, channelMode);
+        setChannelCount(count);
+        activeInputRef.current = deviceId;
+        if (synth.getContext().state === "suspended") {
+          await synth.getContext().resume();
+        }
+        setMicEnabled(true);
+      } catch (err) {
+        console.warn("Failed to start mic", err);
+        setMicEnabled(false);
+        setChannelCount(2);
+        setInputFallbackMessage("Audio input failed; using default input.");
+        if (deviceId !== "default") {
+          await setInputDevice("default");
+        }
+      }
+    },
+    [audioIO, channelMode, setInputDevice, setInputFallbackMessage, synth]
+  );
+
   const toggleMic = async () => {
     if (micEnabled) {
-      audioIO.stop();
+      await audioIO.stop();
+      setMicEnabled(false);
+      setMicLevel(0);
+      activeInputRef.current = null;
+      return;
+    }
+    if (!hasPermission) {
+      await requestPermission();
+    }
+    if (!audioDevices.hasPermission) {
       setMicEnabled(false);
       return;
     }
-    try {
-      await audioIO.startMic(synth.getContext());
-      if (synth.getContext().state === "suspended") {
-        await synth.getContext().resume();
-      }
-      setMicEnabled(true);
-    } catch (err) {
-      console.warn("Failed to start mic", err);
-      setMicEnabled(false);
-    }
+    await startMicWithDevice(selectedInputId);
   };
+
+  useEffect(() => {
+    if (!micEnabled) return;
+    if (activeInputRef.current === selectedInputId) return;
+    startMicWithDevice(selectedInputId);
+  }, [micEnabled, selectedInputId, startMicWithDevice]);
+
+  useEffect(() => {
+    if (!micEnabled) return;
+    audioIO.updateChannelMode(channelMode);
+  }, [audioIO, channelMode, micEnabled]);
+
+  useEffect(() => {
+    const applySink = async () => {
+      if (!supportsSetSinkId) return;
+      const audioEl = monitorAudioRef.current;
+      if (!audioEl || !monitorDestination) return;
+      try {
+        await (audioEl as any).setSinkId(selectedOutputId);
+        setOutputFallbackMessage(null);
+      } catch (err) {
+        console.warn("Failed to set output device", err);
+        setOutputFallbackMessage("Output device not available; using system default.");
+        await setOutputDevice("default");
+      }
+    };
+    applySink();
+  }, [monitorDestination, selectedOutputId, setOutputDevice, setOutputFallbackMessage, supportsSetSinkId]);
 
   const value: ModulationContextValue = {
     modEngine,
@@ -167,9 +284,19 @@ export function ModulationProvider({ children }: { children: React.ReactNode }) 
     synth,
     micEnabled,
     toggleMic,
+    micLevel,
+    channelCount,
+    outputChannelCount,
+    channelMode,
+    setChannelMode,
   };
 
-  return <ModulationContext.Provider value={value}>{children}</ModulationContext.Provider>;
+  return (
+    <ModulationContext.Provider value={value}>
+      {children}
+      <audio ref={monitorAudioRef} className="hidden" autoPlay />
+    </ModulationContext.Provider>
+  );
 }
 
 export function useModulation() {

@@ -1,9 +1,10 @@
 import clsx from "clsx";
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Curve } from "../../modulation/types";
 import type { ModBus, ModBusRuntimeState, ModTarget } from "../../modulation/types";
 import type { TargetPath } from "../../modulation/modEngine";
 import { useModulation } from "../../state/modulationState";
+import { useAudioDevicesContext } from "../../state/audioDevicesState";
 
 interface TargetOption {
   value: TargetPath;
@@ -321,27 +322,233 @@ function ModulationRow({ bus }: { bus: ModBusRuntimeState }) {
 }
 
 function ModulationSection({ compact = false }: { compact?: boolean }) {
-  const { buses, modEngine, micEnabled, toggleMic } = useModulation();
+  const {
+    buses,
+    modEngine,
+    micEnabled,
+    toggleMic,
+    micLevel,
+    channelCount,
+    outputChannelCount,
+    channelMode,
+    setChannelMode,
+  } = useModulation();
+  const audioDevices = useAudioDevicesContext();
+  const [notice, setNotice] = useState<string | null>(null);
 
   const sortedBuses = useMemo(() => buses.slice().sort((a, b) => a.bus.id.localeCompare(b.bus.id)), [buses]);
+
+  const selectedInputLabel = useMemo(() => {
+    if (audioDevices.selectedInputId === "default") return "Default (System)";
+    return audioDevices.inputs.find((d) => d.id === audioDevices.selectedInputId)?.label ?? "Audio input";
+  }, [audioDevices.inputs, audioDevices.selectedInputId]);
+
+  const selectedOutputLabel = useMemo(() => {
+    if (audioDevices.selectedOutputId === "default") return "Default (System)";
+    return audioDevices.outputs.find((d) => d.id === audioDevices.selectedOutputId)?.label ?? "Audio output";
+  }, [audioDevices.outputs, audioDevices.selectedOutputId]);
+
+  const inputChannelModes = useMemo(() => {
+    const pairs: { label: string; mode: ChannelMode }[] = [];
+    const monos: { label: string; mode: ChannelMode }[] = [];
+    const max = Math.max(1, channelCount);
+    for (let i = 1; i <= max; i++) {
+      monos.push({ label: `Ch ${i}`, mode: { type: "mono", channel: i } });
+    }
+    for (let i = 1; i < max; i += 2) {
+      const right = Math.min(max, i + 1);
+      if (right > i) {
+        pairs.push({ label: `${i}/${right}`, mode: { type: "stereo", channels: [i, right] } });
+      }
+    }
+    return [...pairs, ...monos];
+  }, [channelCount]);
+
+  const outputChannels = useMemo(() => {
+    const channels: string[] = [];
+    const max = Math.max(1, outputChannelCount);
+    for (let i = 1; i < max; i += 2) {
+      const right = Math.min(max, i + 1);
+      channels.push(`${i}/${right}`);
+    }
+    if (channels.length === 0) channels.push("1/2");
+    return channels;
+  }, [outputChannelCount]);
+
+  useEffect(() => {
+    const next = audioDevices.inputFallbackMessage || audioDevices.outputFallbackMessage || audioDevices.errorMessage;
+    if (!next) return;
+    setNotice(next);
+    const timer = window.setTimeout(() => {
+      setNotice(null);
+      audioDevices.clearInputFallbackMessage();
+      audioDevices.clearOutputFallbackMessage();
+      audioDevices.clearErrorMessage();
+    }, 5000);
+    return () => window.clearTimeout(timer);
+  }, [
+    audioDevices.clearErrorMessage,
+    audioDevices.clearInputFallbackMessage,
+    audioDevices.clearOutputFallbackMessage,
+    audioDevices.errorMessage,
+    audioDevices.inputFallbackMessage,
+    audioDevices.outputFallbackMessage,
+  ]);
+
+  const isModeActive = useCallback(
+    (mode: ChannelMode) => {
+      if (channelMode.type === "mono" && mode.type === "mono") return channelMode.channel === mode.channel;
+      if (channelMode.type === "stereo" && mode.type === "stereo") {
+        return (
+          channelMode.channels[0] === mode.channels[0] && channelMode.channels[1] === mode.channels[1]
+        );
+      }
+      return false;
+    },
+    [channelMode]
+  );
+
+  const levelWidth = Math.round(Math.min(1, Math.max(0, micLevel)) * 100);
+  const meterColor = levelWidth > 90 ? "bg-red-500" : levelWidth > 70 ? "bg-amber-400" : "bg-emerald-500";
+  const levelDb = Math.max(-60, Math.round(micLevel * 60 - 60));
 
   return (
     <section className="mt-2 flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">MODULATION</div>
-        <button
-          type="button"
-          onClick={toggleMic}
-          className={clsx(
-            "rounded-full px-3 py-1 text-[11px] transition",
-            micEnabled
-              ? "bg-[color:var(--ps-panel-alt-bg)] text-[color:var(--ps-text)]"
-              : "border border-[color:var(--ps-border-subtle)] text-[color:var(--ps-text-soft)]"
-          )}
-        >
-          Mic: {micEnabled ? "On" : "Off"}
-        </button>
+        <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">
+          I/O & ROUTING
+        </div>
       </div>
+
+      <div className="rounded-[10px] border border-[color:var(--ps-border-subtle)] bg-white px-3 py-3 shadow-sm">
+        {notice && (
+          <div className="mb-2 rounded-md bg-amber-100/80 px-2 py-1 text-xs text-amber-800/90 dark:bg-amber-900/40 dark:text-amber-100">
+            {notice}
+          </div>
+        )}
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.14em]">Audio</div>
+          <button
+            type="button"
+            onClick={toggleMic}
+            className={clsx(
+              "rounded-full px-3 py-1 text-[11px] transition",
+              micEnabled
+                ? "bg-[color:var(--ps-panel-alt-bg)] text-[color:var(--ps-text)]"
+                : "border border-[color:var(--ps-border-subtle)] text-[color:var(--ps-text-soft)]"
+            )}
+          >
+            Audio: {micEnabled ? "On" : "Off"}
+          </button>
+        </div>
+        {!audioDevices.hasPermission && (
+          <p className="mt-1 text-[11px] text-[color:var(--ps-text-muted)]">Allow audio to choose device.</p>
+        )}
+
+        <div className="mt-3 grid grid-cols-1 gap-3 text-[11px] sm:grid-cols-2">
+          <label className="flex flex-col gap-1">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em]">Input Device</span>
+            <select
+              value={audioDevices.selectedInputId}
+              onChange={(e) => audioDevices.setInputDevice(e.target.value)}
+              disabled={!audioDevices.hasPermission}
+              className="rounded-lg border border-[color:var(--ps-border-subtle)] bg-white px-2 py-1 text-[11px] text-[color:var(--ps-text)] disabled:text-[color:var(--ps-text-muted)]"
+            >
+              <option value="default">Default (System)</option>
+              {audioDevices.inputs.map((device) => (
+                <option key={device.id} value={device.id}>
+                  {device.label || "Audio input"}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em]">Monitor Output</span>
+            {audioDevices.supportsSetSinkId ? (
+              <select
+                value={audioDevices.selectedOutputId}
+                onChange={(e) => audioDevices.setOutputDevice(e.target.value)}
+                className="rounded-lg border border-[color:var(--ps-border-subtle)] bg-white px-2 py-1 text-[11px] text-[color:var(--ps-text)]"
+              >
+                <option value="default">Default (System)</option>
+                {audioDevices.outputs.map((device) => (
+                  <option key={device.id} value={device.id}>
+                    {device.label || "Audio output"}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="rounded-lg border border-dashed border-[color:var(--ps-border-subtle)] px-2 py-2 text-[color:var(--ps-text-muted)]">
+                Output: System default
+              </div>
+            )}
+          </label>
+        </div>
+
+        <div className="mt-3 flex flex-col gap-2">
+          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--ps-text-muted)]">
+            <span>Input Channels</span>
+            <span className="text-[color:var(--ps-text-soft)]">{selectedInputLabel}</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {inputChannelModes.map(({ label, mode }) => (
+              <button
+                key={`${label}-${mode.type === "stereo" ? mode.channels.join("-") : mode.channel}`}
+                type="button"
+                onClick={() => setChannelMode(mode)}
+                className={clsx(
+                  "rounded-full border px-3 py-1 text-[11px] transition",
+                  isModeActive(mode)
+                    ? "border-[color:var(--ps-accent)] bg-[color:var(--ps-panel-alt-bg)] text-[color:var(--ps-text)]"
+                    : "border-[color:var(--ps-border-subtle)] text-[color:var(--ps-text-muted)] hover:border-[color:var(--ps-border-strong)]"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-3 flex flex-col gap-2">
+          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--ps-text-muted)]">
+            <span>Output Channels</span>
+            <span className="text-[color:var(--ps-text-soft)]">{selectedOutputLabel}</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {outputChannels.map((label) => (
+              <div
+                key={label}
+                className="rounded-full border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-bg)] px-3 py-1 text-[11px] text-[color:var(--ps-text-soft)]"
+              >
+                {label}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-3 flex flex-col gap-2">
+          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--ps-text-muted)]">
+            <span>Input Level</span>
+            <span className="tabular-nums text-[10px] text-[color:var(--ps-text-soft)]">
+              {`${levelDb} dB`}
+            </span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200/80 shadow-inner dark:bg-slate-800/80">
+            <div
+              className={clsx("h-full transition-[width] duration-75 ease-out", meterColor)}
+              style={{ width: `${levelWidth}%` }}
+            />
+          </div>
+          <div className="flex justify-between text-[10px] text-[color:var(--ps-text-muted)]">
+            <span>-60dB</span>
+            <span>-24dB</span>
+            <span>-12dB</span>
+            <span>0dB</span>
+          </div>
+        </div>
+      </div>
+
       {!modEngine && (
         <div className="rounded-[10px] border border-[color:var(--ps-border-subtle)] bg-white px-3 py-2 text-[11px] text-[color:var(--ps-text-soft)]">
           Loading modulation routing…
