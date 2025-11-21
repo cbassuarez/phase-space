@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
+import { Pause, Play } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useViewerState } from "../../state/viewerState";
 import type { Palette, SystemId } from "../../types";
@@ -161,7 +162,23 @@ function ControlPanelDesktop() {
 
       <section className="mt-2 flex flex-col gap-2">
         <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">VIEW</div>
-        <ToggleSwitch label="Auto-spin camera" checked={autoSpin} onToggle={toggleAutoSpin} />
+        <div className="flex items-center justify-between py-1">
+          <span className="text-xs text-[color:var(--ps-text-soft)]">Auto-spin camera</span>
+          <button
+            type="button"
+            onClick={toggleAutoSpin}
+            aria-pressed={autoSpin}
+            className={clsx(
+              "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-medium transition",
+              "border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] text-[color:var(--ps-text)] shadow-[var(--ps-shadow-subtle)]",
+              autoSpin && "border-transparent bg-[color:var(--ps-accent)] text-white shadow-md"
+            )}
+          >
+            {autoSpin ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+            <span className="hidden sm:inline">{autoSpin ? "Pause spin" : "Auto spin"}</span>
+            <span className="sm:hidden">{autoSpin ? "Pause" : "Play"}</span>
+          </button>
+        </div>
         <ToggleSwitch label="Animate head/tail" checked={animateHeadTail} onToggle={toggleAnimateHeadTail} />
         <ToggleSwitch label="Show full trajectory" checked={showFullTrajectory} onToggle={toggleShowFullTrajectory} />
         <div className="space-y-2">
