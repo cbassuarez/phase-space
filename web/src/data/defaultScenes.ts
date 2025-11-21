@@ -1,17 +1,17 @@
-import { SceneSpec, SystemId } from "../types";
+import { DEFAULT_CAMERA_MODE, SceneSpec, SystemId } from "../types";
 import type { CameraProgram } from "../camera/types";
 
 function defaultCameraProgram(): CameraProgram {
   return {
-    mode: "orbit",
-    speed_scalar: 0.35,
+    mode: DEFAULT_CAMERA_MODE,
+    speed_scalar: 0.2,
     zoom_scalar: 1.0,
     stability: 0.25,
     orbit: {
       base_radius: 1.2,
       radius_jitter: 0.05,
-      azimuth_speed: 0.05,
-      polar_speed: 0.08,
+      azimuth_speed: 0.02,
+      polar_speed: 0.04,
       polar_center: 0.9,
       polar_amplitude: 0.25,
       hand_held_jitter: 0.15,

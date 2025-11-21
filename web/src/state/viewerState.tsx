@@ -15,8 +15,73 @@ import type {
   RenderStyle,
   CausticsSettings,
 } from "../types";
-import { mapLegacyPalette, mapLegacyRenderStyle, normalizeViewSpec } from "../types";
+import { DEFAULT_PALETTE, DEFAULT_RENDER_STYLE, mapLegacyPalette, mapLegacyRenderStyle, normalizeViewSpec } from "../types";
 import { CustomPaletteState, loadCustomPalette, saveCustomPalette } from "../palettes";
+
+const VIEWER_PREFS_STORAGE_KEY = "phase-viewer";
+const VIEWER_PREFS_VERSION = 2;
+
+interface ViewerPrefs {
+  version: number;
+  renderStyle: RenderStyle;
+  palette: Palette;
+}
+
+const initialViewerPrefs: ViewerPrefs = {
+  version: VIEWER_PREFS_VERSION,
+  renderStyle: DEFAULT_RENDER_STYLE,
+  palette: DEFAULT_PALETTE,
+};
+
+function migrateViewerPrefs(persisted: unknown): ViewerPrefs {
+  if (!persisted || typeof persisted !== "object") {
+    return initialViewerPrefs;
+  }
+
+  const raw = persisted as Partial<ViewerPrefs> & { version?: number };
+  const prevVersion = typeof raw.version === "number" ? raw.version : 0;
+
+  let next: ViewerPrefs = {
+    ...initialViewerPrefs,
+    ...raw,
+  } as ViewerPrefs;
+
+  if (prevVersion < VIEWER_PREFS_VERSION) {
+    if (next.renderStyle === "photon-weave" || next.renderStyle == null) {
+      next = { ...next, renderStyle: DEFAULT_RENDER_STYLE };
+    }
+
+    if (next.palette === "plasma" || next.palette == null) {
+      next = { ...next, palette: DEFAULT_PALETTE };
+    }
+
+    next = { ...next, version: VIEWER_PREFS_VERSION };
+  }
+
+  return next;
+}
+
+function loadViewerPrefs(): ViewerPrefs | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(VIEWER_PREFS_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return migrateViewerPrefs(parsed);
+  } catch (err) {
+    console.warn("Failed to load viewer prefs", err);
+    return null;
+  }
+}
+
+function persistViewerPrefs(prefs: ViewerPrefs) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(VIEWER_PREFS_STORAGE_KEY, JSON.stringify(prefs));
+  } catch (err) {
+    console.warn("Failed to save viewer prefs", err);
+  }
+}
 
 interface TrajectoryMeta {
   count: number;
@@ -84,13 +149,16 @@ function applyResolution(sceneJson: string, resolution: Resolution): string {
 
 export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const { ready: engineReady, error: engineError, api } = usePhaseWasmEngine();
+  const initialPrefs = useMemo(() => (typeof window === "undefined" ? null : loadViewerPrefs()), []);
   const [system, setSystemState] = useState<SystemId>("lorenz");
   const [resolution, setResolutionState] = useState<Resolution>("default");
   const [autoSpin, setAutoSpin] = useState(true);
   const [animateHeadTail, setAnimateHeadTail] = useState(true);
   const [showFullTrajectory, setShowFullTrajectory] = useState(true);
   const [lineThickness, setLineThickness] = useState<LineThickness>("default");
-  const [renderStyle, setRenderStyleState] = useState<RenderStyle>("volumetric-cloud");
+  const [renderStyle, setRenderStyleState] = useState<RenderStyle>(
+    initialPrefs?.renderStyle ?? DEFAULT_RENDER_STYLE
+  );
   const [photonWeaveSettings, setPhotonWeaveSettingsState] =
     useState<PhotonWeaveSettings>({
       brightness: 1,
@@ -104,8 +172,10 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     projectionAxis: "auto",
     colorMode: "global",
   });
-  const [palette, setPaletteState] = useState<Palette>("prism");
-  const [paletteLocked, setPaletteLocked] = useState(false);
+  const [palette, setPaletteState] = useState<Palette>(initialPrefs?.palette ?? DEFAULT_PALETTE);
+  const [paletteLocked, setPaletteLocked] = useState(
+    initialPrefs ? initialPrefs.palette !== DEFAULT_PALETTE : false
+  );
   const [customPalette, setCustomPaletteState] = useState<CustomPaletteState>(loadCustomPalette());
   const [background, setBackgroundState] = useState<Background>("light");
   const [sceneJson, setSceneJson] = useState("{}");
@@ -116,6 +186,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [renderStillHandler, setRenderStillHandler] = useState<(() => void) | null>(null);
+  const [hasPersistedPrefs] = useState(() => Boolean(initialPrefs));
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -131,6 +202,14 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     setError(engineError);
   }, [engineError]);
 
+  useEffect(() => {
+    persistViewerPrefs({
+      version: VIEWER_PREFS_VERSION,
+      renderStyle,
+      palette,
+    });
+  }, [palette, renderStyle]);
+
   const loadScene = useCallback(
     (nextSystem: SystemId, res: Resolution) => {
       if (!api) return;
@@ -141,6 +220,15 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
         const { trajectories: traj, scene } = api.integrateScene(tunedScene);
         const normalizedView = normalizeViewSpec(scene.view);
         const normalizedScene = { ...scene, view: normalizedView } as SceneSpec;
+        const normalizedStyle = normalizedView.render_style ?? DEFAULT_RENDER_STYLE;
+        const effectiveRenderStyle =
+          hasPersistedPrefs && normalizedStyle === DEFAULT_RENDER_STYLE
+            ? renderStyle
+            : normalizedStyle;
+        const sceneWithEffectiveStyle = {
+          ...normalizedScene,
+          view: { ...normalizedScene.view, render_style: effectiveRenderStyle },
+        } as SceneSpec;
         if (
           normalizedView.palette === "custom" &&
           normalizedView.palette_spec?.stops &&
@@ -158,10 +246,11 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
             return next;
           });
         }
-        setSceneJson(JSON.stringify({ ...normalizedScene }, null, 2));
-        setSceneSpec(normalizedScene);
-        const normalizedStyle = normalizedView.render_style ?? "volumetric-cloud";
-        setRenderStyleState(normalizedStyle);
+        setSceneJson(JSON.stringify({ ...sceneWithEffectiveStyle }, null, 2));
+        setSceneSpec(sceneWithEffectiveStyle);
+        if (!hasPersistedPrefs || normalizedStyle !== DEFAULT_RENDER_STYLE) {
+          setRenderStyleState(normalizedStyle);
+        }
         if (!paletteLocked && scene.view?.palette) {
           setPaletteState(mapLegacyPalette(scene.view.palette));
         }
@@ -188,7 +277,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
       }
     },
-    [api, customPalette, paletteLocked]
+    [api, customPalette, hasPersistedPrefs, paletteLocked, renderStyle]
   );
 
   useEffect(() => {

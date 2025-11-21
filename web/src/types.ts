@@ -13,6 +13,10 @@ export type RenderStyle =
   | "ribbon"
   | "cells";
 
+export const DEFAULT_RENDER_STYLE: RenderStyle = "volumetric-cloud";
+export const DEFAULT_CAMERA_MODE: CameraProgram["mode"] = "orbit";
+export const DEFAULT_PALETTE: Palette = "prism";
+
 export type FilamentDensity = "low" | "medium" | "high";
 export type ProjectionAxis = "xy" | "xz" | "yz" | "auto";
 export type CausticsColorMode = "global" | "warm" | "cool";
@@ -113,7 +117,7 @@ function mapLegacyPalette(palette: Palette | string | undefined | null): Palette
     case "custom":
       return palette;
     default:
-      return "plasma";
+      return DEFAULT_PALETTE;
   }
 }
 
@@ -134,10 +138,10 @@ export function normalizeViewSpec(view: ViewSpec | undefined): ViewSpec {
     mode: "mode3d",
     plane: null,
     camera: { theta: 0.8, phi: 0.9, r: 25 },
-    palette: "prism",
+    palette: DEFAULT_PALETTE,
     background: "dark",
     point_size: 1,
-    render_style: "volumetric-cloud",
+    render_style: DEFAULT_RENDER_STYLE,
   };
 
   if (!view) {
