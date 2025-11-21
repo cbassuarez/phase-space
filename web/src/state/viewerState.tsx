@@ -15,11 +15,11 @@ import type {
   RenderStyle,
   CausticsSettings,
 } from "../types";
-import { DEFAULT_PALETTE, DEFAULT_RENDER_STYLE, mapLegacyPalette, mapLegacyRenderStyle, normalizeViewSpec } from "../types";
+import { DEFAULT_PALETTE, DEFAULT_RENDER_MODE, mapLegacyPalette, mapLegacyRenderStyle, normalizeViewSpec } from "../types";
 import { CustomPaletteState, loadCustomPalette, saveCustomPalette } from "../palettes";
 
 const VIEWER_PREFS_STORAGE_KEY = "phase-viewer";
-const VIEWER_PREFS_VERSION = 2;
+const VIEWER_PREFS_VERSION = 3;
 
 interface ViewerPrefs {
   version: number;
@@ -29,7 +29,7 @@ interface ViewerPrefs {
 
 const initialViewerPrefs: ViewerPrefs = {
   version: VIEWER_PREFS_VERSION,
-  renderStyle: DEFAULT_RENDER_STYLE,
+  renderStyle: DEFAULT_RENDER_MODE,
   palette: DEFAULT_PALETTE,
 };
 
@@ -48,7 +48,7 @@ function migrateViewerPrefs(persisted: unknown): ViewerPrefs {
 
   if (prevVersion < VIEWER_PREFS_VERSION) {
     if (next.renderStyle === "photon-weave" || next.renderStyle == null) {
-      next = { ...next, renderStyle: DEFAULT_RENDER_STYLE };
+      next = { ...next, renderStyle: DEFAULT_RENDER_MODE };
     }
 
     if (next.palette === "plasma" || next.palette == null) {
@@ -157,7 +157,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const [showFullTrajectory, setShowFullTrajectory] = useState(true);
   const [lineThickness, setLineThickness] = useState<LineThickness>("default");
   const [renderStyle, setRenderStyleState] = useState<RenderStyle>(
-    initialPrefs?.renderStyle ?? DEFAULT_RENDER_STYLE
+    initialPrefs?.renderStyle ?? DEFAULT_RENDER_MODE
   );
   const [photonWeaveSettings, setPhotonWeaveSettingsState] =
     useState<PhotonWeaveSettings>({
@@ -220,7 +220,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
         const { trajectories: traj, scene } = api.integrateScene(tunedScene);
         const normalizedView = normalizeViewSpec(scene.view);
         const normalizedScene = { ...scene, view: normalizedView } as SceneSpec;
-        const normalizedStyle = normalizedView.render_style ?? DEFAULT_RENDER_STYLE;
+        const normalizedStyle = normalizedView.render_style ?? DEFAULT_RENDER_MODE;
         const normalizedPalette = mapLegacyPalette(
           normalizedView.palette ?? DEFAULT_PALETTE
         );
@@ -228,11 +228,11 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
         const canonicalRenderStyle =
           !hasPersistedPrefs &&
           (normalizedStyle === "photon-weave" || normalizedStyle == null)
-            ? DEFAULT_RENDER_STYLE
+            ? DEFAULT_RENDER_MODE
             : normalizedStyle;
 
         const effectiveRenderStyle =
-          hasPersistedPrefs && canonicalRenderStyle === DEFAULT_RENDER_STYLE
+          hasPersistedPrefs && canonicalRenderStyle === DEFAULT_RENDER_MODE
             ? renderStyle
             : canonicalRenderStyle;
 
@@ -280,7 +280,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
         }
         setSceneJson(JSON.stringify({ ...sceneWithEffectiveStyle }, null, 2));
         setSceneSpec(sceneWithEffectiveStyle);
-        if (!hasPersistedPrefs || canonicalRenderStyle !== DEFAULT_RENDER_STYLE) {
+        if (!hasPersistedPrefs || canonicalRenderStyle !== DEFAULT_RENDER_MODE) {
           setRenderStyleState(effectiveRenderStyle);
         }
         if (!paletteLocked && (scene.view?.palette || !hasPersistedPrefs)) {
