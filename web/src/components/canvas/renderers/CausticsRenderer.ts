@@ -4,14 +4,19 @@ import {
   BufferGeometry,
   Color,
   DataTexture,
+  HalfFloatType,
+  LinearFilter,
   Mesh,
   MeshBasicMaterial,
   OrthographicCamera,
   PlaneGeometry,
   Points,
+  PointsMaterial,
+  RGBAFormat,
   Scene,
   ShaderMaterial,
   SRGBColorSpace,
+  UnsignedByteType,
   Vector2,
   Vector3,
   WebGLRenderTarget,
@@ -20,6 +25,9 @@ import { samplePalette } from "../../../palettes";
 import type { CustomPaletteState } from "../../../palettes";
 import type { Palette, ProjectionAxis } from "../../../types";
 import type { RendererStrategy, RenderContext, TrajectoryData } from "./base";
+
+// Set to "off" in production build; can be toggled manually during development.
+const CAUSTICS_DEBUG_MODE: "off" | "geom" | "heatmap" | "accum" = "off";
 
 const blurVertex = `
   varying vec2 vUv;
@@ -56,28 +64,55 @@ const colorVertex = blurVertex;
 const colorFragment = `
   varying vec2 vUv;
   uniform sampler2D uTexture;
+  uniform sampler2D uBaseTexture;
   uniform sampler2D uPalette;
   uniform sampler2D uPaletteWarm;
   uniform sampler2D uPaletteCool;
   uniform float uIntensity;
+  uniform float uExposure;
+  uniform float uThreshold;
+  uniform float uBloomStrength;
   uniform int uColorMode;
 
   vec3 samplePaletteColor(sampler2D tex, float t) {
     return texture2D(tex, vec2(clamp(t, 0.0, 1.0), 0.5)).rgb;
   }
 
+  vec3 heatColor(float e) {
+    return mix(vec3(0.02, 0.08, 0.18), vec3(0.95, 1.0, 1.0), clamp(e, 0.0, 1.0));
+  }
+
   void main() {
-    vec3 light = texture2D(uTexture, vUv).rgb * uIntensity;
-    vec3 mapped = light / (vec3(1.0) + light);
-    mapped = pow(mapped, vec3(1.0 / 2.2));
-    float t = clamp(max(max(mapped.r, mapped.g), mapped.b), 0.0, 1.0);
-    vec3 paletteColor = samplePaletteColor(uPalette, t);
+    float baseEnergy = texture2D(uBaseTexture, vUv).r;
+    float blurred = texture2D(uTexture, vUv).r;
+    float energy = mix(baseEnergy, blurred, uBloomStrength);
+    float softened = max(energy - uThreshold, 0.0);
+    float tone = clamp(1.0 - exp(-uExposure * softened), 0.0, 1.0);
+    vec3 paletteColor = samplePaletteColor(uPalette, tone);
     if (uColorMode == 1) {
-      paletteColor = samplePaletteColor(uPaletteWarm, t);
+      paletteColor = samplePaletteColor(uPaletteWarm, tone);
     } else if (uColorMode == 2) {
-      paletteColor = samplePaletteColor(uPaletteCool, t);
+      paletteColor = samplePaletteColor(uPaletteCool, tone);
     }
-    vec3 color = paletteColor * (0.6 + mapped * 0.95);
+    vec3 watery = heatColor(tone);
+    vec3 color = mix(watery, paletteColor, 0.55) * (0.7 + tone * 0.65) * uIntensity;
+    gl_FragColor = vec4(color, 1.0);
+  }
+`;
+
+const accumDebugFragment = `
+  varying vec2 vUv;
+  uniform sampler2D uTexture;
+  uniform float uDebugScale;
+
+  vec3 heatColor(float e) {
+    return mix(vec3(0.0, 0.0, 0.2), vec3(1.0, 1.0, 1.0), clamp(e, 0.0, 1.0));
+  }
+
+  void main() {
+    float e = texture2D(uTexture, vUv).r;
+    float mapped = log(1.0 + e);
+    vec3 color = heatColor(mapped * uDebugScale);
     gl_FragColor = vec4(color, 1.0);
   }
 `;
@@ -131,9 +166,17 @@ function blurSigma(value: number): number {
   return 0.35 + value * 2.6;
 }
 
-function computeEnergyGain(pointCount: number, intensity: number): number {
-  const baseGain = 70;
-  return (baseGain * intensity) / Math.sqrt(Math.max(pointCount, 1));
+function computeEnergyGain(
+  pointCount: number,
+  trajectoryCount: number,
+  intensity: number,
+  blurMultiplier: number
+): number {
+  const totalSamples = Math.max(1, pointCount * blurMultiplier);
+  const targetEnergy = 4.2;
+  const normalized = targetEnergy / totalSamples;
+  const trajectoryBalance = Math.max(0.4, Math.min(1.4, Math.sqrt(Math.max(trajectoryCount, 1))));
+  return normalized * intensity * trajectoryBalance;
 }
 
 function computeBounds(points: number[][][], axis: ProjectionAxis): { min: number[]; max: number[] } {
@@ -164,6 +207,7 @@ export class CausticsRenderer implements RendererStrategy {
   private splatTarget: WebGLRenderTarget | null = null;
   private blurTarget: WebGLRenderTarget | null = null;
   private finalTarget: WebGLRenderTarget | null = null;
+  private baseTarget: WebGLRenderTarget | null = null;
   private data: TrajectoryData | null = null;
   private context: RenderContext | null = null;
   private blurMaterialH: ShaderMaterial | null = null;
@@ -175,19 +219,35 @@ export class CausticsRenderer implements RendererStrategy {
   private warmPaletteTexture: DataTexture | null = null;
   private coolPaletteTexture: DataTexture | null = null;
   private splatMaterial: ShaderMaterial | null = null;
+  private debugPoints: Points | null = null;
   private energyGain = 1;
   private pointCount = 0;
   private projectionScale = 1;
+  private texSize = 512;
+  private blurMultiplier = 5;
 
   init(context: RenderContext, data: TrajectoryData) {
     this.context = context;
     this.data = data;
     this.projectionAxis = data.caustics?.projectionAxis ?? "auto";
+    this.texSize = data.quality?.causticsTextureSize ?? 512;
 
-    const texSize = data.quality?.causticsTextureSize ?? 512;
-    this.splatTarget = new WebGLRenderTarget(texSize, texSize, { depthBuffer: false, stencilBuffer: false });
-    this.blurTarget = new WebGLRenderTarget(texSize, texSize, { depthBuffer: false, stencilBuffer: false });
-    this.finalTarget = new WebGLRenderTarget(texSize, texSize, { depthBuffer: false, stencilBuffer: false });
+    const texSize = this.texSize;
+    const halfFloatSupported =
+      context.renderer.capabilities.isWebGL2 || context.renderer.extensions.has("OES_texture_half_float");
+    const textureType = halfFloatSupported ? HalfFloatType : UnsignedByteType;
+    const targetOpts = {
+      depthBuffer: false,
+      stencilBuffer: false,
+      type: textureType,
+      format: RGBAFormat,
+      minFilter: LinearFilter,
+      magFilter: LinearFilter,
+    };
+    this.baseTarget = new WebGLRenderTarget(texSize, texSize, targetOpts);
+    this.splatTarget = this.baseTarget;
+    this.blurTarget = new WebGLRenderTarget(texSize, texSize, targetOpts);
+    this.finalTarget = new WebGLRenderTarget(texSize, texSize, targetOpts);
 
     this.orthoCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
     this.splatScene = new Scene();
@@ -197,10 +257,6 @@ export class CausticsRenderer implements RendererStrategy {
     const axis = this.projectionAxis === "auto" ? chooseAxisAuto(data.trajectories) : this.projectionAxis;
     const pointStep = Math.max(1, Math.round(data.quality?.causticsPointStep ?? 2));
     const positions: number[] = [];
-    const totalPoints =
-      data.normalized?.pointCount ?? data.trajectories.reduce((sum, traj) => sum + traj.length, 0);
-    this.pointCount = totalPoints;
-    this.energyGain = computeEnergyGain(totalPoints, data.caustics?.intensity ?? 1);
     const radius = data.normalized?.bounds.radius ?? 6;
     this.projectionScale = 1 / Math.max(radius * 1.05, 1e-3);
     const clampRange = 1.35;
@@ -209,9 +265,11 @@ export class CausticsRenderer implements RendererStrategy {
       for (let i = 0; i < traj.length; i += pointStep) {
         const p = traj[i];
         const [a, b] = projectionComponents(axis);
-        const u = Math.max(-clampRange, Math.min(clampRange, p[a] * this.projectionScale));
-        const v = Math.max(-clampRange, Math.min(clampRange, p[b] * this.projectionScale));
-        positions.push(u, v, 0);
+        const mapped: [number, number, number] = [p[a], p[b], p[3 - (a + b)] ?? p[2] ?? 0];
+        const u = Math.max(-clampRange, Math.min(clampRange, mapped[0] * this.projectionScale));
+        const v = Math.max(-clampRange, Math.min(clampRange, mapped[1] * this.projectionScale));
+        const w = Math.max(-clampRange, Math.min(clampRange, mapped[2] * this.projectionScale));
+        positions.push(u, v, w);
       }
     });
 
@@ -222,22 +280,53 @@ export class CausticsRenderer implements RendererStrategy {
     const splatGeom = new BufferGeometry();
     splatGeom.setAttribute("position", new BufferAttribute(new Float32Array(positions), 3));
 
+    this.pointCount = splatGeom.getAttribute("position").count;
+    this.energyGain = computeEnergyGain(
+      this.pointCount,
+      data.trajectories.length,
+      data.caustics?.intensity ?? 1,
+      this.blurMultiplier
+    );
+
+    const pointSize = Math.max(6, Math.round(texSize / 64));
+
+    if (CAUSTICS_DEBUG_MODE === "geom") {
+      const debugMat = new PointsMaterial({
+        size: pointSize * 0.4,
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.9,
+        depthWrite: false,
+      });
+      this.debugPoints = new Points(splatGeom, debugMat);
+      context.threeScene.add(this.debugPoints);
+      return;
+    }
+
     const splatMaterial = new ShaderMaterial({
       uniforms: {
         uEnergyGain: { value: this.energyGain },
+        uPointSize: { value: pointSize },
       },
       vertexShader: `
+        varying vec2 vUv;
         void main() {
-          gl_PointSize = ${Math.max(6, Math.round(10 * (texSize / 512)))}.0;
-          gl_Position = vec4(position, 1.0);
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          vec4 clipPosition = projectionMatrix * mvPosition;
+          vec3 ndc = clipPosition.xyz / max(clipPosition.w, 0.0001);
+          vUv = ndc.xy * 0.5 + 0.5;
+          gl_PointSize = uPointSize;
+          gl_Position = clipPosition;
         }
       `,
       fragmentShader: `
+      varying vec2 vUv;
       uniform float uEnergyGain;
         void main() {
+          if (vUv.x < 0.0 || vUv.x > 1.0 || vUv.y < 0.0 || vUv.y > 1.0) discard;
           vec2 c = gl_PointCoord - vec2(0.5);
           float d = dot(c, c);
-          float base = exp(-d * 10.0);
+          float base = exp(-d * 18.0);
           float energy = base * uEnergyGain;
           gl_FragColor = vec4(vec3(energy), energy);
         }
@@ -246,7 +335,53 @@ export class CausticsRenderer implements RendererStrategy {
       depthWrite: false,
       depthTest: false,
       blending: AdditiveBlending,
+      toneMapped: false,
     });
+
+    if (CAUSTICS_DEBUG_MODE === "heatmap") {
+      const heatMat = new ShaderMaterial({
+        uniforms: {
+          uEnergyGain: { value: this.energyGain },
+          uPointSize: { value: pointSize },
+        },
+        vertexShader: `
+          varying vec2 vUv;
+          uniform float uPointSize;
+          void main() {
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            vec4 clipPosition = projectionMatrix * mvPosition;
+            vec3 ndc = clipPosition.xyz / max(clipPosition.w, 0.0001);
+            vUv = ndc.xy * 0.5 + 0.5;
+            gl_PointSize = uPointSize;
+            gl_Position = clipPosition;
+          }
+        `,
+        fragmentShader: `
+          varying vec2 vUv;
+          uniform float uEnergyGain;
+          vec3 heatColor(float e) {
+            return mix(vec3(0.0, 0.0, 0.2), vec3(1.0, 1.0, 1.0), clamp(e, 0.0, 1.0));
+          }
+          void main() {
+            if (vUv.x < 0.0 || vUv.x > 1.0 || vUv.y < 0.0 || vUv.y > 1.0) discard;
+            vec2 c = gl_PointCoord - vec2(0.5);
+            float d = dot(c, c);
+            float base = exp(-d * 18.0);
+            float energy = base * uEnergyGain;
+            vec3 color = heatColor(energy * 1.5);
+            gl_FragColor = vec4(color, 0.9);
+          }
+        `,
+        transparent: true,
+        depthWrite: false,
+        depthTest: false,
+        blending: AdditiveBlending,
+        toneMapped: false,
+      });
+      this.debugPoints = new Points(splatGeom, heatMat);
+      context.threeScene.add(this.debugPoints);
+      return;
+    }
 
     const points = new Points(splatGeom, splatMaterial);
     this.splatMaterial = splatMaterial;
@@ -289,17 +424,23 @@ export class CausticsRenderer implements RendererStrategy {
     this.outputMaterial = new ShaderMaterial({
       uniforms: {
         uTexture: { value: this.finalTarget.texture },
+        uBaseTexture: { value: this.splatTarget.texture },
         uIntensity: { value: data.caustics?.intensity ?? 1 },
+        uExposure: { value: 1.6 },
+        uThreshold: { value: 0.08 },
+        uBloomStrength: { value: 0.72 },
         uPalette: { value: this.paletteTexture },
         uPaletteWarm: { value: this.warmPaletteTexture },
         uPaletteCool: { value: this.coolPaletteTexture },
         uColorMode: { value: data.caustics?.colorMode === "warm" ? 1 : data.caustics?.colorMode === "cool" ? 2 : 0 },
+        uDebugScale: { value: 1.7 },
       },
       vertexShader: colorVertex,
-      fragmentShader: colorFragment,
+      fragmentShader: CAUSTICS_DEBUG_MODE === "accum" ? accumDebugFragment : colorFragment,
       depthWrite: false,
       depthTest: false,
       transparent: true,
+      toneMapped: false,
     });
 
     const planeGeom = new PlaneGeometry(24, 24);
@@ -318,7 +459,9 @@ export class CausticsRenderer implements RendererStrategy {
   }
 
   private renderCaustics() {
-    if (!this.context || !this.splatScene || !this.blurSceneH || !this.blurSceneV || !this.orthoCamera) return;
+    if (CAUSTICS_DEBUG_MODE === "geom" || CAUSTICS_DEBUG_MODE === "heatmap") return;
+    if (!this.context || !this.splatScene || !this.blurSceneH || !this.blurSceneV || !this.orthoCamera || !this.splatTarget)
+      return;
     const renderer = this.context.renderer;
     const prevTarget = renderer.getRenderTarget();
     const prevClear = renderer.autoClear;
@@ -327,13 +470,15 @@ export class CausticsRenderer implements RendererStrategy {
     renderer.setRenderTarget(this.splatTarget);
     renderer.setClearColor(new Color(0x000000), 1);
     renderer.clear();
-    renderer.render(this.splatScene, this.orthoCamera);
+    renderer.render(this.splatScene, this.context.camera);
 
     if (this.blurMaterialH && this.blurMaterialV) {
+      this.blurMaterialH.uniforms.uTexture.value = this.splatTarget.texture;
       renderer.setRenderTarget(this.blurTarget);
       renderer.clear();
       renderer.render(this.blurSceneH, this.orthoCamera);
 
+      this.blurMaterialV.uniforms.uTexture.value = this.blurTarget.texture;
       renderer.setRenderTarget(this.finalTarget);
       renderer.clear();
       renderer.render(this.blurSceneV, this.orthoCamera);
@@ -343,7 +488,11 @@ export class CausticsRenderer implements RendererStrategy {
     renderer.autoClear = prevClear;
 
     if (this.outputMaterial) {
-      this.outputMaterial.uniforms.uTexture.value = this.finalTarget?.texture ?? null;
+      const accumTex = CAUSTICS_DEBUG_MODE === "accum" ? this.splatTarget.texture : this.finalTarget?.texture;
+      this.outputMaterial.uniforms.uTexture.value = accumTex ?? null;
+      if (this.outputMaterial.uniforms.uBaseTexture) {
+        this.outputMaterial.uniforms.uBaseTexture.value = this.splatTarget.texture;
+      }
     }
   }
 
@@ -371,7 +520,12 @@ export class CausticsRenderer implements RendererStrategy {
     this.data = { ...this.data, ...data };
     this.refreshPalettes(data.palette as Palette, data.customPalette);
     const intensity = data.caustics?.intensity ?? 1;
-    this.energyGain = computeEnergyGain(this.pointCount, intensity);
+    this.energyGain = computeEnergyGain(
+      this.pointCount,
+      this.data?.trajectories.length ?? 1,
+      intensity,
+      this.blurMultiplier
+    );
     if (this.splatMaterial) {
       this.splatMaterial.uniforms.uEnergyGain.value = this.energyGain;
       this.splatMaterial.needsUpdate = true;
@@ -403,10 +557,17 @@ export class CausticsRenderer implements RendererStrategy {
       this.outputPlane.geometry.dispose();
       this.outputPlane.material.dispose();
     }
-    [this.splatTarget, this.blurTarget, this.finalTarget].forEach((rt) => rt?.dispose());
+    if (this.debugPoints) {
+      this.debugPoints.removeFromParent();
+      this.debugPoints.geometry.dispose();
+      (this.debugPoints.material as ShaderMaterial | PointsMaterial).dispose();
+    }
+    [this.splatTarget, this.blurTarget, this.finalTarget, this.baseTarget].forEach((rt) => rt?.dispose());
     this.splatTarget = null;
     this.blurTarget = null;
     this.finalTarget = null;
+    this.baseTarget = null;
+    this.debugPoints = null;
     this.splatScene = null;
     this.blurSceneH = null;
     this.blurSceneV = null;
