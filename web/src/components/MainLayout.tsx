@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import CanvasPanel from "./canvas/CanvasPanel";
 import ControlPanelDesktop from "./controls/ControlPanelDesktop";
 import ControlPanelBottomSheet from "./controls/ControlPanelBottomSheet";
 import { useViewerState } from "../state/viewerState";
+import { DEFAULT_RENDER_MODE } from "../types";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
@@ -32,6 +33,7 @@ function MainLayout() {
     showFullTrajectory,
     lineThickness,
     renderStyle,
+    setRenderStyle,
     resolution,
     photonWeaveSettings,
     causticsSettings,
@@ -39,6 +41,18 @@ function MainLayout() {
     loading,
     error,
   } = useViewerState();
+
+  const hasAlignedRenderStyle = useRef(false);
+
+  useEffect(() => {
+    if (hasAlignedRenderStyle.current) return;
+
+    if (!renderStyle || renderStyle === "photon-weave") {
+      setRenderStyle(DEFAULT_RENDER_MODE);
+    }
+
+    hasAlignedRenderStyle.current = true;
+  }, [renderStyle, setRenderStyle]);
 
   const viewCamera = sceneSpec?.view?.camera;
   const sceneSeed = sceneSpec?.random_seed ?? undefined;
