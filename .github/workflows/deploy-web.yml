@@ -46,6 +46,11 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: SPA fallback for GitHub Pages
+        run: |
+          cd web/dist
+          cp index.html 404.html
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
