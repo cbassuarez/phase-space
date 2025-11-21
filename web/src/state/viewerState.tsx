@@ -19,7 +19,14 @@ import { DEFAULT_PALETTE, DEFAULT_RENDER_MODE, mapLegacyPalette, mapLegacyRender
 import { CustomPaletteState, loadCustomPalette, saveCustomPalette } from "../palettes";
 
 const VIEWER_PREFS_STORAGE_KEY = "phase-viewer";
-const VIEWER_PREFS_VERSION = 3;
+const VIEWER_PREFS_VERSION = 4;
+const VALID_RENDER_STYLES: RenderStyle[] = [
+  "photon-weave",
+  "volumetric-cloud",
+  "caustics",
+  "ribbon",
+  "cells",
+];
 
 interface ViewerPrefs {
   version: number;
@@ -46,17 +53,20 @@ function migrateViewerPrefs(persisted: unknown): ViewerPrefs {
     ...raw,
   } as ViewerPrefs;
 
-  if (prevVersion < VIEWER_PREFS_VERSION) {
-    if (next.renderStyle === "photon-weave" || next.renderStyle == null) {
-      next = { ...next, renderStyle: DEFAULT_RENDER_MODE };
-    }
+  const shouldNormalizeRenderStyle =
+    next.renderStyle == null ||
+    !VALID_RENDER_STYLES.includes(next.renderStyle) ||
+    (prevVersion < VIEWER_PREFS_VERSION && next.renderStyle === "photon-weave");
 
-    if (next.palette === "plasma" || next.palette == null) {
-      next = { ...next, palette: DEFAULT_PALETTE };
-    }
-
-    next = { ...next, version: VIEWER_PREFS_VERSION };
+  if (shouldNormalizeRenderStyle) {
+    next = { ...next, renderStyle: DEFAULT_RENDER_MODE };
   }
+
+  if (next.palette === "plasma" || next.palette == null) {
+    next = { ...next, palette: DEFAULT_PALETTE };
+  }
+
+  next = { ...next, version: VIEWER_PREFS_VERSION };
 
   return next;
 }
