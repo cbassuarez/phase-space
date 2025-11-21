@@ -1,6 +1,9 @@
 {
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "release": "semantic-release"
+  },
+  "devDependencies": {
+    "@semantic-release/exec": "^7.1.0"
   }
 }
-
