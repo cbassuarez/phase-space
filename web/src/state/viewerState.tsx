@@ -221,13 +221,45 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
         const normalizedView = normalizeViewSpec(scene.view);
         const normalizedScene = { ...scene, view: normalizedView } as SceneSpec;
         const normalizedStyle = normalizedView.render_style ?? DEFAULT_RENDER_STYLE;
-        const effectiveRenderStyle =
-          hasPersistedPrefs && normalizedStyle === DEFAULT_RENDER_STYLE
-            ? renderStyle
+        const normalizedPalette = mapLegacyPalette(
+          normalizedView.palette ?? DEFAULT_PALETTE
+        );
+
+        const canonicalRenderStyle =
+          !hasPersistedPrefs &&
+          (normalizedStyle === "photon-weave" || normalizedStyle == null)
+            ? DEFAULT_RENDER_STYLE
             : normalizedStyle;
+
+        const effectiveRenderStyle =
+          hasPersistedPrefs && canonicalRenderStyle === DEFAULT_RENDER_STYLE
+            ? renderStyle
+            : canonicalRenderStyle;
+
+        const effectivePalette = (() => {
+          const isLegacyPalette =
+            normalizedPalette === "plasma" || normalizedPalette == null;
+          if (!hasPersistedPrefs && isLegacyPalette) {
+            return DEFAULT_PALETTE;
+          }
+
+          if (
+            hasPersistedPrefs &&
+            (normalizedPalette === DEFAULT_PALETTE || isLegacyPalette)
+          ) {
+            return palette;
+          }
+
+          return normalizedPalette;
+        })();
+
         const sceneWithEffectiveStyle = {
           ...normalizedScene,
-          view: { ...normalizedScene.view, render_style: effectiveRenderStyle },
+          view: {
+            ...normalizedScene.view,
+            render_style: effectiveRenderStyle,
+            palette: effectivePalette,
+          },
         } as SceneSpec;
         if (
           normalizedView.palette === "custom" &&
@@ -248,11 +280,11 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
         }
         setSceneJson(JSON.stringify({ ...sceneWithEffectiveStyle }, null, 2));
         setSceneSpec(sceneWithEffectiveStyle);
-        if (!hasPersistedPrefs || normalizedStyle !== DEFAULT_RENDER_STYLE) {
-          setRenderStyleState(normalizedStyle);
+        if (!hasPersistedPrefs || canonicalRenderStyle !== DEFAULT_RENDER_STYLE) {
+          setRenderStyleState(effectiveRenderStyle);
         }
-        if (!paletteLocked && scene.view?.palette) {
-          setPaletteState(mapLegacyPalette(scene.view.palette));
+        if (!paletteLocked && (scene.view?.palette || !hasPersistedPrefs)) {
+          setPaletteState(effectivePalette);
         }
         const fallbackCamera =
           (scene.camera as CameraProgram | undefined) ??
