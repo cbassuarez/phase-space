@@ -147,8 +147,10 @@ pub struct PaletteSpec {
 }
 
 fn default_render_style() -> RenderStyle {
-    RenderStyle::NeonFilaments
+    // default to the calm, cloudy renderer
+    RenderStyle::VolumetricCloud
 }
+
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OrbitCameraConfig {
@@ -415,11 +417,11 @@ impl SceneSpec {
                     phi: 0.9,
                     r: 25.0,
                 },
-                palette: Palette::Plasma,
+                palette: Palette::Prism,
                 palette_spec: None,
-                background: Background::Dark,
+                background: Background::Light,
                 point_size: 1.0,
-                render_style: RenderStyle::NeonFilaments,
+                render_style: RenderStyle::VolumetricCloud,
             },
             random_seed: Some(42),
             camera,
@@ -464,11 +466,11 @@ impl SceneSpec {
                     phi: 0.9,
                     r: 18.0,
                 },
-                palette: Palette::Viridis,
+                palette: Palette::Prism,
                 palette_spec: None,
                 background: Background::Dark,
                 point_size: 1.0,
-                render_style: RenderStyle::NeonFilaments,
+                render_style: RenderStyle::VolumetricCloud,
             },
             random_seed: Some(43),
             camera,
@@ -521,7 +523,7 @@ impl SceneSpec {
                 palette_spec: None,
                 background: Background::Dark,
                 point_size: 1.0,
-                render_style: RenderStyle::NeonFilaments,
+                render_style: RenderStyle::VolumetricCloud,
             },
             random_seed: Some(44),
             camera,
@@ -575,7 +577,7 @@ impl SceneSpec {
                 palette_spec: None,
                 background: Background::Dark,
                 point_size: 1.0,
-                render_style: RenderStyle::NeonFilaments,
+                render_style: RenderStyle::VolumetricCloud,
             },
             random_seed: Some(45),
             camera,
