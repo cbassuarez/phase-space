@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/cbassuarez/phase-space/compare/v1.0.0...v1.0.1) (2025-11-21)
+
+
+### Bug Fixes
+
+* version badge ([6a5c46b](https://github.com/cbassuarez/phase-space/commit/6a5c46b8fb2d5ef7b169a74648b18bc6c9324f67))
+
 # 1.0.0 (2025-11-21)
 
 
