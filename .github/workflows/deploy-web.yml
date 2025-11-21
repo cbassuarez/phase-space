@@ -1,4 +1,4 @@
-# NOTE (Codex): npm ci runs only in web/ during the build job (no root usage).
+# NOTE (Codex): Web installs use npm install in web/ (no npm ci at repo root).
 name: Deploy web to GitHub Pages
 
 on:
@@ -41,7 +41,7 @@ jobs:
           cache-dependency-path: web/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-fund --no-audit
 
       - name: Build
         run: npm run build
