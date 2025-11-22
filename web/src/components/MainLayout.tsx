@@ -58,10 +58,10 @@ function MainLayout() {
                     <ControlPanelBottomSheet />
                 </div>
             ) : (
-                <div className="flex h-full w-full flex-1 items-stretch gap-4 px-4 pb-4 pt-4 md:pb-6 md:pt-6 lg:mx-auto lg:max-w-6xl">
-                    {/* Sidebar: fixed, comfortable width; hugs the left until lg, then the whole layout recenters */}
-                    <aside className="flex h-full w-[340px] shrink-0">
-                        <ControlPanelDesktop />
+                <div className="flex h-full w-full flex-1 items-stretch gap-4 px-4 pb-4 pt-4 md:pb-6 md:pt-6">
+                    {/* Sidebar: fixed, comfortable width; hugs the left edge, viewer uses the rest */}
+                    <aside className="flex h-full w-[380px] shrink-0">
+                    <ControlPanelDesktop />
                     </aside>
 
                     {/* Viewer: takes the remaining width, no horizontal scroll */}
