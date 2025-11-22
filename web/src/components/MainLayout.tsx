@@ -58,8 +58,8 @@ function MainLayout() {
                     <ControlPanelBottomSheet />
                 </div>
             ) : (
-                <div className="mx-auto flex w-full max-w-6xl flex-1 min-h-0 items-stretch gap-4 px-4 pb-4 pt-4 md:pb-6 md:pt-6">
-                    <aside className="flex min-h-0 flex-col basis-[260px] shrink-0">
+                <div className="flex w-full flex-1 min-h-0 items-stretch gap-4 px-4 pb-4 pt-4 md:pb-6 md:pt-6">
+                    <aside className="flex min-h-0 flex-col w-[260px] shrink-0">
                         <ControlPanelDesktop />
                     </aside>
                     <section className="flex min-h-0 min-w-0 flex-1">
