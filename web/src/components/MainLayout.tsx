@@ -1,25 +1,8 @@
-import { useEffect, useState } from "react";
 import CanvasPanel from "./canvas/CanvasPanel";
 import ControlPanelDesktop from "./controls/ControlPanelDesktop";
-import ControlPanelBottomSheet from "./controls/ControlPanelBottomSheet";
 import { useViewerState } from "../state/viewerState";
 
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    const update = () => setIsMobile(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-
-  return isMobile;
-}
-
 function MainLayout() {
-  const isMobile = useIsMobile();
   const {
     ready,
     trajectories,
@@ -44,63 +27,35 @@ function MainLayout() {
   const sceneSeed = sceneSpec?.random_seed ?? undefined;
 
   return (
-    <main className="flex flex-1 flex-col">
-      {isMobile ? (
-        <div className="mx-auto flex h-[calc(100vh-3.5rem)] w-full max-w-6xl flex-col px-4">
-          <div className="flex-1 min-w-0">
-            <CanvasPanel
-              ready={ready}
-              loading={loading}
-              error={error}
-              trajectories={trajectories}
-              palette={palette}
-              customPalette={customPalette}
-              background={background}
-              camera={viewCamera}
-              cameraProgram={cameraProgram}
-              randomSeed={sceneSeed}
-              autoSpin={autoSpin}
-              animateHeadTail={animateHeadTail}
-              showFullTrajectory={showFullTrajectory}
-              lineThickness={lineThickness}
-              renderStyle={renderStyle}
-              resolution={resolution}
-              photonWeaveSettings={photonWeaveSettings}
-              causticsSettings={causticsSettings}
-            />
-          </div>
-          <ControlPanelBottomSheet />
+    <div className="app-shell-inner grid h-full max-h-full w-full min-h-0 grid-cols-1 grid-rows-[minmax(0,1fr)_auto] gap-x-[clamp(12px,2vw,24px)] md:grid-cols-[minmax(260px,360px)_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)]">
+      <aside className="order-2 md:order-1 flex h-full min-h-0 flex-col">
+        <ControlPanelDesktop />
+      </aside>
+      <section className="order-1 md:order-2 flex h-full min-h-0 flex-col">
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <CanvasPanel
+            ready={ready}
+            loading={loading}
+            error={error}
+            trajectories={trajectories}
+            palette={palette}
+            customPalette={customPalette}
+            background={background}
+            camera={viewCamera}
+            cameraProgram={cameraProgram}
+            randomSeed={sceneSeed}
+            autoSpin={autoSpin}
+            animateHeadTail={animateHeadTail}
+            showFullTrajectory={showFullTrajectory}
+            lineThickness={lineThickness}
+            renderStyle={renderStyle}
+            resolution={resolution}
+            photonWeaveSettings={photonWeaveSettings}
+            causticsSettings={causticsSettings}
+          />
         </div>
-      ) : (
-        <div className="mx-auto flex w-full max-w-6xl flex-1 items-stretch gap-4 px-4 pb-6 pt-4 md:pb-6 md:pt-6">
-          <aside className="w-full max-w-xs shrink-0">
-            <ControlPanelDesktop />
-          </aside>
-          <section className="flex min-w-0 flex-1">
-            <CanvasPanel
-              ready={ready}
-              loading={loading}
-              error={error}
-              trajectories={trajectories}
-              palette={palette}
-              customPalette={customPalette}
-              background={background}
-              camera={viewCamera}
-              cameraProgram={cameraProgram}
-              randomSeed={sceneSeed}
-              autoSpin={autoSpin}
-              animateHeadTail={animateHeadTail}
-              showFullTrajectory={showFullTrajectory}
-              lineThickness={lineThickness}
-              renderStyle={renderStyle}
-              resolution={resolution}
-              photonWeaveSettings={photonWeaveSettings}
-              causticsSettings={causticsSettings}
-            />
-          </section>
-        </div>
-      )}
-    </main>
+      </section>
+    </div>
   );
 }
 
