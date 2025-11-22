@@ -74,6 +74,10 @@ body {
   overflow-y: auto;
 }
 
+body.viewer-route {
+  overflow: hidden;
+}
+
 .phase-resolution-slider-wrapper {
   --ps-res-track-height: 0.85rem;
   --ps-res-thumb-size: 0.9rem;
