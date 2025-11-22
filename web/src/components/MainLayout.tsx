@@ -58,11 +58,14 @@ function MainLayout() {
                     <ControlPanelBottomSheet />
                 </div>
             ) : (
-                <div className="mx-auto flex w-full max-w-6xl flex-1 min-h-0 items-stretch gap-4 px-4 pb-4 pt-4 md:pb-6 md:pt-6">
-                    <aside className="flex min-h-0 flex-col w-[260px] shrink-0">
+                <div className="flex h-full w-full flex-1 items-stretch gap-4 px-4 pb-4 pt-4 md:pb-6 md:pt-6 lg:mx-auto lg:max-w-6xl">
+                    {/* Sidebar: fixed, comfortable width; hugs the left until lg, then the whole layout recenters */}
+                    <aside className="flex h-full w-[340px] shrink-0">
                         <ControlPanelDesktop />
                     </aside>
-                    <section className="flex min-h-0 min-w-0 flex-1">
+
+                    {/* Viewer: takes the remaining width, no horizontal scroll */}
+                    <section className="flex h-full min-w-0 flex-1">
                         <CanvasPanel
                             ready={ready}
                             loading={loading}
@@ -86,7 +89,6 @@ function MainLayout() {
                     </section>
                 </div>
             )}
-
         </div>
     );
 }
