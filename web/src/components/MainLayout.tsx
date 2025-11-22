@@ -27,7 +27,7 @@ function MainLayout() {
   const sceneSeed = sceneSpec?.random_seed ?? undefined;
 
   return (
-    <div className="app-shell-inner grid h-full w-full min-h-0 grid-cols-1 grid-rows-[minmax(0,1fr)_auto] gap-x-[clamp(12px,2vw,24px)] md:grid-cols-[minmax(260px,360px)_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)]">
+    <div className="app-shell-inner grid h-full max-h-full w-full min-h-0 grid-cols-1 grid-rows-[minmax(0,1fr)_auto] gap-x-[clamp(12px,2vw,24px)] md:grid-cols-[minmax(260px,360px)_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)]">
       <aside className="order-2 md:order-1 flex h-full min-h-0 flex-col">
         <ControlPanelDesktop />
       </aside>
