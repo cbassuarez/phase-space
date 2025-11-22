@@ -127,17 +127,17 @@ function ControlPanelDesktop() {
   };
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-1 flex-col rounded-[18px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-bg)] p-4 shadow-[var(--ps-shadow-soft)]">
-      <div className="flex flex-col gap-1 border-b border-[color:var(--ps-border-subtle)] pb-3">
-        <div className="text-lg font-semibold tracking-tight text-[color:var(--ps-text)]">phase-space</div>
-        <p className="text-xs text-[color:var(--ps-text-soft)]">Interactive phase-space viewer</p>
-        <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-[color:var(--ps-panel-alt-bg)] px-3 py-1 text-[11px] font-medium text-[color:var(--ps-text-soft)]">
-          <span className="h-2 w-2 rounded-full bg-[color:var(--ps-traj-1)]" />
-          <span className="capitalize">{system}</span>
+    <aside className="flex h-full min-h-0 w-full max-w-xs flex-col gap-4 overflow-hidden rounded-[18px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-bg)] p-4 shadow-[var(--ps-shadow-soft)]">
+      <div className="flex-1 min-h-0 space-y-4 overflow-y-auto pr-1">
+        <div className="flex flex-col gap-1 border-b border-[color:var(--ps-border-subtle)] pb-3">
+          <div className="text-lg font-semibold tracking-tight text-[color:var(--ps-text)]">phase-space</div>
+          <p className="text-xs text-[color:var(--ps-text-soft)]">Interactive phase-space viewer</p>
+          <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-[color:var(--ps-panel-alt-bg)] px-3 py-1 text-[11px] font-medium text-[color:var(--ps-text-soft)]">
+            <span className="h-2 w-2 rounded-full bg-[color:var(--ps-traj-1)]" />
+            <span className="capitalize">{system}</span>
+          </div>
         </div>
-      </div>
 
-      <div className="mt-3 flex-1 min-h-0 space-y-4 overflow-y-auto pr-1">
         <section className="flex flex-col gap-2">
           <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">SYSTEM</div>
           <div className="inline-flex items-center rounded-full bg-[color:var(--ps-panel-alt-bg)] p-1">
@@ -553,6 +553,8 @@ function ControlPanelDesktop() {
         </div>
       </section>
 
+      </div>
+
       <section className="mt-auto">
         <button
           type="button"
@@ -586,8 +588,7 @@ function ControlPanelDesktop() {
           )}
         </AnimatePresence>
       </section>
-      </div>
-    </div>
+    </aside>
   );
 }
 

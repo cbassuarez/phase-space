@@ -5,12 +5,12 @@ import { ViewerProvider } from "../state/viewerState";
 
 export const PhaseViewerPage: React.FC = () => {
   return (
-    <ViewerProvider>
-      <ModulationProvider>
-        <div className="flex h-full w-full min-h-0 flex-col">
+    <div className="flex flex-1 min-h-0 bg-[color:var(--ps-bg)]">
+      <ViewerProvider>
+        <ModulationProvider>
           <MainLayout />
-        </div>
-      </ModulationProvider>
-    </ViewerProvider>
+        </ModulationProvider>
+      </ViewerProvider>
+    </div>
   );
 };
