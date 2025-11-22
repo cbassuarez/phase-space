@@ -23,7 +23,7 @@ export const presets: Preset[] = [
     tags: ["default", "balanced", "two-lobed"],
     cameraMode: "orbit",
     description: "The canonical Lorenz attractor at σ=10, ρ=28, β=8/3.",
-    thumbnail: "/images/presets/lorenz-classic.png",
+    thumbnail: "https://cdn.jsdelivr.net/gh/cbassuarez/phase-space/docs/media/lorenz-hero.png",
     query: { system: "lorenz", preset: "classic" },
   },
   {
@@ -33,7 +33,7 @@ export const presets: Preset[] = [
     tags: ["spiral", "sheet", "surface"],
     cameraMode: "grid-surface",
     description: "A smooth spiral sheet that shows off the surface-like structure.",
-    thumbnail: "/images/presets/rossler-sheet.png",
+    thumbnail: "https://cdn.jsdelivr.net/gh/cbassuarez/phase-space/docs/media/rossler-hero.png",
     query: { system: "rossler", preset: "sheet" },
   },
   {
@@ -43,7 +43,7 @@ export const presets: Preset[] = [
     tags: ["knot", "volumetric", "dense"],
     cameraMode: "drone-ghost",
     description: "A dense, flower-like attractor with filaments weaving through each other.",
-    thumbnail: "/images/presets/aizawa-bloom.png",
+    thumbnail: "https://cdn.jsdelivr.net/gh/cbassuarez/phase-space/docs/media/aizawa-hero.png",
     query: { system: "aizawa", preset: "bloom" },
   },
   {
@@ -53,7 +53,7 @@ export const presets: Preset[] = [
     tags: ["torus-like", "loop", "gentle"],
     cameraMode: "path-rider",
     description: "Soft loop-like trajectories that feel like drifting ghost rings.",
-    thumbnail: "/images/presets/thomas-ghost-rings.png",
+    thumbnail: "https://cdn.jsdelivr.net/gh/cbassuarez/phase-space/docs/media/thomas-hero.png",
     query: { system: "thomas", preset: "ghost-rings" },
   },
 ];

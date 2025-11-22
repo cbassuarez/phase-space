@@ -23,7 +23,7 @@ export const fieldNotes: FieldNote[] = [
       "Pushing ρ upward spreads the wings into a noisier halo, making transitions more dramatic.",
     body:
       "When ρ increases beyond the classic 28, the two lobes of the Lorenz attractor stretch and blur. The trajectories still hop back and forth, but the 'butterfly' begins to feel more like a cloud. It’s a great place for orbit or lobe-focus modes: the global shape remains familiar, but local detail becomes more surprising.",
-    thumbnail: "/images/field-notes/lorenz-high-rho.png",
+    thumbnail: "https://cdn.jsdelivr.net/gh/cbassuarez/phase-space/docs/media/lorenz-hero.png",
     query: { system: "lorenz", preset: "high-rho" },
   },
   {
@@ -34,7 +34,7 @@ export const fieldNotes: FieldNote[] = [
       "Tuning parameters toward a tighter core yields a bright knot of trajectories with a softer outer bloom.",
     body:
       "By nudging parameters to favor the central region, Aizawa forms a knot-like core with a fuzzier envelope around it. Drone-style camera passes reveal how the filaments wrap and unwrap around that core, and a slower path rider along a single trajectory can make the structure feel architectural.",
-    thumbnail: "/images/field-notes/aizawa-dense-core.png",
+    thumbnail: "https://cdn.jsdelivr.net/gh/cbassuarez/phase-space/docs/media/aizawa-hero.png",
     query: { system: "aizawa", preset: "dense-core" },
   },
 ];
