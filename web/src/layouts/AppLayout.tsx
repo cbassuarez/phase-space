@@ -15,24 +15,16 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     location.pathname === basePath ||
     location.pathname === `${basePath}/`;
   const mainClass = clsx(
-    "mx-auto flex w-full flex-1 flex-col",
-    isViewer ? "overflow-hidden" : "max-w-6xl px-4 py-8 overflow-y-auto"
+    "flex w-full flex-1 flex-col min-h-0",
+    isViewer ? undefined : "mx-auto max-w-6xl px-4 py-8"
   );
 
   return (
-    <div className="flex min-h-screen flex-col bg-[color:var(--ps-bg)] text-[color:var(--ps-text)]">
+    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
       <TopBar />
 
       {/* Page content */}
-      <main className={mainClass}>
-        {isViewer ? (
-          <div className="mx-auto flex h-full w-full max-w-6xl flex-1 min-h-0 px-4">
-            {children}
-          </div>
-        ) : (
-          <div className="mx-auto flex w-full flex-col">{children}</div>
-        )}
-      </main>
+      <main className={mainClass}>{children}</main>
     </div>
   );
 };
