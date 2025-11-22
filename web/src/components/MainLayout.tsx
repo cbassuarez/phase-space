@@ -58,9 +58,9 @@ function MainLayout() {
                     <ControlPanelBottomSheet />
                 </div>
             ) : (
-                <div className="flex h-full w-full flex-1 items-stretch gap-4 px-4 pb-4 pt-4 md:pb-6 md:pt-6">
+                <div className="flex h-full w-full flex-1 items-stretch gap-1 px-4 pb-4 pt-4 md:pb-6 md:pt-6">
                     {/* Sidebar: fixed, comfortable width; hugs the left edge, viewer uses the rest */}
-                    <aside className="flex h-full w-[440px] shrink-0">
+                    <aside className="flex h-full w-[500px] shrink-0">
                     <ControlPanelDesktop />
                     </aside>
 
