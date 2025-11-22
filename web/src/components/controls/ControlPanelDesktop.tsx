@@ -137,7 +137,10 @@ function ControlPanelDesktop() {
     };
   }, []);
 
-  const orbOffsetPercent = 6 + Math.min(1, Math.max(0, scrollProgress)) * 88;
+  const clampedProgress = Math.min(1, Math.max(0, scrollProgress));
+  const ladderStepCount = 8;
+  const snappedProgress = Math.round(clampedProgress * ladderStepCount) / ladderStepCount;
+  const orbOffsetPercent = 6 + (clampedProgress * 0.7 + snappedProgress * 0.3) * 88;
 
   const paletteOptions: { id: Palette; label: string; swatch: string }[] = useMemo(() => {
     const base = builtinPalettes.map((p) => {
@@ -640,10 +643,10 @@ function ControlPanelDesktop() {
       </section>
 
       {/* Overlay dot ladder + orb scroll indicator */}
-      <div className="pointer-events-none absolute inset-y-4 right-2 flex items-stretch">
+      <div className="pointer-events-none absolute inset-y-3 right-2 flex items-stretch">
         <div
           className={clsx(
-            "phase-scroll-rail",
+            "phase-scroll-rail h-full",
             (scrollProgress > 0 || isScrolling) && "phase-scroll-rail--visible"
           )}
         >

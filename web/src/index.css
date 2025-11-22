@@ -158,20 +158,20 @@ body {
 /* The vertical rail: subtle dotted ladder with soft glass wash */
 .phase-scroll-rail {
   position: relative;
-  width: 8px;
+  width: 6px;
+  height: 100%;
+  padding: 6px 0;
   border-radius: 9999px;
   display: flex;
   align-items: stretch;
   justify-content: center;
   opacity: 0;
   transition:
-    opacity var(--ps-duration-med) var(--ps-ease-out),
-    filter var(--ps-duration-med) var(--ps-ease-out);
+    opacity var(--ps-duration-med) var(--ps-ease-out);
   /* Dot ladder via repeating radial gradient */
   background:
-    radial-gradient(circle, rgba(148, 163, 184, 0.45) 0, rgba(148, 163, 184, 0.45) 45%, transparent 46%)
-      50% 6px / 2px 14px repeat-y;
-  filter: drop-shadow(0 0 4px rgba(15, 23, 42, 0.2));
+    radial-gradient(circle, rgba(148, 163, 184, 0.35) 0, rgba(148, 163, 184, 0.35) 46%, transparent 50%)
+      center 10px / 2px 26px repeat-y;
 }
 
 /* Soft glass overlay to blend with the panel */
@@ -180,33 +180,27 @@ body {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.16),
-    transparent 12%,
-    transparent 88%,
-    rgba(15, 23, 42, 0.16)
-  );
-  opacity: 0.6;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04));
+  opacity: 0.7;
 }
 
 /* Rail becomes visible once we've scrolled or are scrolling */
 .phase-scroll-rail--visible {
-  opacity: 1;
+  opacity: 0.85;
 }
 
 /* Orbital indicator bead */
 .phase-scroll-orb {
   position: absolute;
   left: 50%;
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
   border-radius: 9999px;
   transform: translate(-50%, 6%);
-  background: radial-gradient(circle at 30% 20%, #ffffff 0, #e4ecff 26%, #60a5fa 55%, #a855f7 100%);
+  background: radial-gradient(circle at 35% 25%, #ffffff 0, #e8eefb 35%, #8ab7ff 72%, rgba(80, 119, 204, 0.8) 100%);
   box-shadow:
-    0 0 0 1px rgba(15, 23, 42, 0.4),
-    0 0 8px rgba(59, 130, 246, 0.75);
+    0 0 0 1px rgba(15, 23, 42, 0.35),
+    0 0 6px rgba(80, 119, 204, 0.65);
   transition:
     opacity var(--ps-duration-med) var(--ps-ease-out),
     box-shadow var(--ps-duration-med) var(--ps-ease-out),
