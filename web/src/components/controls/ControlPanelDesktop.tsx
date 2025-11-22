@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import { Pause, Play } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useViewerState } from "../../state/viewerState";
 import type { Palette, SystemId } from "../../types";
 import ResolutionSlider from "./ResolutionSlider";
@@ -60,38 +60,87 @@ function CameraSlider({
 }
 
 function ControlPanelDesktop() {
-    const {
-        system,
-        resolution,
-        autoSpin,
-        animateHeadTail,
-        showFullTrajectory,
-        lineThickness,
-        renderStyle,
-        photonWeaveSettings,
-        setPhotonWeaveSettings,
-        causticsSettings,
-        setCausticsSettings,
-        palette,
-        customPalette,
-        background,
-        setSystem,
-        setResolution,
-        toggleAutoSpin,
-        toggleAnimateHeadTail,
-        toggleShowFullTrajectory,
-        setLineThickness,
-        setRenderStyle,
-        setPalette,
-        setCustomPalette,
-        setBackground,
-        cameraProgram,
-        setCameraProgram,
-        trajectoryMeta,
-        sceneJson,
-    } = useViewerState();
+  const {
+    system,
+    resolution,
+    autoSpin,
+    animateHeadTail,
+    showFullTrajectory,
+    lineThickness,
+    renderStyle,
+    photonWeaveSettings,
+    setPhotonWeaveSettings,
+    causticsSettings,
+    setCausticsSettings,
+    palette,
+    customPalette,
+    background,
+    setSystem,
+    setResolution,
+    toggleAutoSpin,
+    toggleAnimateHeadTail,
+    toggleShowFullTrajectory,
+    setLineThickness,
+    setRenderStyle,
+    setPalette,
+    setCustomPalette,
+    setBackground,
+    cameraProgram,
+    setCameraProgram,
+    trajectoryMeta,
+    sceneJson,
+  } = useViewerState();
 
-    const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+
+  // Custom scroll indicator: track scroll progress of the main content column.
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [isScrolling, setIsScrolling] = useState(false);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    let idleTimer: number | undefined;
+
+    const updateProgress = () => {
+      const max = el.scrollHeight - el.clientHeight;
+      const ratio = max > 0 ? el.scrollTop / max : 0;
+      setScrollProgress(ratio);
+    };
+
+    const handleScroll = () => {
+      updateProgress();
+      setIsScrolling(true);
+      if (idleTimer !== undefined) {
+        window.clearTimeout(idleTimer);
+      }
+      idleTimer = window.setTimeout(() => {
+        setIsScrolling(false);
+      }, 450);
+    };
+
+    // Initialize once.
+    updateProgress();
+
+    el.addEventListener("scroll", handleScroll);
+    // Also update on resize in case content height changes.
+    window.addEventListener("resize", updateProgress);
+
+    return () => {
+      el.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", updateProgress);
+      if (idleTimer !== undefined) {
+        window.clearTimeout(idleTimer);
+      }
+    };
+  }, []);
+
+  const clampedProgress = Math.min(1, Math.max(0, scrollProgress));
+  const ladderStepCount = 8;
+  const snappedProgress = Math.round(clampedProgress * ladderStepCount) / ladderStepCount;
+  const orbOffsetPercent = 6 + (clampedProgress * 0.7 + snappedProgress * 0.3) * 88;
 
   const paletteOptions: { id: Palette; label: string; swatch: string }[] = useMemo(() => {
     const base = builtinPalettes.map((p) => {
@@ -127,8 +176,11 @@ function ControlPanelDesktop() {
   };
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col gap-4 overflow-hidden rounded-[18px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-bg)] p-4 shadow-[var(--ps-shadow-soft)]">
-      <div className="flex-1 min-h-0 space-y-4 overflow-y-auto pr-1">
+    <div className="relative flex h-full min-h-0 w-full flex-col gap-4 overflow-hidden rounded-[18px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-bg)] p-4 shadow-[var(--ps-shadow-soft)]">
+      <div
+        ref={scrollRef}
+        className="phase-control-scroll flex-1 min-h-0 space-y-4 overflow-y-auto pr-3"
+      >
         <div className="flex flex-col gap-1 border-b border-[color:var(--ps-border-subtle)] pb-3">
           <div className="text-lg font-semibold tracking-tight text-[color:var(--ps-text)]">phase-space</div>
           <p className="text-xs text-[color:var(--ps-text-soft)]">Interactive phase-space viewer</p>
@@ -589,6 +641,24 @@ function ControlPanelDesktop() {
           )}
         </AnimatePresence>
       </section>
+
+      {/* Overlay dot ladder + orb scroll indicator */}
+      <div className="pointer-events-none absolute inset-y-3 right-2 flex items-stretch">
+        <div
+          className={clsx(
+            "phase-scroll-rail h-full",
+            (scrollProgress > 0 || isScrolling) && "phase-scroll-rail--visible"
+          )}
+        >
+          <div
+            className={clsx(
+              "phase-scroll-orb",
+              isScrolling ? "phase-scroll-orb--active" : "phase-scroll-orb--idle"
+            )}
+            style={{ transform: `translate(-50%, ${orbOffsetPercent}%)` }}
+          />
+        </div>
+      </div>
     </div>
   );
 }
