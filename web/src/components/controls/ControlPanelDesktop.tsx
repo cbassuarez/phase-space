@@ -127,7 +127,7 @@ function ControlPanelDesktop() {
   };
 
   return (
-    <div className="flex h-full min-h-0 w-full max-w-xs flex-col gap-4 overflow-hidden rounded-[18px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-bg)] p-4 shadow-[var(--ps-shadow-soft)]">
+    <div className="flex h-full min-h-0 w-full flex-col gap-4 overflow-hidden rounded-[18px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-bg)] p-4 shadow-[var(--ps-shadow-soft)]">
       <div className="flex-1 min-h-0 space-y-4 overflow-y-auto pr-1">
         <div className="flex flex-col gap-1 border-b border-[color:var(--ps-border-subtle)] pb-3">
           <div className="text-lg font-semibold tracking-tight text-[color:var(--ps-text)]">phase-space</div>
