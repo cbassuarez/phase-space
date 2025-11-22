@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import clsx from "clsx";
 import TopBar from "../components/TopBar";
@@ -14,6 +14,18 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         location.pathname === "/" ||
         location.pathname === basePath ||
         location.pathname === `${basePath}/`;
+
+    useEffect(() => {
+        if (isViewer) {
+            document.body.classList.add("viewer-route");
+        } else {
+            document.body.classList.remove("viewer-route");
+        }
+
+        return () => {
+            document.body.classList.remove("viewer-route");
+        };
+    }, [isViewer]);
 
     const rootClass = clsx(
         // base shell
