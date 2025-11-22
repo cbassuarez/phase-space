@@ -59,11 +59,11 @@ function MainLayout() {
                 </div>
             ) : (
                 <div className="mx-auto flex w-full max-w-6xl flex-1 min-h-0 items-stretch gap-4 px-4 pb-4 pt-4 md:pb-6 md:pt-6">
-                    <aside className="flex w-full max-w-xs shrink-0 flex-col min-h-0">
+                    <aside className="flex min-h-0 flex-col basis-[260px] shrink-0">
                         <ControlPanelDesktop />
                     </aside>
-                    <section className="flex min-w-0 flex-1 min-h-0">
-                        <CanvasPanel
+                    <section className="flex min-h-0 min-w-0 flex-1">
+                    <CanvasPanel
                             ready={ready}
                             loading={loading}
                             error={error}
