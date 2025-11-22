@@ -165,16 +165,17 @@ function ControlPanelDesktop() {
         <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">VIEW</div>
         <div className="flex items-center justify-between py-1">
           <span className="text-xs text-[color:var(--ps-text-soft)]">Auto-spin camera</span>
-          <button
-            type="button"
-            onClick={toggleAutoSpin}
-            aria-pressed={autoSpin}
-            className={clsx(
-              "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-medium transition",
-              "border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] text-[color:var(--ps-text)] shadow-[var(--ps-shadow-subtle)]",
-              autoSpin && "border-transparent bg-[color:var(--ps-accent)] text-white shadow-md"
-            )}
-          >
+            <button
+                type="button"
+                onClick={toggleAutoSpin}
+                aria-pressed={autoSpin}
+                className={clsx(
+                    "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-medium transition",
+                    "border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] text-[color:var(--ps-text)] shadow-[var(--ps-shadow-subtle)]",
+                    autoSpin &&
+                    "border-[color:var(--ps-accent)] bg-[color:var(--ps-panel-bg)] text-[color:var(--ps-text)] shadow-[var(--ps-shadow-subtle)]"
+                )}
+            >
             {autoSpin ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
             <span className="hidden sm:inline">{autoSpin ? "Pause spin" : "Auto spin"}</span>
             <span className="sm:hidden">{autoSpin ? "Pause" : "Play"}</span>
