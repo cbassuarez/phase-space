@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  /* The app manages scroll inside its own panes. */
+  overflow: hidden;
+}
+
+#root {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
 :root {
   /* Base surfaces */
   --ps-bg: #f6f7fb;
