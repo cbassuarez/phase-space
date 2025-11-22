@@ -8,11 +8,6 @@ body {
   margin: 0;
 }
 
-body {
-  /* The app manages scroll inside its own panes. */
-  overflow: hidden;
-}
-
 #root {
   min-height: 100dvh;
   display: grid;
@@ -74,6 +69,9 @@ body {
     #f6f7fb 55%,
     #edf0f9 100%
   );
+  /* Allow vertical scroll on all routes by default, but hide horizontal. */
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .phase-resolution-slider-wrapper {
