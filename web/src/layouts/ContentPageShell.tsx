@@ -28,12 +28,13 @@ export const ContentPageShell: React.FC<ContentPageShellProps> = ({
       : "max-w-6xl"; // wider, good for grids/cards
 
   return (
-    <div className="flex flex-1 justify-center bg-[color:var(--ps-bg)]">
+    <div className="flex flex-1 justify-center bg-[color:var(--ps-bg)] px-2 sm:px-4 lg:px-6">
       <div
         className={clsx(
           "w-full",
           maxWidth,
           "mx-auto",
+          "px-1 sm:px-0",
           // Horizontal padding + vertical rhythm
           "space-y-6",
           "sm:space-y-8",

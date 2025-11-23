@@ -79,7 +79,7 @@ function TopBar() {
           </span>
         </Link>
         <div className="flex items-center gap-4">
-          <nav className="flex items-center gap-4 text-xs text-[color:var(--ps-text-soft)] md:text-sm">
+          <nav className="flex flex-wrap items-center gap-3 text-xs text-[color:var(--ps-text-soft)] sm:gap-4 md:flex-nowrap md:text-sm">
             <NavLink to="/" className={navLinkClass}>
               Viewer
             </NavLink>

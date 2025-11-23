@@ -41,7 +41,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         isViewer
             ? "overflow-hidden"
             // non-viewer: centered, scrollable content
-            : "overflow-y-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10"
+            : "overflow-y-auto overflow-x-hidden px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10"
     );
 
     return (
