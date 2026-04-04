@@ -1,4 +1,4 @@
-# phase-space
+# phase-space 
 
 > A strange-attractor sandbox and visual instrument: Rust integrator + WebGL renderer + sound-reactive camera playground.
 
