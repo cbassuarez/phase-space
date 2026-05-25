@@ -1,52 +1,12 @@
 import { SceneSpec, SystemId } from "../types";
 import type { CameraProgram } from "../camera/types";
+import { createDefaultCameraProgram } from "../camera/migrate";
 
-function defaultCameraProgram(): CameraProgram {
-  return {
-    mode: "orbit",
-    speed_scalar: 0.35,
-    zoom_scalar: 1.0,
-    stability: 0.25,
-    orbit: {
-      base_radius: 1.2,
-      radius_jitter: 0.05,
-      azimuth_speed: 0.05,
-      polar_speed: 0.08,
-      polar_center: 0.9,
-      polar_amplitude: 0.25,
-      hand_held_jitter: 0.15,
-    },
-    path_rider: {
-      trajectory_index: 0,
-      ahead_offset: 150,
-      lateral_offset: 0.3,
-      up_blend: 0.6,
-      time_scale: 1.0,
-      loop_mode: "wrap",
-    },
-    grid_surface: {
-      plane_height: 0,
-      camera_height: 2.0,
-      tilt_angle: 0.4,
-      travel_radius: 1.2,
-      travel_speed: 0.25,
-      path_shape: "circle",
-    },
-    drone_ghost: {
-      system: "lorenz",
-      radius_scale: 1.4,
-      center_bias: 0.4,
-      speed: 1.0,
-      mode: "offset",
-    },
-    lobe_focus: {
-      dwell_time: 6.0,
-      transition_time: 2.5,
-      zoom_inner: 0.9,
-      zoom_outer: 1.4,
-      cycle_mode: "alternate",
-    },
-  };
+function cameraFor(mode: CameraProgram["mode"], tweak?: (c: CameraProgram) => void): CameraProgram {
+  const cam = createDefaultCameraProgram();
+  cam.mode = mode;
+  tweak?.(cam);
+  return cam;
 }
 
 const defaultScenes: Record<SystemId, SceneSpec> = {
@@ -78,13 +38,10 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       render_style: "volumetric-cloud",
     },
     random_seed: 42,
-    camera: (() => {
-      const cam = defaultCameraProgram();
-      cam.mode = "orbit";
-      cam.zoom_scalar = 1.0;
-      cam.stability = 0.2;
-      return cam;
-    })(),
+    camera: cameraFor("chase", (c) => {
+      c.chase.bank_strength = 0.35;
+      c.chase.time_scale = 0.9;
+    }),
   },
   rossler: {
     id: "rossler-default",
@@ -114,12 +71,10 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       render_style: "volumetric-cloud",
     },
     random_seed: 43,
-    camera: (() => {
-      const cam = defaultCameraProgram();
-      cam.mode = "grid-surface";
-      cam.zoom_scalar = 1.1;
-      return cam;
-    })(),
+    camera: cameraFor("survey", (c) => {
+      c.survey.dir_preset = "iso";
+      c.survey.margin = 1.2;
+    }),
   },
   aizawa: {
     id: "aizawa-default",
@@ -153,13 +108,11 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       render_style: "volumetric-cloud",
     },
     random_seed: 44,
-    camera: (() => {
-      const cam = defaultCameraProgram();
-      cam.mode = "path-rider";
-      cam.path_rider.time_scale = 0.8;
-      cam.path_rider.ahead_offset = 220;
-      return cam;
-    })(),
+    camera: cameraFor("lobe", (c) => {
+      c.lobe.lobe_count = "auto";
+      c.lobe.dwell_time = 5.0;
+      c.lobe.transition_time = 2.0;
+    }),
   },
   thomas: {
     id: "thomas-default",
@@ -188,13 +141,10 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       render_style: "volumetric-cloud",
     },
     random_seed: 45,
-    camera: (() => {
-      const cam = defaultCameraProgram();
-      cam.mode = "drone-ghost";
-      cam.drone_ghost.radius_scale = 1.6;
-      cam.drone_ghost.center_bias = 0.35;
-      return cam;
-    })(),
+    camera: cameraFor("orbit", (c) => {
+      c.orbit.base_radius = 1.4;
+      c.orbit.azimuth_speed = 0.07;
+    }),
   },
 };
 

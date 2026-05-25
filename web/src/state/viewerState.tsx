@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 import { usePhaseWasmEngine } from "../hooks/usePhaseWasmEngine";
 import type { CameraProgram } from "../camera/types";
+import { createDefaultCameraProgram, migrateCameraProgram } from "../camera/migrate";
 import { getDefaultSceneSpec } from "../data/defaultScenes";
 import type {
   Background,
@@ -165,11 +166,11 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
         if (!paletteLocked && scene.view?.palette) {
           setPaletteState(mapLegacyPalette(scene.view.palette));
         }
-        const fallbackCamera =
-          (scene.camera as CameraProgram | undefined) ??
-          (getDefaultSceneSpec(nextSystem).camera as CameraProgram | undefined) ??
+        const rawCamera =
+          (scene.camera as unknown) ??
+          (getDefaultSceneSpec(nextSystem).camera as unknown) ??
           null;
-        setCameraProgramState(fallbackCamera ? JSON.parse(JSON.stringify(fallbackCamera)) : null);
+        setCameraProgramState(migrateCameraProgram(rawCamera));
         setTrajectories(traj);
         const meta = traj.reduce(
           (acc, t) => {
@@ -199,16 +200,17 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const setCameraProgram = useCallback(
     (updater: (c: CameraProgram) => CameraProgram) => {
       setCameraProgramState((prev) => {
-        const base =
+        const base: CameraProgram =
           prev ??
-          (sceneSpec?.camera as CameraProgram | undefined) ??
-          (sceneSpec?.system
-            ? (getDefaultSceneSpec(sceneSpec.system as SystemId).camera as CameraProgram | undefined)
-            : undefined) ??
-          (getDefaultSceneSpec(system).camera as CameraProgram | undefined) ??
-          null;
+          migrateCameraProgram(
+            sceneSpec?.camera ??
+              (sceneSpec?.system
+                ? getDefaultSceneSpec(sceneSpec.system as SystemId).camera
+                : undefined) ??
+              getDefaultSceneSpec(system).camera
+          ) ??
+          createDefaultCameraProgram();
 
-        if (!base) return prev;
         const next = updater(JSON.parse(JSON.stringify(base)) as CameraProgram);
         setSceneSpec((prevSpec) => {
           if (!prevSpec) return prevSpec;

@@ -1,62 +1,44 @@
-export type CameraMode =
-  | "orbit"
-  | "path-rider"
-  | "grid-surface"
-  | "drone-ghost"
-  | "lobe-focus";
+export type CameraMode = "survey" | "orbit" | "chase" | "lobe";
+
+export type SurveyDirPreset = "iso" | "front" | "top";
+
+export interface SurveyCameraConfig {
+  rotate: boolean;
+  rotate_speed: number;
+  margin: number;
+  pitch: number;
+  dir_preset: SurveyDirPreset;
+}
 
 export interface OrbitCameraConfig {
   base_radius: number;
-  radius_jitter: number;
   azimuth_speed: number;
   polar_speed: number;
   polar_center: number;
   polar_amplitude: number;
-  hand_held_jitter: number;
 }
 
-export type PathRiderLoopMode = "wrap" | "ping-pong" | "clamp";
+export type ChaseLoopMode = "wrap" | "ping-pong" | "clamp";
 
-export interface PathRiderCameraConfig {
+export interface ChaseCameraConfig {
   trajectory_index: number;
-  ahead_offset: number;
-  lateral_offset: number;
-  up_blend: number;
+  chase_distance: number;
+  ride_height: number;
+  look_ahead: number;
+  bank_strength: number;
   time_scale: number;
-  loop_mode: PathRiderLoopMode;
+  loop_mode: ChaseLoopMode;
 }
 
-export type GridSurfacePathShape = "circle" | "lemniscate" | "line-scan";
+export type LobeCycleMode = "alternate" | "random";
+export type LobeCount = "auto" | 2 | 3 | 4;
 
-export interface GridSurfaceCameraConfig {
-  plane_height: number;
-  camera_height: number;
-  tilt_angle: number;
-  travel_radius: number;
-  travel_speed: number;
-  path_shape: GridSurfacePathShape;
-}
-
-export type DroneSystem = "lorenz" | "rossler" | "thomas";
-
-export type DroneGhostMode = "spherical" | "offset";
-
-export interface DroneGhostCameraConfig {
-  system: DroneSystem;
-  radius_scale: number;
-  center_bias: number;
-  speed: number;
-  mode: DroneGhostMode;
-}
-
-export type LobeFocusCycleMode = "alternate" | "random";
-
-export interface LobeFocusCameraConfig {
+export interface LobeCameraConfig {
+  lobe_count: LobeCount;
   dwell_time: number;
   transition_time: number;
-  zoom_inner: number;
-  zoom_outer: number;
-  cycle_mode: LobeFocusCycleMode;
+  zoom: number;
+  cycle_mode: LobeCycleMode;
 }
 
 export interface CameraProgram {
@@ -65,11 +47,10 @@ export interface CameraProgram {
   zoom_scalar: number;
   stability: number;
 
+  survey: SurveyCameraConfig;
   orbit: OrbitCameraConfig;
-  path_rider: PathRiderCameraConfig;
-  grid_surface: GridSurfaceCameraConfig;
-  drone_ghost: DroneGhostCameraConfig;
-  lobe_focus: LobeFocusCameraConfig;
+  chase: ChaseCameraConfig;
+  lobe: LobeCameraConfig;
 }
 
 export interface CameraPose {
@@ -82,6 +63,8 @@ export interface CameraContext {
   t: number;
   dt: number;
   randomSeed: number;
+
+  aspect: number;
 
   bboxMin: [number, number, number];
   bboxMax: [number, number, number];

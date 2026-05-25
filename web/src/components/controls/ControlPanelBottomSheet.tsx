@@ -18,12 +18,11 @@ const systemLabels: { id: SystemId; label: string }[] = [
 ];
 
 const cameraModes = [
+  { id: "survey", label: "View" },
   { id: "orbit", label: "Orbit" },
-  { id: "path-rider", label: "Path" },
-  { id: "grid-surface", label: "Grid" },
-  { id: "drone-ghost", label: "Ghost" },
-  { id: "lobe-focus", label: "Lobe" },
-];
+  { id: "chase", label: "Chase" },
+  { id: "lobe", label: "Lobes" },
+] as const;
 
 function ControlPanelBottomSheet() {
   const {
@@ -316,7 +315,7 @@ function ControlPanelBottomSheet() {
         {cameraProgram && (
           <section className="mt-2 space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] px-3 py-2">
             <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">CAMERA</div>
-            <div className="grid grid-cols-3 gap-2 text-[11px] text-[color:var(--ps-text-soft)]">
+            <div className="grid grid-cols-4 gap-2 text-[11px] text-[color:var(--ps-text-soft)]">
               {cameraModes.map((opt) => (
                 <button
                   key={opt.id}

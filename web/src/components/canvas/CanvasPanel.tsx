@@ -224,14 +224,19 @@ const normalized = useMemo(() => normalizeTrajectories(trajectories), [trajector
       if (autoSpin) {
         timeRef.current += frameDelta;
       }
+      const viewSize = state.size;
+      const aspect = viewSize && viewSize.height > 0
+        ? viewSize.width / viewSize.height
+        : 16 / 9;
       const ctx: CameraContext = {
         t: timeRef.current,
         dt: frameDelta,
         randomSeed: randomSeed ?? 42,
+        aspect,
         bboxMin: bounds.bboxMin,
         bboxMax: bounds.bboxMax,
         centroid: bounds.centroid,
-          trajectories: normalizedTrajectories as [number, number, number][][],
+        trajectories: normalizedTrajectories as [number, number, number][][],
         primaryTrajectoryIndex: 0,
       };
       const pose = computeCameraPose(cameraProgram, ctx, lastPoseRef.current);

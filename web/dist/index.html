@@ -2,58 +2,43 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Phase Toy</title>
+    <title>phase-space viewer</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-      html, body {
-        margin: 0;
-        padding: 0;
-        background: radial-gradient(circle at top, #101020, #050510);
-        color: #f5f5ff;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-      }
-      #app {
-        width: 100vw;
-        height: 100vh;
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 320px;
-      }
-      #canvas-root {
-        position: relative;
-      }
-      #canvas-root canvas {
-        width: 100%;
-        height: 100%;
-        display: block;
-      }
-      #sidebar {
-        padding: 1rem;
-        box-sizing: border-box;
-        border-left: 1px solid rgba(255, 255, 255, 0.08);
-        background: linear-gradient(180deg, rgba(12, 12, 28, 0.95), rgba(6, 6, 18, 0.98));
-      }
-      .sidebar-title {
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-      }
-      .sidebar-subtitle {
-        font-size: 0.85rem;
-        opacity: 0.7;
-        margin-bottom: 1rem;
-      }
-    </style>
-    <script type="module" crossorigin src="/phase-space/assets/index-CvHMtflv.js"></script>
+    <!-- Favicon / tab icon -->
+    <link
+      rel="icon"
+      type="image/png"
+      href="/phase-space/phase-space-icon.png"
+    />
+
+    <!-- Apple / iOS home-screen icons -->
+    <link
+      rel="apple-touch-icon"
+      sizes="29x29"
+      href="/phase-space/phase-space-icon-29.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="76x76"
+      href="/phase-space/phase-space-icon-76.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="/phase-space/phase-space-icon.png"
+    />
+
+    <!-- Web app manifest (for Android / PWA-style install) -->
+    <link
+      rel="manifest"
+      href="/phase-space/site.webmanifest"
+    />
+
+    <!-- Optional but recommended for theming on mobile -->
+    <meta name="theme-color" content="#050814" />
+    <script type="module" crossorigin src="/phase-space/assets/index-BGZp6q--.js"></script>
+    <link rel="stylesheet" crossorigin href="/phase-space/assets/index-COGPG0po.css">
   </head>
-  <body>
-    <div id="app">
-      <div id="canvas-root"></div>
-      <aside id="sidebar">
-        <div class="sidebar-title">Phase Toy</div>
-        <div class="sidebar-subtitle">Lorenz default scene (v1 skeleton)</div>
-        <pre id="debug" style="font-size: 0.7rem; max-height: 80vh; overflow: auto;"></pre>
-      </aside>
-    </div>
+  <body class="bg-[color:var(--ps-bg)]">
+    <div id="root"></div>
   </body>
 </html>
-
