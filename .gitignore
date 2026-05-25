@@ -2,5 +2,7 @@
 /target
 web/node_modules
 web/dist
-web/src/wasm
+web/src/wasm/*
+!web/src/wasm/.gitignore
+!web/src/wasm/phasewasm.d.ts
 phasewasm/src/wasm
