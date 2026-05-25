@@ -15,7 +15,8 @@
     "semantic-release": "^25.0.2"
   },
   "dependencies": {
-    "husky": "^9.1.7"
+    "husky": "^9.1.7",
+    "lucide-react": "^1.16.0"
   },
   "version": "1.0.6"
 }
