@@ -9,41 +9,33 @@ import {
   Vector3,
 } from "three";
 import { colorForTrajectory } from "./utils";
+import { getLighting } from "../../../visual/lighting";
 import type { RendererStrategy, RenderContext, TrajectoryData } from "./base";
 
 /**
- * Ribbon renderer — "continuous band draped along the trajectory".
+ * Ribbon renderer — lit version.
  *
- * Why this is a rewrite, not a tweak of the previous version:
+ * Geometry is unchanged from the previous Bishop-frame rewrite. What
+ * changed: the unlit shader is replaced with a Lambert + half-
+ * Lambert-fill shader that samples the shared LightingConfig
+ * singleton. The ribbon now visibly turns through the key light as
+ * the camera orbits and the lit/shadow sides separate; tail still
+ * dims via the per-vertex `t` aging gradient.
  *
- *   1. Frame stability. The old code built the side-vector as
- *      `cross(worldUp, tangent)`. When the trajectory tangent is
- *      anywhere near (0,1,0) — extremely common on Lorenz lobe
- *      transitions — that cross product collapses toward zero and the
- *      ribbon either snaps 180° or degenerates to a line. Here we
- *      compute a parallel-transport (Bishop) frame: pick a normal at
- *      the start, then rotate it incrementally to track each tangent
- *      change. No singularities, no flips, smooth twist behaviour.
- *
- *   2. Materials. The old code used MeshStandardMaterial with
- *      `emissiveIntensity` but never set an `emissive` color, so that
- *      uniform did nothing. Standard-mat also requires scene lights
- *      to look like anything. We use a custom unlit ShaderMaterial
- *      that fakes form from the view-space normal (rim/facing term),
- *      so the ribbon reads as a 3D band regardless of what lights the
- *      host scene happens to have.
- *
- *   3. Aging gradient. Vertex attribute `t` runs 0→1 along the
- *      trajectory; the fragment shader uses it to dim the tail. This
- *      is what gives the band motion read even when it's static.
+ * Lighting in world space: we pass the world-space surface normal as
+ * an attribute and dot it against the world-space key/fill directions
+ * directly. Avoids the view-matrix gymnastics that the previous fake-
+ * shading relied on, and means the light direction is read from the
+ * tweaks without any per-renderer plumbing.
  */
 
 const ribbonVertex = `
   attribute float t;
-  varying vec3 vNormal;
+  attribute vec3 aNormal;     // world-space surface normal
+  varying vec3  vNormal;
   varying float vT;
   void main() {
-    vNormal = normalize(normalMatrix * normal);
+    vNormal = aNormal;
     vT = t;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
@@ -52,56 +44,63 @@ const ribbonVertex = `
 const ribbonFragment = `
   varying vec3 vNormal;
   varying float vT;
-  uniform vec3 uColor;
+  uniform vec3  uColor;
+  uniform vec3  uKeyDir;
+  uniform vec3  uKeyColor;
+  uniform float uKeyI;
+  uniform vec3  uFillDir;
+  uniform vec3  uFillColor;
+  uniform float uFillI;
+  uniform vec3  uAmbient;
   uniform float uEmissive;
-  uniform float uHeadBoost;
 
   void main() {
-    // View-space facing term — surfaces pointing toward the camera
-    // (|n.z| ~ 1) read brighter than edge-on ones. Cheap fake shading
-    // that survives without any scene lights.
-    float facing = abs(vNormal.z);
-    float shade  = mix(0.45, 1.0, facing);
+    vec3 n = normalize(vNormal);
 
-    // Head/tail gradient. uHeadBoost lets the modulation engine push
-    // the head brighter without recomputing geometry.
+    // Lambert on key, but allow both sides of the ribbon to receive
+    // light: |dot| because the ribbon has no "inside". This is what
+    // most attractor ribbons want, otherwise half of every band is
+    // pitch black.
+    float key  = abs(dot(n, normalize(uKeyDir)));
+    // Half-Lambert fill: (n.l*0.5 + 0.5)^2 — softer than full Lambert,
+    // good as a sky-bounce term.
+    float halfFill = dot(n, normalize(uFillDir)) * 0.5 + 0.5;
+    float fill = halfFill * halfFill;
+
+    vec3 lit =
+        uColor * uKeyColor  * key  * uKeyI
+      + uColor * uFillColor * fill * uFillI
+      + uColor * uAmbient;
+
+    // Tail aging dims the band; head stays at full lit value.
     float age = mix(0.55, 1.0, vT);
+    vec3 col = lit * age * (1.0 + uEmissive * 0.3);
 
-    vec3 col = uColor * shade * age * (1.0 + uEmissive * 0.35);
-    // Subtle warm tint on the bright facing edge — gives the band an
-    // iridescent read instead of flat-colored vinyl.
-    col += pow(facing, 6.0) * uColor * 0.25;
-
-    // Edge-fade for tail so trails dissolve instead of stopping.
-    float alpha = mix(0.55, 1.0, vT * vT);
-    gl_FragColor = vec4(col * uHeadBoost, alpha);
+    float alpha = mix(0.6, 1.0, vT * vT);
+    gl_FragColor = vec4(col, alpha);
   }
 `;
 
-interface RibbonMaterialUniforms {
+interface RibbonUniforms {
   uColor: { value: Color };
   uEmissive: { value: number };
-  uHeadBoost: { value: number };
+  uKeyDir: { value: Vector3 };
+  uKeyColor: { value: Color };
+  uKeyI: { value: number };
+  uFillDir: { value: Vector3 };
+  uFillColor: { value: Color };
+  uFillI: { value: number };
+  uAmbient: { value: Color };
 }
 
 function ribbonWidthFor(data: TrajectoryData): number {
   const base =
-    data.lineThickness === "thick"
-      ? 0.28
-      : data.lineThickness === "thin"
-      ? 0.12
-      : 0.18;
+    data.lineThickness === "thick" ? 0.28
+    : data.lineThickness === "thin" ? 0.12
+    : 0.18;
   return base * (data.ribbonWidth ?? 1);
 }
 
-/**
- * Build a parallel-transport (Bishop) frame along the curve.
- *
- * Returns per-vertex normals (the width direction of the ribbon).
- * Unlike a Frenet frame this doesn't twist at inflection points,
- * and unlike `cross(up, tangent)` it doesn't degenerate when the
- * tangent aligns with world-up.
- */
 function buildFrames(points: Vector3[]): { normals: Vector3[]; tangents: Vector3[] } {
   const n = points.length;
   const tangents: Vector3[] = new Array(n);
@@ -111,55 +110,41 @@ function buildFrames(points: Vector3[]): { normals: Vector3[]; tangents: Vector3
     tangents[i] = new Vector3().subVectors(next, prev).normalize();
     if (!isFinite(tangents[i].x)) tangents[i].set(1, 0, 0);
   }
-
-  // Pick an initial normal orthogonal to T[0]. Prefer the axis least
-  // aligned with the tangent so the cross product is well-conditioned.
   const t0 = tangents[0];
-  const ax = Math.abs(t0.x);
-  const ay = Math.abs(t0.y);
-  const az = Math.abs(t0.z);
+  const ax = Math.abs(t0.x), ay = Math.abs(t0.y), az = Math.abs(t0.z);
   const seed =
-    ax <= ay && ax <= az
-      ? new Vector3(1, 0, 0)
-      : ay <= az
-      ? new Vector3(0, 1, 0)
-      : new Vector3(0, 0, 1);
+    ax <= ay && ax <= az ? new Vector3(1, 0, 0)
+    : ay <= az            ? new Vector3(0, 1, 0)
+    :                       new Vector3(0, 0, 1);
   const n0 = new Vector3().crossVectors(t0, seed).normalize();
   if (!isFinite(n0.x) || n0.lengthSq() < 1e-8) n0.set(0, 1, 0);
-
   const normals: Vector3[] = new Array(n);
   normals[0] = n0;
-
   const axis = new Vector3();
   for (let i = 1; i < n; i++) {
     const tPrev = tangents[i - 1];
     const tCurr = tangents[i];
     axis.crossVectors(tPrev, tCurr);
-    const sinTheta = axis.length();
-    const cosTheta = Math.max(-1, Math.min(1, tPrev.dot(tCurr)));
-
-    if (sinTheta < 1e-6) {
-      // Tangent unchanged — carry the normal forward unrotated.
+    const sinT = axis.length();
+    const cosT = Math.max(-1, Math.min(1, tPrev.dot(tCurr)));
+    if (sinT < 1e-6) {
       normals[i] = normals[i - 1].clone();
       continue;
     }
-    axis.divideScalar(sinTheta); // normalize
-    const theta = Math.atan2(sinTheta, cosTheta);
-    // Rodrigues' rotation: rotate previous normal around `axis` by theta.
+    axis.divideScalar(sinT);
+    const theta = Math.atan2(sinT, cosT);
+    const c = Math.cos(theta);
+    const s = Math.sin(theta);
     const nPrev = normals[i - 1];
-    const cos = Math.cos(theta);
-    const sin = Math.sin(theta);
     const dot = axis.dot(nPrev);
     const rotated = new Vector3()
-      .copy(nPrev).multiplyScalar(cos)
-      .addScaledVector(new Vector3().crossVectors(axis, nPrev), sin)
-      .addScaledVector(axis, dot * (1 - cos));
-    // Re-orthogonalize against the new tangent to prevent slow drift.
+      .copy(nPrev).multiplyScalar(c)
+      .addScaledVector(new Vector3().crossVectors(axis, nPrev), s)
+      .addScaledVector(axis, dot * (1 - c));
     rotated.addScaledVector(tCurr, -rotated.dot(tCurr)).normalize();
     if (!isFinite(rotated.x)) rotated.copy(nPrev);
     normals[i] = rotated;
   }
-
   return { normals, tangents };
 }
 
@@ -178,14 +163,14 @@ export class RibbonRenderer implements RendererStrategy {
     threeScene.add(this.group);
 
     const widthBase = ribbonWidthFor(data);
+    const lighting = getLighting();
 
     data.trajectories.forEach((traj, idx) => {
       if (traj.length < 2) return;
-
       const points = traj.map((p) => new Vector3(p[0], p[1], p[2]));
       const { normals, tangents } = buildFrames(points);
 
-      const positions = new Float32Array(traj.length * 6); // 2 verts/ring * 3
+      const positions = new Float32Array(traj.length * 6);
       const vertNormals = new Float32Array(traj.length * 6);
       const tAttr = new Float32Array(traj.length * 2);
 
@@ -193,22 +178,14 @@ export class RibbonRenderer implements RendererStrategy {
         const p = points[i];
         const n = normals[i];
         const t = tangents[i];
-        // Surface normal = bishop normal × tangent — points "out of the band".
         const surface = new Vector3().crossVectors(t, n).normalize();
 
-        const lx = p.x - n.x * widthBase;
-        const ly = p.y - n.y * widthBase;
-        const lz = p.z - n.z * widthBase;
-        const rx = p.x + n.x * widthBase;
-        const ry = p.y + n.y * widthBase;
-        const rz = p.z + n.z * widthBase;
-
-        positions[i * 6 + 0] = lx;
-        positions[i * 6 + 1] = ly;
-        positions[i * 6 + 2] = lz;
-        positions[i * 6 + 3] = rx;
-        positions[i * 6 + 4] = ry;
-        positions[i * 6 + 5] = rz;
+        positions[i * 6 + 0] = p.x - n.x * widthBase;
+        positions[i * 6 + 1] = p.y - n.y * widthBase;
+        positions[i * 6 + 2] = p.z - n.z * widthBase;
+        positions[i * 6 + 3] = p.x + n.x * widthBase;
+        positions[i * 6 + 4] = p.y + n.y * widthBase;
+        positions[i * 6 + 5] = p.z + n.z * widthBase;
 
         vertNormals[i * 6 + 0] = surface.x;
         vertNormals[i * 6 + 1] = surface.y;
@@ -224,29 +201,27 @@ export class RibbonRenderer implements RendererStrategy {
 
       const indices: number[] = [];
       for (let i = 0; i < traj.length - 1; i++) {
-        const a = i * 2;
-        const b = i * 2 + 1;
-        const c = i * 2 + 2;
-        const d = i * 2 + 3;
+        const a = i * 2, b = i * 2 + 1, c = i * 2 + 2, d = i * 2 + 3;
         indices.push(a, b, d, a, d, c);
       }
 
       const geometry = new BufferGeometry();
       geometry.setIndex(indices);
       geometry.setAttribute("position", new BufferAttribute(positions, 3));
-      geometry.setAttribute("normal", new BufferAttribute(vertNormals, 3));
+      geometry.setAttribute("aNormal", new BufferAttribute(vertNormals, 3));
       geometry.setAttribute("t", new BufferAttribute(tAttr, 1));
 
-      const color = colorForTrajectory(
-        idx,
-        data.palette,
-        data.customPalette,
-        data.paletteShift ?? 0
-      );
-      const uniforms: RibbonMaterialUniforms = {
-        uColor: { value: color.clone() },
+      const baseColor = colorForTrajectory(idx, data.palette, data.customPalette, data.paletteShift ?? 0);
+      const uniforms: RibbonUniforms = {
+        uColor: { value: baseColor.clone() },
         uEmissive: { value: data.emissiveBoost ?? 0 },
-        uHeadBoost: { value: 1 },
+        uKeyDir: { value: new Vector3().fromArray(lighting.keyDir) },
+        uKeyColor: { value: new Color().fromArray(lighting.keyColor) },
+        uKeyI: { value: lighting.keyIntensity },
+        uFillDir: { value: new Vector3().fromArray(lighting.fillDir) },
+        uFillColor: { value: new Color().fromArray(lighting.fillColor) },
+        uFillI: { value: lighting.fillIntensity },
+        uAmbient: { value: new Color().fromArray(lighting.ambient) },
       };
       const material = new ShaderMaterial({
         uniforms: uniforms as unknown as Record<string, { value: unknown }>,
@@ -265,8 +240,6 @@ export class RibbonRenderer implements RendererStrategy {
   }
 
   update(context: RenderContext, data: TrajectoryData) {
-    // Anything that changes geometry (width, palette indexing, line
-    // thickness, trajectories themselves) is structural — rebuild.
     this.dispose(context);
     this.init(context, data);
   }
@@ -274,23 +247,26 @@ export class RibbonRenderer implements RendererStrategy {
   applyDynamic(data: TrajectoryData) {
     if (!this.data) return;
     this.data = { ...this.data, ...data };
-
     const widthScale = this.data.ribbonWidth ?? 1;
     const emissive = this.data.emissiveBoost ?? 0;
+    const paletteShift = this.data.paletteShift ?? 0;
+    const lighting = getLighting();
 
     this.meshes.forEach((mesh, idx) => {
       mesh.scale.setScalar(Math.max(0.4, Math.min(2.5, widthScale)));
       const mat = this.materials[idx];
       if (!mat) return;
-      const u = mat.uniforms as unknown as RibbonMaterialUniforms;
-      const baseColor = colorForTrajectory(
-        idx,
-        this.data!.palette,
-        this.data!.customPalette,
-        this.data?.paletteShift ?? 0
-      );
+      const u = mat.uniforms as unknown as RibbonUniforms;
+      const baseColor = colorForTrajectory(idx, this.data!.palette, this.data!.customPalette, paletteShift);
       u.uColor.value.copy(baseColor);
       u.uEmissive.value = emissive;
+      u.uKeyDir.value.fromArray(lighting.keyDir);
+      u.uKeyColor.value.fromArray(lighting.keyColor);
+      u.uKeyI.value = lighting.keyIntensity;
+      u.uFillDir.value.fromArray(lighting.fillDir);
+      u.uFillColor.value.fromArray(lighting.fillColor);
+      u.uFillI.value = lighting.fillIntensity;
+      u.uAmbient.value.fromArray(lighting.ambient);
       mat.needsUpdate = true;
     });
   }
@@ -298,11 +274,7 @@ export class RibbonRenderer implements RendererStrategy {
   updateDrawWindow(trajectoryIndex: number, start: number, count: number) {
     const mesh = this.meshes[trajectoryIndex];
     if (!mesh) return;
-    // Two vertices per trajectory sample, six indices per quad.
-    // setDrawRange on an indexed geometry counts indices.
-    const indexStart = start * 6;
-    const indexCount = Math.max(0, count - 1) * 6;
-    mesh.geometry.setDrawRange(indexStart, indexCount);
+    mesh.geometry.setDrawRange(start * 6, Math.max(0, count - 1) * 6);
   }
 
   dispose({ threeScene }: RenderContext) {
@@ -311,11 +283,8 @@ export class RibbonRenderer implements RendererStrategy {
       this.group.traverse((obj) => {
         const mesh = obj as Mesh;
         if (mesh.geometry) mesh.geometry.dispose();
-        if (Array.isArray(mesh.material)) {
-          mesh.material.forEach((m) => m.dispose());
-        } else if (mesh.material) {
-          mesh.material.dispose();
-        }
+        if (Array.isArray(mesh.material)) mesh.material.forEach((m) => m.dispose());
+        else if (mesh.material) mesh.material.dispose();
       });
     }
     this.group = null;

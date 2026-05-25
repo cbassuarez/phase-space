@@ -231,7 +231,7 @@ const normalized = useMemo(() => normalizeTrajectories(trajectories), [trajector
         bboxMin: bounds.bboxMin,
         bboxMax: bounds.bboxMax,
         centroid: bounds.centroid,
-        trajectories: trajectories as [number, number, number][][],
+          trajectories: normalizedTrajectories as [number, number, number][][],
         primaryTrajectoryIndex: 0,
       };
       const pose = computeCameraPose(cameraProgram, ctx, lastPoseRef.current);

@@ -3,6 +3,7 @@ import ControlPanelDesktop from "./controls/ControlPanelDesktop";
 import ControlPanelBottomSheet from "./controls/ControlPanelBottomSheet";
 import { useViewerState } from "../state/viewerState";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { LightingTweaks } from "./LightingTweaks";
 
 function MainLayout() {
     const isMobile = useIsMobile();
@@ -31,6 +32,7 @@ function MainLayout() {
 
     return (
         <div className="flex w-full flex-1 min-h-0 flex-col">
+            <LightingTweaks />
             {isMobile ? (
                 <div className="mx-auto flex w-full max-w-6xl flex-1 min-h-0 flex-col px-4 pb-4 pt-4">
                     <div className="flex-1 min-h-0 min-w-0">

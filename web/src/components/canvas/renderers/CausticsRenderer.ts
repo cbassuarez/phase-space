@@ -161,13 +161,20 @@ const accumDebugFragment = `
 
 function buildPaletteTexture(id: Palette, customPalette: CustomPaletteState): DataTexture {
   const size = 256;
-  const data = new Uint8Array(size * 3);
+  // RGBA with explicit alpha = 255. The previous version used
+  // Uint8Array(size*3) with DataTexture's default RGBAFormat,
+  // which reads four bytes per pixel from a three-byte stride and
+  // walks off the end of the buffer. Some drivers tolerate it,
+  // others fault on the next allocation — exactly the crash on
+  // palette swap.
+  const data = new Uint8Array(size * 4);
   for (let i = 0; i < size; i++) {
     const t = i / (size - 1);
     const color = samplePalette(id, t, customPalette).clone().convertLinearToSRGB();
-    data[i * 3 + 0] = Math.round(color.r * 255);
-    data[i * 3 + 1] = Math.round(color.g * 255);
-    data[i * 3 + 2] = Math.round(color.b * 255);
+    data[i * 4 + 0] = Math.round(color.r * 255);
+    data[i * 4 + 1] = Math.round(color.g * 255);
+    data[i * 4 + 2] = Math.round(color.b * 255);
+    data[i * 4 + 3] = 255;
   }
   const tex = new DataTexture(data, size, 1);
   tex.colorSpace = SRGBColorSpace;
@@ -345,8 +352,10 @@ export class CausticsRenderer implements RendererStrategy {
         vEnergy = aEnergy;
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
         gl_Position = projectionMatrix * mv;
-        // Keep pointSize roughly constant in NDC by scaling by 1/-z.
-        gl_PointSize = uPointSize * (12.0 / max(1.0, -mv.z));
+        // Keep splat size constant in framebuffer pixels — exposure
+        // accumulation needs uniform contribution per sample, not
+        // perspective-shrunk dots.
+        gl_PointSize = uPointSize;
       }
     `;
     const splatFrag = `
@@ -363,7 +372,10 @@ export class CausticsRenderer implements RendererStrategy {
     this.splatMaterial = new ShaderMaterial({
       uniforms: {
         uEnergyGain: { value: this.energyGain },
-        uPointSize:  { value: Math.max(6, Math.round(this.texSize / 64)) },
+        // Bigger sprites = more overlap = brighter caustic concentrations.
+        // tex/32 at 512 -> 16px sprites, which is what we want at this
+        // accumulation resolution.
+        uPointSize:  { value: Math.max(10, Math.round(this.texSize / 32)) },
       },
       vertexShader: splatVert,
       fragmentShader: splatFrag,
@@ -421,8 +433,10 @@ export class CausticsRenderer implements RendererStrategy {
         uTexture:       { value: this.finalTarget.texture },
         uBaseTexture:   { value: this.splatTarget.texture },
         uIntensity:     { value: data.caustics?.intensity ?? 1 },
-        uExposure:      { value: 1.6 },
-        uThreshold:     { value: 0.06 },
+        // Exposure + threshold are tuned together with the new
+        // energyGain so realistic caustic peaks reach tone ~0.8.
+        uExposure:      { value: 2.4 },
+        uThreshold:     { value: 0.008 },
         uBloomStrength: { value: 0.72 },
         uPalette:       { value: this.paletteTexture },
         uPaletteWarm:   { value: this.warmPaletteTexture },
@@ -448,12 +462,16 @@ export class CausticsRenderer implements RendererStrategy {
   }
 
   private computeEnergyGain(intensity: number): number {
+    // Per-splat energy. The blur+tonemap stages downstream are tuned
+    // for hot-pixel peaks around 1.0, so we want enough per-splat
+    // contribution that ~5-10 overlapping samples push the
+    // accumulator past the tonemap threshold (~0.01) into useful
+    // exposure range. Constant-ish across trajectory counts; we damp
+    // a little by sqrt(trajCount) so adding more seeds doesn't blow
+    // out the image.
     const trajCount = this.data?.trajectories.length ?? 1;
-    const samples = Math.max(1, this.pointCount);
-    const targetEnergy = 6.0;
-    const normalized = targetEnergy / samples;
-    const trajectoryBalance = Math.max(0.4, Math.min(1.4, Math.sqrt(trajCount)));
-    return normalized * intensity * trajectoryBalance * 12; // empirical
+    const trajectoryDamp = 1 / Math.max(0.7, Math.sqrt(trajCount * 0.5));
+    return 0.55 * intensity * trajectoryDamp;
   }
 
   private renderCaustics() {
@@ -508,21 +526,6 @@ export class CausticsRenderer implements RendererStrategy {
     }
   }
 
-  private refreshPalettes(palette: Palette, customPalette: CustomPaletteState) {
-    this.paletteTexture?.dispose();
-    this.warmPaletteTexture?.dispose();
-    this.coolPaletteTexture?.dispose();
-    this.paletteTexture     = buildPaletteTexture(palette, customPalette);
-    this.warmPaletteTexture = buildPaletteTexture("solar", customPalette);
-    this.coolPaletteTexture = buildPaletteTexture("abyss", customPalette);
-    if (this.outputMaterial) {
-      this.outputMaterial.uniforms.uPalette.value     = this.paletteTexture;
-      this.outputMaterial.uniforms.uPaletteWarm.value = this.warmPaletteTexture;
-      this.outputMaterial.uniforms.uPaletteCool.value = this.coolPaletteTexture;
-      this.outputMaterial.needsUpdate = true;
-    }
-  }
-
   update(context: RenderContext, data: TrajectoryData) {
     // Structural change (new trajectories, palette swap, projection
     // axis change, quality tier) — rebuild from scratch.
@@ -533,7 +536,13 @@ export class CausticsRenderer implements RendererStrategy {
   applyDynamic(data: TrajectoryData) {
     if (!this.data) return;
     this.data = { ...this.data, ...data };
-    this.refreshPalettes(data.palette as Palette, data.customPalette);
+
+    // Palette swaps trigger a full strategy rebuild via the
+    // CanvasPanel useEffect deps, so init() already builds fresh
+    // palette textures. Calling refreshPalettes here on every frame
+    // was disposing + uploading three DataTextures per frame, which
+    // is what was crashing on color change once the renderer
+    // actually had work to do.
 
     const intensity = data.caustics?.intensity ?? 1;
     this.energyGain = this.computeEnergyGain(intensity);
