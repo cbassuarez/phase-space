@@ -1,0 +1,10 @@
+[      77ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://127.0.0.1:5175/phase-space/phase-space/site.webmanifest:0
+[     107ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:21608
+[     157ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[     157ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[     158ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[     158ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[     177ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://127.0.0.1:5175/phase-space/phase-space/site.webmanifest:0
+[  134421ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://127.0.0.1:5175/phase-space/phase-space/site.webmanifest:0
+[  134494ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:21608
+[  134538ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://127.0.0.1:5175/phase-space/phase-space/site.webmanifest:0

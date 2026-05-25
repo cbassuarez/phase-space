@@ -11,6 +11,7 @@ pub enum SystemId {
     Rossler,
     Aizawa,
     Thomas,
+    Chua,
 }
 
 /// High-level camera mode selector.

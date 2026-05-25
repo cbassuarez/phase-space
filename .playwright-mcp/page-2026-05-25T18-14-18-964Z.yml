@@ -1,0 +1,125 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - link "phase-space" [ref=e6] [cursor=pointer]:
+        - /url: /phase-space
+        - generic [ref=e7]: phase-space
+      - generic [ref=e8]:
+        - navigation [ref=e9]:
+          - link "Viewer" [ref=e10] [cursor=pointer]:
+            - /url: /phase-space
+          - link "About" [ref=e11] [cursor=pointer]:
+            - /url: /phase-space/about
+          - link "Credits" [ref=e12] [cursor=pointer]:
+            - /url: /phase-space/credits
+        - generic [ref=e13]:
+          - generic [ref=e14]: "Output:"
+          - combobox [ref=e15]:
+            - option "Default (System)" [selected]
+        - generic [ref=e21]: phase-space v1.0.6 • beta
+        - link "Open GitHub repository" [ref=e22] [cursor=pointer]:
+          - /url: https://github.com/cbassuarez/phase-space
+          - img [ref=e23]
+  - main [ref=e25]:
+    - main [ref=e28]:
+      - generic [ref=e29]:
+        - generic [ref=e30]:
+          - paragraph [ref=e31]: About
+          - heading "Phase Space" [level=1] [ref=e32]
+          - paragraph [ref=e33]: A strange-attractor sandbox and visual instrument for looking at chaotic systems as moving geometry.
+          - paragraph [ref=e34]: "It sits between a sketchbook, a renderer, and a small cybernetic instrument: pick a system, let the equations move, then use camera motion, light, and sound to find the shape inside the motion."
+          - generic [ref=e35]:
+            - link "Open viewer" [ref=e36] [cursor=pointer]:
+              - /url: /phase-space
+            - link "View systems" [ref=e37] [cursor=pointer]:
+              - /url: "#systems"
+        - navigation "About page sections" [ref=e38]:
+          - link "Why this exists" [ref=e39] [cursor=pointer]:
+            - /url: "#why"
+          - link "What it does" [ref=e40] [cursor=pointer]:
+            - /url: "#what"
+          - link "Systems" [ref=e41] [cursor=pointer]:
+            - /url: "#systems"
+          - link "Sebastian" [ref=e42] [cursor=pointer]:
+            - /url: "#sebastian"
+          - link "More info" [ref=e43] [cursor=pointer]:
+            - /url: "#more-info"
+      - generic [ref=e45]:
+        - paragraph [ref=e46]: Why this exists
+        - generic [ref=e47]:
+          - paragraph [ref=e48]: "I built Phase Space because strange attractors are usually treated as either textbook diagrams or screen-saver decoration. I wanted something in between: a working instrument where the math stays intact, but the experience is visual, tactile, and a little unstable."
+          - paragraph [ref=e49]: The project is also a way to study public systems in miniature. A few equations, a feedback loop, a camera, and an input signal can produce behavior that feels alive without pretending to be alive.
+      - generic [ref=e51]:
+        - paragraph [ref=e52]: What it does
+        - generic [ref=e53]:
+          - generic [ref=e54]: Integrates strange attractors in Rust and runs them in the browser through WebAssembly.
+          - generic [ref=e55]: Turns trajectories into WebGL scenes with line, ribbon, photon-weave, caustic, and cloud render modes.
+          - generic [ref=e56]: "Treats the camera as part of the instrument: orbit, chase, lobe, and survey motion change how each system is understood."
+          - generic [ref=e57]: Lets audio input and output modulate the image without turning the panel into a wall of knobs.
+      - generic [ref=e58]:
+        - generic [ref=e59]:
+          - generic [ref=e60]:
+            - paragraph [ref=e61]: Systems
+            - heading "Five ways chaos becomes visible" [level=2] [ref=e62]
+          - paragraph [ref=e63]: Each image is a local WebP render generated from the system equations, not a screenshot of the old pages.
+        - generic [ref=e64]:
+          - article [ref=e65]:
+            - img "Lorenz attractor render" [ref=e66]
+            - generic [ref=e67]:
+              - generic [ref=e68]:
+                - heading "Lorenz" [level=3] [ref=e69]
+                - link "Open in viewer" [ref=e70] [cursor=pointer]:
+                  - /url: /phase-space?system=lorenz
+              - paragraph [ref=e71]: "The classic butterfly: two lobes pulling a trajectory back and forth through a narrow switching region. It is here because it makes chaos legible without making it feel tame."
+          - article [ref=e72]:
+            - img "Rössler attractor render" [ref=e73]
+            - generic [ref=e74]:
+              - generic [ref=e75]:
+                - heading "Rössler" [level=3] [ref=e76]
+                - link "Open in viewer" [ref=e77] [cursor=pointer]:
+                  - /url: /phase-space?system=rossler
+              - paragraph [ref=e78]: A spiral that keeps peeling into a folded sheet. It reads like a slow mechanical orbit until the surface turns over and exposes how much motion is hidden in the loop.
+          - article [ref=e79]:
+            - img "Aizawa attractor render" [ref=e80]
+            - generic [ref=e81]:
+              - generic [ref=e82]:
+                - heading "Aizawa" [level=3] [ref=e83]
+                - link "Open in viewer" [ref=e84] [cursor=pointer]:
+                  - /url: /phase-space?system=aizawa
+              - paragraph [ref=e85]: A dense, floral knot with paths that wrap through a compact core. It gives the viewer a more volumetric system where the camera can drift through structure rather than orbit a silhouette.
+          - article [ref=e86]:
+            - img "Thomas attractor render" [ref=e87]
+            - generic [ref=e88]:
+              - generic [ref=e89]:
+                - heading "Thomas" [level=3] [ref=e90]
+                - link "Open in viewer" [ref=e91] [cursor=pointer]:
+                  - /url: /phase-space?system=thomas
+              - paragraph [ref=e92]: "Soft cyclic motion that gathers into ghostlike loops. Thomas is useful as a quieter counterpoint: still chaotic, but less aggressive and more atmospheric."
+          - article [ref=e93]:
+            - img "Chua attractor render" [ref=e94]
+            - generic [ref=e95]:
+              - generic [ref=e96]:
+                - heading "Chua" [level=3] [ref=e97]
+                - link "Open in viewer" [ref=e98] [cursor=pointer]:
+                  - /url: /phase-space?system=chua
+              - paragraph [ref=e99]: "A dual-scroll system born from an electronic circuit. It matters because its chaos can be soldered together: a physical system with a clean visual snap between two scrolls."
+      - generic [ref=e101]:
+        - paragraph [ref=e102]: Sebastian
+        - generic [ref=e103]:
+          - paragraph [ref=e104]: Sebastian Suarez-Solis is a cybernetic artist, public systems artist, and creative technologist.
+          - paragraph [ref=e105]: "His work is interested in feedback, infrastructure, signal, and the point where a tool starts acting like an environment. Phase Space is one small expression of that: a browser instrument where equations, rendering, and input routing become something you can steer."
+      - generic [ref=e107]:
+        - paragraph [ref=e108]: More info
+        - generic [ref=e109]:
+          - generic [ref=e110]:
+            - paragraph [ref=e111]: Internally, Phase Space is split into a Rust core, a WebAssembly bridge, and a React/WebGL viewer. A scene model carries the chosen system, parameters, seeds, view settings, and camera behavior.
+            - paragraph [ref=e112]: The goal is not to turn the About page into documentation. It is enough to know that the visuals are generated from the same structured engine the viewer uses.
+          - generic [ref=e113]:
+            - link "GitHub profile" [ref=e114] [cursor=pointer]:
+              - /url: https://github.com/cbassuarez
+            - link "Phase Space repository" [ref=e115] [cursor=pointer]:
+              - /url: https://github.com/cbassuarez/phase-space
+            - link "contact@cbassuarez.com" [ref=e116] [cursor=pointer]:
+              - /url: mailto:contact@cbassuarez.com
+            - link "Credits" [ref=e117] [cursor=pointer]:
+              - /url: /phase-space/credits

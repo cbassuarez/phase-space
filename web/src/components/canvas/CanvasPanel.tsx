@@ -20,6 +20,7 @@ import { useViewerState } from "../../state/viewerState";
 import type { RendererStrategy } from "./renderers/base";
 import { createRendererForStyle } from "./renderers";
 import { normalizeTrajectories } from "./renderers/normalize";
+import { computeDynamicScalars } from "./renderers/utils";
 import { computeVisualFeatures, type VisualFeatureFrame } from "../../visual/visualFeatures";
 import { useModulation } from "../../state/modulationState";
 import { getRenderQuality, getViewportBackgroundColor } from "../../visual/renderQuality";
@@ -45,6 +46,10 @@ interface CanvasPanelProps {
   causticsSettings: CausticsSettings;
 }
 
+type PhaseSceneProps = Omit<CanvasPanelProps, "ready" | "loading" | "error"> & {
+  setRenderStillHandler: (handler: (() => void) | null) => void;
+};
+
 function PhaseScene({
   trajectories,
   palette,
@@ -61,7 +66,8 @@ function PhaseScene({
   resolution,
   photonWeaveSettings,
   causticsSettings,
-}: Omit<CanvasPanelProps, "ready" | "loading" | "error">) {
+  setRenderStillHandler,
+}: PhaseSceneProps) {
   const groupRef = useRef<THREE.Group>(null);
   const timeRef = useRef(0);
   const lastPoseRef = useRef<CameraPose | null>(null);
@@ -77,13 +83,16 @@ function PhaseScene({
     bgAlt: new THREE.Color(),
   });
   const { scene, camera: threeCamera, gl } = useThree();
-  const { setRenderStillHandler } = useViewerState();
   const { modEngine, audioFrameRef, modValuesRef } = useModulation();
 
   const quality = useMemo(() => getRenderQuality(resolution), [resolution]);
   
-const normalized = useMemo(() => normalizeTrajectories(trajectories), [trajectories]);
+  const normalized = useMemo(() => normalizeTrajectories(trajectories), [trajectories]);
   const normalizedTrajectories = normalized.trajectories;
+  const dynamicScalars = useMemo(
+    () => computeDynamicScalars(normalizedTrajectories),
+    [normalizedTrajectories]
+  );
   
   const backgroundColor = useMemo(
     () => getViewportBackgroundColor(renderStyle, background),
@@ -162,23 +171,31 @@ const normalized = useMemo(() => normalizeTrajectories(trajectories), [trajector
       };
 
     const photonBrightness = (modValues.photonWeaveBrightness ?? 1) * photonSettings.brightness;
+    const photonTrailLength = (modValues.photonWeaveTrail ?? 1) * photonSettings.trailLength;
     const causticsIntensity = (modValues.causticsIntensity ?? 1) * causticsSettingsSafe.intensity;
+    const causticsBlur = modValues.causticsBlur ?? causticsSettingsSafe.blurRadius;
 
     const data = {
       trajectories: normalizedTrajectories,
       normalized,
+      dynamics: dynamicScalars,
       palette,
       customPalette,
       lineThickness,
       background,
       paletteShift: modValues.paletteShift,
+      renderEnergy: modValues.renderEnergy,
+      renderPulse: modValues.renderPulse,
+      lineWidthScale: modValues.lineWidthScale,
+      cellSizeScale: modValues.cellSizeScale,
       emissiveBoost: modValues.emissiveBoost,
       ribbonWidth: modValues.ribbonWidth,
+      ribbonGlow: modValues.ribbonGlow,
       cloudDensity: modValues.cloudDensity,
       backgroundBrightness: modValues.backgroundBrightness,
       quality,
-      photonWeave: { ...photonSettings, brightness: photonBrightness },
-      caustics: { ...causticsSettingsSafe, intensity: causticsIntensity },
+      photonWeave: { ...photonSettings, brightness: photonBrightness, trailLength: photonTrailLength },
+      caustics: { ...causticsSettingsSafe, intensity: causticsIntensity, blurRadius: causticsBlur },
     };
     if (!strategyRef.current || strategyRef.current.style !== renderStyle) {
       strategyRef.current?.dispose(ctx);
@@ -202,6 +219,7 @@ const normalized = useMemo(() => normalizeTrajectories(trajectories), [trajector
     trajectories,
     normalized,
     normalizedTrajectories,
+    dynamicScalars,
     palette,
     customPalette,
     lineThickness,
@@ -269,6 +287,10 @@ const normalized = useMemo(() => normalizeTrajectories(trajectories), [trajector
     if (modValues.camera.phi !== null) {
       spherical.phi = modValues.camera.phi;
     }
+    if (modValues.camera.pulse > 0) {
+      spherical.radius *= 1 + modValues.camera.pulse * 0.32;
+      spherical.radius = THREE.MathUtils.clamp(spherical.radius, 4, 120);
+    }
     offset.setFromSpherical(spherical);
     position.copy(target).add(offset);
     state.camera.position.copy(position);
@@ -282,7 +304,11 @@ const normalized = useMemo(() => normalizeTrajectories(trajectories), [trajector
       minR: 6,
       maxR: 80,
     };
-const visual = computeVisualFeatures({ camera: cameraState, trajectories: normalizedTrajectories }, visualFrameRef.current ?? undefined);    visualFrameRef.current = visual;
+    const visual = computeVisualFeatures(
+      { camera: cameraState, trajectories: normalizedTrajectories },
+      visualFrameRef.current ?? undefined
+    );
+    visualFrameRef.current = visual;
     if (modEngine) {
       modEngine.step(audioFrameRef.current, visual);
     }
@@ -304,22 +330,30 @@ const visual = computeVisualFeatures({ camera: cameraState, trajectories: normal
         };
 
       const photonBrightness = (modValues.photonWeaveBrightness ?? 1) * photonSettings.brightness;
+      const photonTrailLength = (modValues.photonWeaveTrail ?? 1) * photonSettings.trailLength;
       const causticsIntensity = (modValues.causticsIntensity ?? 1) * causticsSettingsSafe.intensity;
+      const causticsBlur = modValues.causticsBlur ?? causticsSettingsSafe.blurRadius;
       strategy.applyDynamic({
         trajectories: normalizedTrajectories,
         normalized,
+        dynamics: dynamicScalars,
         palette,
         lineThickness,
         background,
         customPalette,
         paletteShift: modValues.paletteShift,
+        renderEnergy: modValues.renderEnergy,
+        renderPulse: modValues.renderPulse,
+        lineWidthScale: modValues.lineWidthScale,
+        cellSizeScale: modValues.cellSizeScale,
         emissiveBoost: modValues.emissiveBoost,
         ribbonWidth: modValues.ribbonWidth,
+        ribbonGlow: modValues.ribbonGlow,
         cloudDensity: modValues.cloudDensity,
         backgroundBrightness: modValues.backgroundBrightness,
         quality,
-        photonWeave: { ...photonSettings, brightness: photonBrightness },
-        caustics: { ...causticsSettingsSafe, intensity: causticsIntensity },
+        photonWeave: { ...photonSettings, brightness: photonBrightness, trailLength: photonTrailLength },
+        caustics: { ...causticsSettingsSafe, intensity: causticsIntensity, blurRadius: causticsBlur },
       });
     }
 
@@ -329,11 +363,10 @@ const visual = computeVisualFeatures({ camera: cameraState, trajectories: normal
     const bgMix = bgBase.clone().lerp(bgAlt, modValues.backgroundBrightness);
     gl.setClearColor(bgMix, 1);
 
-    const updateDrawWindow = strategy?.updateDrawWindow;
-    if (updateDrawWindow) {
+    if (strategy?.updateDrawWindow) {
       countsRef.current.forEach((count, idx) => {
         if (showFullTrajectory) {
-          updateDrawWindow(idx, 0, count);
+          strategy.updateDrawWindow?.(idx, 0, count);
           return;
         }
         const windowSize = Math.max(8, Math.floor(count * 0.35));
@@ -344,10 +377,10 @@ const visual = computeVisualFeatures({ camera: cameraState, trajectories: normal
           if (start + drawCount > count) {
             drawCount = count - start;
           }
-          updateDrawWindow(idx, start, drawCount);
+          strategy.updateDrawWindow?.(idx, start, drawCount);
         } else {
           const start = Math.max(0, count - windowSize);
-          updateDrawWindow(idx, start, windowSize);
+          strategy.updateDrawWindow?.(idx, start, windowSize);
         }
       });
     }
@@ -382,6 +415,7 @@ function CanvasPanel({
   photonWeaveSettings,
   causticsSettings,
 }: CanvasPanelProps) {
+  const { setRenderStillHandler } = useViewerState();
   const gradientClass =
     background === "light"
       ? "bg-[radial-gradient(circle_at_center,#fbfcff_0%,#e5ebff_70%)]"
@@ -443,6 +477,7 @@ function CanvasPanel({
               resolution={resolution}
               photonWeaveSettings={photonWeaveSettings}
               causticsSettings={causticsSettings}
+              setRenderStillHandler={setRenderStillHandler}
             />
           </Suspense>
         </Canvas>

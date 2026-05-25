@@ -1,0 +1,8 @@
+[     199ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://127.0.0.1:5175/phase-space/phase-space/site.webmanifest:0
+[     656ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:21608
+[     724ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:5175/about/systems/lorenz.webp:0
+[     724ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:5175/about/systems/rossler.webp:0
+[     724ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:5175/about/systems/aizawa.webp:0
+[     724ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:5175/about/systems/thomas.webp:0
+[     727ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://127.0.0.1:5175/phase-space/phase-space/site.webmanifest:0
+[   15483ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:5175/about/systems/chua.webp:0

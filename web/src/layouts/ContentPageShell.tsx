@@ -11,7 +11,7 @@ interface ContentPageShellProps {
 /**
  * ContentPageShell
  *
- * - Used ONLY by non-viewer pages (/about, /systems, /systems/:id, /presets, /field-notes, /credits).
+ * - Used ONLY by non-viewer pages (/about, /credits).
  * - Viewer route (/), PhaseViewerPage, MainLayout, etc. must NOT use this shell.
  * - Provides a responsive, mobile-first canvas with:
  *   - full-bleed background in our ps palette

@@ -11,45 +11,62 @@
       },
       "targets": [
         {
-          "path": "render.photonWeave.brightness",
-          "range": [0.5, 3.0],
-          "curve": "exp",
-          "lag": 0.8
+          "path": "render.active.energy",
+          "range": [0, 1],
+          "curve": "log"
         }
       ]
     },
     {
       "id": "M2",
-      "enabled": false,
+      "enabled": true,
       "source": {
         "domain": "audio",
-        "feature": "brightness",
-        "smoothing": 0.9,
+        "feature": "low_band",
+        "smoothing": 0.82,
         "gain": 1.0
       },
-      "targets": []
+      "targets": [
+        {
+          "path": "view.camera.pulse",
+          "range": [0, 0.28],
+          "curve": "log"
+        }
+      ]
     },
     {
       "id": "M3",
-      "enabled": false,
+      "enabled": true,
       "source": {
-        "domain": "visual",
-        "feature": "camera_orbit_phase",
-        "smoothing": 0.9,
-        "gain": 1.0
+        "domain": "audio",
+        "feature": "brightness",
+        "smoothing": 0.88,
+        "gain": 1.05
       },
-      "targets": []
+      "targets": [
+        {
+          "path": "view.palette_shift",
+          "range": [0, 0.48],
+          "curve": "linear"
+        }
+      ]
     },
     {
       "id": "M4",
-      "enabled": false,
+      "enabled": true,
       "source": {
-        "domain": "visual",
-        "feature": "avg_speed",
-        "smoothing": 0.9,
+        "domain": "audio",
+        "feature": "onset",
+        "smoothing": 0.35,
         "gain": 1.0
       },
-      "targets": []
+      "targets": [
+        {
+          "path": "render.active.pulse",
+          "range": [0, 1],
+          "curve": "linear"
+        }
+      ]
     }
   ]
 }

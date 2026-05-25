@@ -1,0 +1,356 @@
+- generic [ref=e146]:
+  - banner [ref=e147]:
+    - generic [ref=e148]:
+      - link "phase-space" [ref=e149] [cursor=pointer]:
+        - /url: /phase-space
+        - generic [ref=e150]: phase-space
+      - generic [ref=e151]:
+        - navigation [ref=e152]:
+          - link "Viewer" [ref=e153] [cursor=pointer]:
+            - /url: /phase-space
+          - link "About" [ref=e154] [cursor=pointer]:
+            - /url: /phase-space/about
+          - link "Credits" [ref=e155] [cursor=pointer]:
+            - /url: /phase-space/credits
+        - generic [ref=e156]:
+          - generic [ref=e157]: "Output:"
+          - combobox [ref=e158]:
+            - option "Default (System)" [selected]
+            - option "Default - MacBook Pro Speakers (Built-in)"
+            - option "BlackHole 2ch (Virtual)"
+            - option "BlackHole 64ch (Virtual)"
+            - option "MacBook Pro Speakers (Built-in)"
+            - option "Multi-Output Device (Aggregate)"
+        - generic [ref=e164]: phase-space v1.0.6 • beta
+        - link "Open GitHub repository" [ref=e165] [cursor=pointer]:
+          - /url: https://github.com/cbassuarez/phase-space
+          - img [ref=e166]
+  - main [ref=e1]:
+    - complementary [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - generic [ref=e8]:
+            - generic [ref=e9]: phase-space
+            - paragraph [ref=e10]: Interactive phase-space viewer
+            - generic [ref=e13]: lorenz
+          - generic [ref=e14]:
+            - generic [ref=e15]: SYSTEM
+            - generic [ref=e16]:
+              - button "Lorenz" [ref=e17] [cursor=pointer]
+              - button "Rössler" [ref=e18] [cursor=pointer]
+              - button "Aizawa" [ref=e19] [cursor=pointer]
+              - button "Thomas" [ref=e20] [cursor=pointer]
+              - button "Chua" [ref=e21] [cursor=pointer]
+            - generic [ref=e22]:
+              - generic [ref=e24]: RESOLUTION
+              - slider "Resolution" [ref=e26] [cursor=pointer]: "1"
+              - generic [ref=e27]:
+                - button "Fast" [ref=e28] [cursor=pointer]
+                - button "Default" [ref=e29] [cursor=pointer]
+                - button "High" [ref=e30] [cursor=pointer]
+                - button "Ultra" [ref=e31] [cursor=pointer]
+          - generic [ref=e32]:
+            - generic [ref=e33]: CAMERA
+            - generic [ref=e34]:
+              - button "Survey" [ref=e35] [cursor=pointer]
+              - button "Orbit" [ref=e36] [cursor=pointer]
+              - button "Chase" [ref=e37] [cursor=pointer]
+              - button "Lobe" [ref=e38] [cursor=pointer]
+            - generic [ref=e39]:
+              - generic [ref=e40]:
+                - generic [ref=e41]:
+                  - generic [ref=e42]: Speed
+                  - generic [ref=e43]: "0.35"
+                - slider "Speed 0.35" [ref=e44]: "0.35"
+              - generic [ref=e45]:
+                - generic [ref=e46]:
+                  - generic [ref=e47]: Zoom bias
+                  - generic [ref=e48]: "1.00"
+                - slider "Zoom bias 1.00" [ref=e49]: "1"
+              - generic [ref=e50]:
+                - generic [ref=e51]:
+                  - generic [ref=e52]: Stability
+                  - generic [ref=e53]: "0.25"
+                - slider "Stability 0.25" [ref=e54]: "0.25"
+              - group [ref=e55]:
+                - generic "Mode tuning" [ref=e56] [cursor=pointer]
+          - generic [ref=e57]:
+            - generic [ref=e58]: LOOK
+            - generic [ref=e59]:
+              - generic [ref=e60]: Style
+              - generic [ref=e61]:
+                - button "Line" [active] [ref=e62] [cursor=pointer]
+                - button "Cloud" [ref=e63] [cursor=pointer]
+                - button "Cells" [ref=e64] [cursor=pointer]
+                - button "Ribbon" [ref=e65] [cursor=pointer]
+                - button "Weave" [ref=e66] [cursor=pointer]
+                - button "Caustics" [ref=e67] [cursor=pointer]
+            - generic [ref=e68]:
+              - generic [ref=e69]: Thickness
+              - generic [ref=e70]:
+                - button "Thin" [ref=e71] [cursor=pointer]
+                - button "Default" [ref=e72] [cursor=pointer]
+                - button "Thick" [ref=e73] [cursor=pointer]
+            - generic [ref=e74]:
+              - paragraph [ref=e75]: Palette
+              - generic [ref=e76]:
+                - generic [ref=e77]: Signal
+                - radio "Signal" [checked] [ref=e80]
+              - generic [ref=e81]:
+                - generic [ref=e82]: Ion
+                - radio "Ion" [ref=e85]
+              - generic [ref=e86]:
+                - generic [ref=e87]: Biolume
+                - radio "Biolume" [ref=e90]
+              - generic [ref=e91]:
+                - generic [ref=e92]: Arc
+                - radio "Arc" [ref=e95]
+              - generic [ref=e96]:
+                - generic [ref=e97]: X-Ray
+                - radio "X-Ray" [ref=e100]
+              - generic [ref=e101]:
+                - generic [ref=e102]: Graphite
+                - radio "Graphite" [ref=e105]
+              - generic [ref=e106]:
+                - generic [ref=e107]: Custom
+                - radio "Custom" [ref=e110]
+            - generic [ref=e111]:
+              - paragraph [ref=e112]: Background
+              - generic [ref=e113]:
+                - button "Light" [ref=e114] [cursor=pointer]
+                - button "Dim" [ref=e115] [cursor=pointer]
+          - generic [ref=e116]:
+            - generic [ref=e117]: MOTION
+            - generic [ref=e118]:
+              - generic [ref=e119]: Auto-spin camera
+              - button "Pause" [pressed] [ref=e120] [cursor=pointer]:
+                - img [ref=e121]
+                - generic [ref=e124]: Pause
+            - generic [ref=e125]:
+              - generic [ref=e126]: Animate head/tail
+              - button [ref=e127] [cursor=pointer]
+            - generic [ref=e129]:
+              - generic [ref=e130]: Show full trajectory
+              - button [ref=e131] [cursor=pointer]
+          - group [ref=e133]:
+            - generic "AUDIO REACTIVITY" [ref=e134] [cursor=pointer]
+            - generic [ref=e171]:
+              - generic [ref=e173]: I/O & ROUTING
+              - generic [ref=e174]:
+                - generic [ref=e175]:
+                  - generic [ref=e176]: Audio
+                  - 'button "Audio: On" [ref=e177] [cursor=pointer]'
+                - generic [ref=e178]:
+                  - generic [ref=e179]:
+                    - generic [ref=e180]: Input Device
+                    - combobox "Input Device" [ref=e181]:
+                      - option "Default (System)"
+                      - option "BlackHole 2ch (Virtual)"
+                      - option "BlackHole 64ch (Virtual)"
+                      - option "MacBook Pro Microphone (Built-in)" [selected]
+                      - option "sebb Microphone"
+                      - option "Default - MacBook Pro Microphone (Built-in)"
+                  - generic [ref=e182]:
+                    - generic [ref=e183]: Monitor Output
+                    - combobox "Monitor Output" [ref=e184]:
+                      - option "Default (System)" [selected]
+                      - option "Default - MacBook Pro Speakers (Built-in)"
+                      - option "BlackHole 2ch (Virtual)"
+                      - option "BlackHole 64ch (Virtual)"
+                      - option "MacBook Pro Speakers (Built-in)"
+                      - option "Multi-Output Device (Aggregate)"
+                - generic [ref=e185]:
+                  - generic [ref=e186]:
+                    - generic [ref=e187]: Input Channels
+                    - generic [ref=e188]: MacBook Pro Microphone (Built-in)
+                  - button "Ch 1" [ref=e190] [cursor=pointer]
+                - generic [ref=e191]:
+                  - generic [ref=e192]:
+                    - generic [ref=e193]: Output Channels
+                    - generic [ref=e194]: Default (System)
+                  - generic [ref=e196]: 1/2
+                - generic [ref=e197]:
+                  - generic [ref=e198]:
+                    - generic [ref=e199]: Input Level
+                    - generic [ref=e200]: "-60 dB"
+                  - generic [ref=e202]:
+                    - generic [ref=e203]: "-60dB"
+                    - generic [ref=e204]: "-24dB"
+                    - generic [ref=e205]: "-12dB"
+                    - generic [ref=e206]: 0dB
+              - generic [ref=e207]:
+                - generic [ref=e208]:
+                  - generic [ref=e209]:
+                    - generic [ref=e210]: M1
+                    - generic [ref=e211]:
+                      - generic [ref=e212]: "On"
+                      - checkbox "On" [checked] [ref=e213]
+                  - generic [ref=e214]:
+                    - generic [ref=e215]:
+                      - generic [ref=e216]: Source
+                      - combobox "Source" [ref=e217]:
+                        - option "Level"
+                        - option "Brightness"
+                        - option "Low band"
+                        - option "Mid band"
+                        - option "High band"
+                        - option "Onset" [selected]
+                        - option "Camera orbit"
+                        - option "Camera radius"
+                        - option "Average speed"
+                        - option "Curvature"
+                        - option "Trajectory density"
+                    - generic [ref=e218]:
+                      - generic [ref=e219]: Target
+                      - combobox "Target" [ref=e220]:
+                        - option "Select a target" [disabled]
+                        - option "Active energy" [selected]
+                        - option "Hit pulse"
+                        - option "Radius"
+                        - option "Theta"
+                        - option "Phi"
+                        - option "Camera pulse"
+                        - option "Line width"
+                        - option "Palette phase"
+                        - option "Background brightness"
+                        - option "Voice pitch"
+                        - option "Voice pan"
+                        - option "Voice brightness"
+                        - option "Master gain"
+                  - generic [ref=e221]:
+                    - generic [ref=e222]:
+                      - generic [ref=e223]: Depth
+                      - generic [ref=e224]: "1.00"
+                    - slider [ref=e225]: "1"
+                - generic [ref=e226]:
+                  - generic [ref=e227]:
+                    - generic [ref=e228]: M2
+                    - generic [ref=e229]:
+                      - generic [ref=e230]: "On"
+                      - checkbox "On" [checked] [ref=e231]
+                  - generic [ref=e232]:
+                    - generic [ref=e233]:
+                      - generic [ref=e234]: Source
+                      - combobox "Source" [ref=e235]:
+                        - option "Level"
+                        - option "Brightness"
+                        - option "Low band" [selected]
+                        - option "Mid band"
+                        - option "High band"
+                        - option "Onset"
+                        - option "Camera orbit"
+                        - option "Camera radius"
+                        - option "Average speed"
+                        - option "Curvature"
+                        - option "Trajectory density"
+                    - generic [ref=e236]:
+                      - generic [ref=e237]: Target
+                      - combobox "Target" [ref=e238]:
+                        - option "Select a target" [disabled]
+                        - option "Active energy"
+                        - option "Hit pulse"
+                        - option "Radius"
+                        - option "Theta"
+                        - option "Phi"
+                        - option "Camera pulse" [selected]
+                        - option "Line width"
+                        - option "Palette phase"
+                        - option "Background brightness"
+                        - option "Voice pitch"
+                        - option "Voice pan"
+                        - option "Voice brightness"
+                        - option "Master gain"
+                  - generic [ref=e239]:
+                    - generic [ref=e240]:
+                      - generic [ref=e241]: Depth
+                      - generic [ref=e242]: "0.71"
+                    - slider [ref=e243]: "0.71"
+                - generic [ref=e244]:
+                  - generic [ref=e245]:
+                    - generic [ref=e246]: M3
+                    - generic [ref=e247]:
+                      - generic [ref=e248]: "Off"
+                      - checkbox "Off" [ref=e280]
+                  - generic [ref=e250]:
+                    - generic [ref=e251]:
+                      - generic [ref=e252]: Source
+                      - combobox "Source" [ref=e253]:
+                        - option "Level"
+                        - option "Brightness" [selected]
+                        - option "Low band"
+                        - option "Mid band"
+                        - option "High band"
+                        - option "Onset"
+                        - option "Camera orbit"
+                        - option "Camera radius"
+                        - option "Average speed"
+                        - option "Curvature"
+                        - option "Trajectory density"
+                    - generic [ref=e254]:
+                      - generic [ref=e255]: Target
+                      - combobox "Target" [ref=e256]:
+                        - option "Select a target" [disabled]
+                        - option "Active energy"
+                        - option "Hit pulse"
+                        - option "Radius"
+                        - option "Theta"
+                        - option "Phi"
+                        - option "Camera pulse"
+                        - option "Line width"
+                        - option "Palette phase" [selected]
+                        - option "Background brightness"
+                        - option "Voice pitch"
+                        - option "Voice pan"
+                        - option "Voice brightness"
+                        - option "Master gain"
+                  - generic [ref=e257]:
+                    - generic [ref=e258]:
+                      - generic [ref=e259]: Depth
+                      - generic [ref=e260]: "0.48"
+                    - slider [ref=e261]: "0.48"
+                - generic [ref=e262]:
+                  - generic [ref=e263]:
+                    - generic [ref=e264]: M4
+                    - generic [ref=e265]:
+                      - generic [ref=e266]: "Off"
+                      - checkbox "Off" [ref=e281]
+                  - generic [ref=e268]:
+                    - generic [ref=e269]:
+                      - generic [ref=e270]: Source
+                      - combobox "Source" [ref=e271]:
+                        - option "Level"
+                        - option "Brightness"
+                        - option "Low band"
+                        - option "Mid band"
+                        - option "High band"
+                        - option "Onset" [selected]
+                        - option "Camera orbit"
+                        - option "Camera radius"
+                        - option "Average speed"
+                        - option "Curvature"
+                        - option "Trajectory density"
+                    - generic [ref=e272]:
+                      - generic [ref=e273]: Target
+                      - combobox "Target" [ref=e274]:
+                        - option "Select a target" [disabled]
+                        - option "Active energy"
+                        - option "Hit pulse" [selected]
+                        - option "Radius"
+                        - option "Theta"
+                        - option "Phi"
+                        - option "Camera pulse"
+                        - option "Line width"
+                        - option "Palette phase"
+                        - option "Background brightness"
+                        - option "Voice pitch"
+                        - option "Voice pan"
+                        - option "Voice brightness"
+                        - option "Master gain"
+                  - generic [ref=e275]:
+                    - generic [ref=e276]:
+                      - generic [ref=e277]: Depth
+                      - generic [ref=e278]: "1.00"
+                    - slider [ref=e279]: "1"
+        - button "INSPECTOR ▸" [ref=e136] [cursor=pointer]:
+          - generic [ref=e137]: INSPECTOR
+          - generic [ref=e138]: ▸

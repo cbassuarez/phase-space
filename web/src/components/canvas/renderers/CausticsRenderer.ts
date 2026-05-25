@@ -13,15 +13,13 @@ import {
   RGBAFormat,
   Scene,
   ShaderMaterial,
-  SRGBColorSpace,
   UnsignedByteType,
   Vector2,
   WebGLRenderTarget,
 } from "three";
-import { samplePalette } from "../../../palettes";
-import type { CustomPaletteState } from "../../../palettes";
 import type { Palette, ProjectionAxis } from "../../../types";
 import type { RendererStrategy, RenderContext, TrajectoryData } from "./base";
+import { buildPaletteTexture, dynamicScalarAt } from "./utils";
 
 /**
  * Caustics renderer — "screen-space light density / spill, caustic-like".
@@ -121,6 +119,7 @@ const outputFragment = `
   uniform float uExposure;
   uniform float uThreshold;
   uniform float uBloomStrength;
+  uniform float uPaletteShift;
   uniform int   uColorMode;
 
   vec3 samplePaletteColor(sampler2D tex, float t) {
@@ -128,15 +127,20 @@ const outputFragment = `
   }
 
   void main() {
-    float baseEnergy = texture2D(uBaseTexture, vUv).r;
-    float blurred    = texture2D(uTexture,     vUv).r;
+    vec4 baseSample = texture2D(uBaseTexture, vUv);
+    vec4 blurSample = texture2D(uTexture,     vUv);
+    float baseEnergy = baseSample.r;
+    float blurred    = blurSample.r;
     float energy     = mix(baseEnergy, blurred, uBloomStrength);
+    float colorEnergy = mix(baseSample.g, blurSample.g, uBloomStrength);
     float softened   = max(energy - uThreshold, 0.0);
     float tone       = clamp(1.0 - exp(-uExposure * softened), 0.0, 1.0);
+    float dynamicT   = energy > 0.00001 ? colorEnergy / energy : tone;
+    dynamicT = fract(dynamicT + uPaletteShift);
 
-    vec3 paletteColor = samplePaletteColor(uPalette, tone);
-    if (uColorMode == 1) paletteColor = samplePaletteColor(uPaletteWarm, tone);
-    else if (uColorMode == 2) paletteColor = samplePaletteColor(uPaletteCool, tone);
+    vec3 paletteColor = samplePaletteColor(uPalette, dynamicT);
+    if (uColorMode == 1) paletteColor = samplePaletteColor(uPaletteWarm, dynamicT);
+    else if (uColorMode == 2) paletteColor = samplePaletteColor(uPaletteCool, dynamicT);
 
     // Slight watery base mix so even the "dark" regions feel like a
     // medium rather than a flat black plate.
@@ -159,31 +163,40 @@ const accumDebugFragment = `
   }
 `;
 
-function buildPaletteTexture(id: Palette, customPalette: CustomPaletteState): DataTexture {
-  const size = 256;
-  // RGBA with explicit alpha = 255. The previous version used
-  // Uint8Array(size*3) with DataTexture's default RGBAFormat,
-  // which reads four bytes per pixel from a three-byte stride and
-  // walks off the end of the buffer. Some drivers tolerate it,
-  // others fault on the next allocation — exactly the crash on
-  // palette swap.
-  const data = new Uint8Array(size * 4);
-  for (let i = 0; i < size; i++) {
-    const t = i / (size - 1);
-    const color = samplePalette(id, t, customPalette).clone().convertLinearToSRGB();
-    data[i * 4 + 0] = Math.round(color.r * 255);
-    data[i * 4 + 1] = Math.round(color.g * 255);
-    data[i * 4 + 2] = Math.round(color.b * 255);
-    data[i * 4 + 3] = 255;
-  }
-  const tex = new DataTexture(data, size, 1);
-  tex.colorSpace = SRGBColorSpace;
-  tex.needsUpdate = true;
-  return tex;
-}
-
 function blurSigma(value: number): number {
   return 0.35 + value * 2.6;
+}
+
+function thicknessScale(data: TrajectoryData): number {
+  if (data.lineThickness === "thick") return 1.65;
+  if (data.lineThickness === "thin") return 0.68;
+  return 1;
+}
+
+function causticsEnergyScale(data: TrajectoryData): number {
+  const energy = data.renderEnergy ?? 0;
+  const pulse = data.renderPulse ?? 0;
+  return 1 + energy * 1.15 + pulse * 1.6;
+}
+
+function causticsPointScale(data: TrajectoryData): number {
+  const energy = data.renderEnergy ?? 0;
+  const pulse = data.renderPulse ?? 0;
+  return 1 + energy * 0.85 + pulse * 1.25;
+}
+
+function causticsBlurRadius(data: TrajectoryData): number {
+  const base = data.caustics?.blurRadius ?? 0.5;
+  const energy = data.renderEnergy ?? 0;
+  const pulse = data.renderPulse ?? 0;
+  return Math.max(0.08, Math.min(1.9, base * (1 + energy * 0.25 + pulse * 0.35)));
+}
+
+function causticsOutputIntensity(data: TrajectoryData): number {
+  const base = data.caustics?.intensity ?? 1;
+  const energy = data.renderEnergy ?? 0;
+  const pulse = data.renderPulse ?? 0;
+  return Math.max(0.05, Math.min(5, base * (1 + energy * 0.65 + pulse * 0.9)));
 }
 
 /**
@@ -193,14 +206,16 @@ function blurSigma(value: number): number {
  */
 function buildVelocityWeights(
   trajectories: number[][][],
+  dynamics: TrajectoryData["dynamics"],
   step: number
-): { positions: Float32Array; energies: Float32Array; pointCount: number } {
+): { positions: Float32Array; energies: Float32Array; colorScalars: Float32Array; pointCount: number } {
   let total = 0;
   trajectories.forEach((t) => {
     total += Math.ceil(t.length / step);
   });
   const positions = new Float32Array(total * 3);
   const energies = new Float32Array(total);
+  const colorScalars = new Float32Array(total);
 
   let offset = 0;
   let energyOffset = 0;
@@ -224,7 +239,7 @@ function buildVelocityWeights(
   });
   const vSafe = Math.max(vmin, vmax * 0.05, 1e-4);
   let widx = 0;
-  trajectories.forEach((traj) => {
+  trajectories.forEach((traj, trajIdx) => {
     for (let i = 0; i < traj.length; i += step) {
       const p = traj[i];
       positions[offset++] = p[0];
@@ -237,10 +252,16 @@ function buildVelocityWeights(
       // Bias by sqrt to soften extremes — without this Lorenz
       // saddles burn out completely.
       energies[energyOffset++] = Math.sqrt(w);
+      colorScalars[energyOffset - 1] = dynamicScalarAt(
+        dynamics,
+        trajIdx,
+        i,
+        traj.length > 1 ? i / (traj.length - 1) : 0
+      );
     }
   });
 
-  return { positions, energies, pointCount: total };
+  return { positions, energies, colorScalars, pointCount: total };
 }
 
 function projectionAxisCamera(axis: ProjectionAxis, halfExtent: number): OrthographicCamera | null {
@@ -329,8 +350,9 @@ export class CausticsRenderer implements RendererStrategy {
 
     // --- Splat geometry ----------------------------------------
     const pointStep = Math.max(1, Math.round(data.quality?.causticsPointStep ?? 2));
-    const { positions, energies, pointCount } = buildVelocityWeights(
+    const { positions, energies, colorScalars, pointCount } = buildVelocityWeights(
       data.trajectories,
+      data.dynamics,
       pointStep
     );
     this.pointCount = pointCount;
@@ -339,6 +361,7 @@ export class CausticsRenderer implements RendererStrategy {
     const splatGeom = new BufferGeometry();
     splatGeom.setAttribute("position", new BufferAttribute(positions, 3));
     splatGeom.setAttribute("aEnergy", new BufferAttribute(energies, 1));
+    splatGeom.setAttribute("aColorT", new BufferAttribute(colorScalars, 1));
 
     // Soft point sprite with per-vertex energy. We rely on the main
     // camera's projection in "auto" mode, or the axis-locked ortho
@@ -346,10 +369,13 @@ export class CausticsRenderer implements RendererStrategy {
     // projectionMatrix * modelViewMatrix path.
     const splatVert = `
       attribute float aEnergy;
+      attribute float aColorT;
       varying float vEnergy;
+      varying float vColorT;
       uniform float uPointSize;
       void main() {
         vEnergy = aEnergy;
+        vColorT = aColorT;
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
         gl_Position = projectionMatrix * mv;
         // Keep splat size constant in framebuffer pixels — exposure
@@ -360,13 +386,14 @@ export class CausticsRenderer implements RendererStrategy {
     `;
     const splatFrag = `
       varying float vEnergy;
+      varying float vColorT;
       uniform float uEnergyGain;
       void main() {
         vec2 c = gl_PointCoord - vec2(0.5);
         float d = dot(c, c);
         float falloff = exp(-d * 18.0);
         float energy = falloff * vEnergy * uEnergyGain;
-        gl_FragColor = vec4(vec3(energy), energy);
+        gl_FragColor = vec4(energy, energy * vColorT, 0.0, energy);
       }
     `;
     this.splatMaterial = new ShaderMaterial({
@@ -375,7 +402,7 @@ export class CausticsRenderer implements RendererStrategy {
         // Bigger sprites = more overlap = brighter caustic concentrations.
         // tex/32 at 512 -> 16px sprites, which is what we want at this
         // accumulation resolution.
-        uPointSize:  { value: Math.max(10, Math.round(this.texSize / 32)) },
+        uPointSize:  { value: Math.max(6, Math.round((this.texSize / 32) * thicknessScale(data) * causticsPointScale(data))) },
       },
       vertexShader: splatVert,
       fragmentShader: splatFrag,
@@ -401,7 +428,7 @@ export class CausticsRenderer implements RendererStrategy {
         uTexture:    { value: this.splatTarget.texture },
         uDirection:  { value: new Vector2(1, 0) },
         uResolution: { value: new Vector2(this.texSize, this.texSize) },
-        uRadius:     { value: blurSigma(data.caustics?.blurRadius ?? 0.5) },
+        uRadius:     { value: blurSigma(causticsBlurRadius(data)) },
       },
       vertexShader: blurVertex,
       fragmentShader: blurFragment,
@@ -412,7 +439,7 @@ export class CausticsRenderer implements RendererStrategy {
         uTexture:    { value: this.blurTarget.texture },
         uDirection:  { value: new Vector2(0, 1) },
         uResolution: { value: new Vector2(this.texSize, this.texSize) },
-        uRadius:     { value: blurSigma(data.caustics?.blurRadius ?? 0.5) },
+        uRadius:     { value: blurSigma(causticsBlurRadius(data)) },
       },
       vertexShader: blurVertex,
       fragmentShader: blurFragment,
@@ -432,12 +459,13 @@ export class CausticsRenderer implements RendererStrategy {
       uniforms: {
         uTexture:       { value: this.finalTarget.texture },
         uBaseTexture:   { value: this.splatTarget.texture },
-        uIntensity:     { value: data.caustics?.intensity ?? 1 },
+        uIntensity:     { value: causticsOutputIntensity(data) },
         // Exposure + threshold are tuned together with the new
         // energyGain so realistic caustic peaks reach tone ~0.8.
         uExposure:      { value: 2.4 },
         uThreshold:     { value: 0.008 },
         uBloomStrength: { value: 0.72 },
+        uPaletteShift:  { value: data.paletteShift ?? 0 },
         uPalette:       { value: this.paletteTexture },
         uPaletteWarm:   { value: this.warmPaletteTexture },
         uPaletteCool:   { value: this.coolPaletteTexture },
@@ -471,7 +499,8 @@ export class CausticsRenderer implements RendererStrategy {
     // out the image.
     const trajCount = this.data?.trajectories.length ?? 1;
     const trajectoryDamp = 1 / Math.max(0.7, Math.sqrt(trajCount * 0.5));
-    return 0.55 * intensity * trajectoryDamp;
+    const data = this.data ?? ({ lineThickness: "default" } as TrajectoryData);
+    return 0.55 * intensity * trajectoryDamp * thicknessScale(data) * causticsEnergyScale(data);
   }
 
   private renderCaustics() {
@@ -548,17 +577,22 @@ export class CausticsRenderer implements RendererStrategy {
     this.energyGain = this.computeEnergyGain(intensity);
     if (this.splatMaterial) {
       this.splatMaterial.uniforms.uEnergyGain.value = this.energyGain;
+      this.splatMaterial.uniforms.uPointSize.value = Math.max(
+        6,
+        Math.round((this.texSize / 32) * thicknessScale(this.data) * causticsPointScale(this.data))
+      );
       this.splatMaterial.needsUpdate = true;
     }
     if (this.outputMaterial) {
-      this.outputMaterial.uniforms.uIntensity.value = intensity;
+      this.outputMaterial.uniforms.uIntensity.value = causticsOutputIntensity(this.data);
       const mode = data.caustics?.colorMode;
       this.outputMaterial.uniforms.uColorMode.value =
         mode === "warm" ? 1 : mode === "cool" ? 2 : 0;
+      this.outputMaterial.uniforms.uPaletteShift.value = data.paletteShift ?? 0;
       this.outputMaterial.needsUpdate = true;
     }
     if (this.blurMaterialH && this.blurMaterialV) {
-      const radius = blurSigma(data.caustics?.blurRadius ?? 0.5);
+      const radius = blurSigma(causticsBlurRadius(this.data));
       this.blurMaterialH.uniforms.uRadius.value = radius;
       this.blurMaterialV.uniforms.uRadius.value = radius;
     }
@@ -613,4 +647,3 @@ export class CausticsRenderer implements RendererStrategy {
     this.context = null;
   }
 }
-

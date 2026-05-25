@@ -15,6 +15,7 @@ const systemLabels: { id: SystemId; label: string }[] = [
   { id: "rossler", label: "Rössler" },
   { id: "aizawa", label: "Aizawa" },
   { id: "thomas", label: "Thomas" },
+  { id: "chua", label: "Chua" },
 ];
 
 const cameraModes = [

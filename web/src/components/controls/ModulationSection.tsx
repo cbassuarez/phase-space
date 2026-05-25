@@ -4,8 +4,10 @@ import type { Curve } from "../../modulation/types";
 import type { ModBus, ModBusRuntimeState, ModTarget } from "../../modulation/types";
 import type { TargetPath } from "../../modulation/modEngine";
 import { useModulation } from "../../state/modulationState";
+import { useViewerState } from "../../state/viewerState";
 import { useAudioDevicesContext } from "../../state/audioDevicesState";
 import type { ChannelMode } from "../../hooks/useAudioDevices";
+import type { RenderStyle } from "../../types";
 
 interface TargetOption {
   value: TargetPath;
@@ -67,6 +69,14 @@ const targetOptions: TargetOption[] = [
     depthFromRange: (target) => clamp01((target.range[1] - 0.25) / 2.2),
   },
   {
+    value: "view.camera.pulse",
+    label: "Camera pulse",
+    group: "Camera",
+    curve: "log",
+    makeTarget: (depth) => ({ path: "view.camera.pulse", range: [0, 0.08 + depth * 0.28], curve: "log" }),
+    depthFromRange: (target) => clamp01((target.range[1] - 0.08) / 0.28),
+  },
+  {
     value: "view.palette_shift",
     label: "Palette phase",
     group: "Color",
@@ -81,6 +91,35 @@ const targetOptions: TargetOption[] = [
     depthFromRange: (target) => clamp01(target.range[1]),
   },
   {
+    value: "render.active.energy",
+    label: "Active energy",
+    group: "Macro",
+    curve: "log",
+    makeTarget: (depth) => ({ path: "render.active.energy", range: [0, 0.2 + depth * 0.8], curve: "log" }),
+    depthFromRange: (target) => clamp01((target.range[1] - 0.2) / 0.8),
+  },
+  {
+    value: "render.active.pulse",
+    label: "Hit pulse",
+    group: "Macro",
+    makeTarget: (depth) => ({ path: "render.active.pulse", range: [0, 0.25 + depth * 0.75] }),
+    depthFromRange: (target) => clamp01((target.range[1] - 0.25) / 0.75),
+  },
+  {
+    value: "render.line.width",
+    label: "Line width",
+    group: "Line",
+    makeTarget: (depth) => ({ path: "render.line.width", range: [0.75, 0.9 + depth * 2.0], curve: "log" }),
+    depthFromRange: (target) => clamp01((target.range[1] - 0.9) / 2.0),
+  },
+  {
+    value: "render.cells.size",
+    label: "Cell size",
+    group: "Cells",
+    makeTarget: (depth) => ({ path: "render.cells.size", range: [0.7, 0.85 + depth * 2.1], curve: "log" }),
+    depthFromRange: (target) => clamp01((target.range[1] - 0.85) / 2.1),
+  },
+  {
     value: "render.photonWeave.brightness",
     label: "Photon brightness",
     group: "Rendering",
@@ -93,6 +132,16 @@ const targetOptions: TargetOption[] = [
     depthFromRange: (target) => clamp01((target.range[1] - target.range[0] - 0.4) / 2.4),
   },
   {
+    value: "render.photonWeave.trail",
+    label: "Weave trail",
+    group: "Weave",
+    makeTarget: (depth) => {
+      const span = 0.35 + depth * 1.2;
+      return { path: "render.photonWeave.trail", range: [Math.max(0.45, 1 - span / 2), 1 + span] };
+    },
+    depthFromRange: (target) => clamp01((target.range[1] - target.range[0] - 0.35) / 1.2),
+  },
+  {
     value: "render.ribbon.width",
     label: "Ribbon width",
     group: "Rendering",
@@ -103,14 +152,22 @@ const targetOptions: TargetOption[] = [
     depthFromRange: (target) => clamp01((target.range[1] - target.range[0] - 0.3) / 0.9),
   },
   {
+    value: "render.ribbon.glow",
+    label: "Ribbon glow",
+    group: "Ribbon",
+    curve: "exp",
+    makeTarget: (depth) => ({ path: "render.ribbon.glow", range: [0, depth * 2.6], curve: "exp" }),
+    depthFromRange: (target) => clamp01(target.range[1] / 2.6),
+  },
+  {
     value: "render.cloud.density",
     label: "Cloud density",
     group: "Rendering",
     makeTarget: (depth) => ({
       path: "render.cloud.density",
-      range: [Math.max(0, 0.2 - depth * 0.15), Math.min(1, 0.7 + depth * 0.3)],
+      range: [Math.max(0, 0.18 - depth * 0.12), Math.min(1.6, 0.7 + depth * 0.8)],
     }),
-    depthFromRange: (target) => clamp01((target.range[1] - 0.7) / 0.3),
+    depthFromRange: (target) => clamp01((target.range[1] - 0.7) / 0.8),
   },
   {
     value: "render.caustics.intensity",
@@ -122,6 +179,16 @@ const targetOptions: TargetOption[] = [
       curve: "linear",
     }),
     depthFromRange: (target) => clamp01((target.range[1] - 0.8) / 1.4),
+  },
+  {
+    value: "render.caustics.blur",
+    label: "Caustic blur",
+    group: "Caustics",
+    makeTarget: (depth) => ({
+      path: "render.caustics.blur",
+      range: [0.12, Math.min(1.8, 0.25 + depth * 1.25)],
+    }),
+    depthFromRange: (target) => clamp01((target.range[1] - 0.25) / 1.25),
   },
   {
     value: "audio.voice_0.pitch",
@@ -180,17 +247,53 @@ const sourceOptions = [
   },
 ];
 
-const groupedTargets = [
-  { label: "Camera", values: ["view.camera.r", "view.camera.theta", "view.camera.phi"] },
-  { label: "Rendering", values: ["render.photonWeave.brightness", "render.ribbon.width", "render.cloud.density", "render.caustics.intensity"] },
-  { label: "Color", values: ["view.palette_shift", "view.background_brightness"] },
-  { label: "Sound output", values: ["audio.voice_0.pitch", "audio.voice_0.pan", "audio.voice_0.brightness", "audio.master.gain"] },
-];
+interface TargetGroup {
+  label: string;
+  values: TargetPath[];
+}
+
+const macroTargets: TargetGroup = {
+  label: "Macro",
+  values: ["render.active.energy", "render.active.pulse"],
+};
+
+const cameraTargets: TargetGroup = {
+  label: "Camera",
+  values: ["view.camera.r", "view.camera.theta", "view.camera.phi", "view.camera.pulse"],
+};
+
+const colorTargets: TargetGroup = {
+  label: "Color",
+  values: ["view.palette_shift", "view.background_brightness"],
+};
+
+const soundTargets: TargetGroup = {
+  label: "Sound output",
+  values: ["audio.voice_0.pitch", "audio.voice_0.pan", "audio.voice_0.brightness", "audio.master.gain"],
+};
+
+const renderTargetGroups: Record<RenderStyle, TargetGroup> = {
+  line: { label: "Line", values: ["render.line.width"] },
+  cells: { label: "Cells", values: ["render.cells.size"] },
+  "volumetric-cloud": { label: "Cloud", values: ["render.cloud.density"] },
+  ribbon: { label: "Ribbon", values: ["render.ribbon.width", "render.ribbon.glow"] },
+  "photon-weave": { label: "Weave", values: ["render.photonWeave.brightness", "render.photonWeave.trail"] },
+  caustics: { label: "Caustics", values: ["render.caustics.intensity", "render.caustics.blur"] },
+};
 
 const targetOptionMap = targetOptions.reduce<Record<string, TargetOption>>((acc, opt) => {
   acc[opt.value] = opt;
   return acc;
 }, {});
+
+function targetGroupsFor(renderStyle: RenderStyle, selectedTarget?: TargetPath): TargetGroup[] {
+  const groups = [macroTargets, cameraTargets, renderTargetGroups[renderStyle], colorTargets, soundTargets];
+  const visible = new Set(groups.flatMap((group) => group.values));
+  if (selectedTarget && targetOptionMap[selectedTarget] && !visible.has(selectedTarget)) {
+    return [{ label: "Current routing", values: [selectedTarget] }, ...groups];
+  }
+  return groups;
+}
 
 function busDepth(bus: ModBus): number {
   const target = bus.targets[0];
@@ -200,11 +303,15 @@ function busDepth(bus: ModBus): number {
   return 0.5;
 }
 
-function ModulationRow({ bus }: { bus: ModBusRuntimeState }) {
+function ModulationRow({ bus, renderStyle }: { bus: ModBusRuntimeState; renderStyle: RenderStyle }) {
   const { updateBuses, modEngine } = useModulation();
   const disabled = !modEngine;
   const selectedTarget = bus.bus.targets[0]?.path as TargetPath | undefined;
   const depth = busDepth(bus.bus);
+  const visibleTargetGroups = useMemo(
+    () => targetGroupsFor(renderStyle, selectedTarget),
+    [renderStyle, selectedTarget]
+  );
 
   const handleToggle = () => {
     updateBuses((buses) =>
@@ -289,7 +396,7 @@ function ModulationRow({ bus }: { bus: ModBusRuntimeState }) {
             <option value="" disabled>
               Select a target
             </option>
-            {groupedTargets.map((group) => (
+            {visibleTargetGroups.map((group) => (
               <optgroup key={group.label} label={group.label}>
                 {group.values.map((value) => (
                   <option key={value} value={value}>
@@ -335,6 +442,7 @@ function ModulationSection({ compact = false }: { compact?: boolean }) {
     setChannelMode,
   } = useModulation();
   const audioDevices = useAudioDevicesContext();
+  const { renderStyle } = useViewerState();
   const [notice, setNotice] = useState<string | null>(null);
 
   const sortedBuses = useMemo(() => buses.slice().sort((a, b) => a.bus.id.localeCompare(b.bus.id)), [buses]);
@@ -557,7 +665,7 @@ function ModulationSection({ compact = false }: { compact?: boolean }) {
       )}
       <div className={clsx("grid gap-2", compact ? "grid-cols-1" : "md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2")}> {/* keep layout adaptable without shrinking canvas */}
         {sortedBuses.map((bus) => (
-          <ModulationRow key={bus.bus.id} bus={bus} />
+          <ModulationRow key={bus.bus.id} bus={bus} renderStyle={renderStyle} />
         ))}
       </div>
     </section>

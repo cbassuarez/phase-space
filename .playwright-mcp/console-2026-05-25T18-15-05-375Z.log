@@ -1,0 +1,56 @@
+[      38ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://127.0.0.1:5175/phase-space/phase-space/site.webmanifest:0
+[      52ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:21608
+[      87ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://127.0.0.1:5175/phase-space/phase-space/site.webmanifest:0
+[  667229ms] Error: useViewerState must be used within ViewerProvider
+    at useViewerState (http://127.0.0.1:5175/phase-space/src/state/viewerState.tsx:338:11)
+    at MainLayout (http://127.0.0.1:5175/phase-space/src/components/MainLayout.tsx:44:7)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at mountIndeterminateComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14974:21)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3680:22)
+    at Object.invokeGuardedCallbackDev (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3705:24)
+    at invokeGuardedCallback (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3739:39)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19818:15)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19251:20)
+[  667229ms] Error: useViewerState must be used within ViewerProvider
+    at useViewerState (http://127.0.0.1:5175/phase-space/src/state/viewerState.tsx:338:11)
+    at MainLayout (http://127.0.0.1:5175/phase-space/src/components/MainLayout.tsx:44:7)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at mountIndeterminateComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14974:21)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3680:22)
+    at Object.invokeGuardedCallbackDev (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3705:24)
+    at invokeGuardedCallback (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3739:39)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19818:15)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19251:20)
+[  667228ms] [ERROR] The above error occurred in the <MainLayout> component:
+
+    at MainLayout (http://127.0.0.1:5175/phase-space/src/components/MainLayout.tsx:25:20)
+    at ModulationProvider (http://127.0.0.1:5175/phase-space/src/state/modulationState.tsx:90:38)
+    at ViewerProvider (http://127.0.0.1:5175/phase-space/src/state/viewerState.tsx?t=1779733572258:62:34)
+    at div
+    at PhaseViewerPage
+    at RenderedRoute (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6002:26)
+    at Routes (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6792:3)
+    at main
+    at div
+    at AppLayout (http://127.0.0.1:5175/phase-space/src/layouts/AppLayout.tsx:22:29)
+    at AudioDevicesProvider (http://127.0.0.1:5175/phase-space/src/state/audioDevicesState.tsx:21:40)
+    at App
+    at Router (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6735:13)
+    at BrowserRouter (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:9844:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:17715
+[  667452ms] Error: useViewerState must be used within ViewerProvider
+    at useViewerState (http://127.0.0.1:5175/phase-space/src/state/viewerState.tsx:338:11)
+    at MainLayout (http://127.0.0.1:5175/phase-space/src/components/MainLayout.tsx:44:7)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at mountIndeterminateComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14974:21)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:15962:22)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19806:22)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19251:20)
+    at workLoopSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19190:13)
+    at renderRootSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19169:15)
+    at recoverFromConcurrentError (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:18786:28)
+[  667987ms] [LOG] THREE.WebGLRenderer: Context Lost. @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-STVB4E3O.js?v=94acf69f:693

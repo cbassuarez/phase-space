@@ -1,0 +1,773 @@
+[      92ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://127.0.0.1:5175/phase-space/phase-space/site.webmanifest:0
+[     118ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:21608
+[     140ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[     140ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[     140ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[     140ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[     157ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://127.0.0.1:5175/phase-space/phase-space/site.webmanifest:0
+[  631613ms] Error: useModulation must be used within ModulationProvider
+    at useModulation (http://127.0.0.1:5175/phase-space/src/state/modulationState.tsx?t=1779734689060:276:19)
+    at PhaseScene (http://127.0.0.1:5175/phase-space/src/components/canvas/CanvasPanel.tsx?t=1779734689060:64:54)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:5894:26)
+    at updateFunctionComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:9018:28)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:10370:22)
+    at HTMLUnknownElement.callCallback2 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:10591:22)
+    at Object.invokeGuardedCallbackDev (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:10616:24)
+    at invokeGuardedCallback (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:10648:39)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:14206:15)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:13670:20)
+[  631613ms] Error: useModulation must be used within ModulationProvider
+    at useModulation (http://127.0.0.1:5175/phase-space/src/state/modulationState.tsx?t=1779734689060:276:19)
+    at PhaseScene (http://127.0.0.1:5175/phase-space/src/components/canvas/CanvasPanel.tsx?t=1779734689060:64:54)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:5894:26)
+    at updateFunctionComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:9018:28)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:10370:22)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:14194:22)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:13670:20)
+    at workLoopSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:13610:13)
+    at renderRootSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:13589:15)
+    at performSyncWorkOnRoot (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:13317:28)
+[  632326ms] [LOG] THREE.WebGLRenderer: Context Lost. @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-STVB4E3O.js?v=94acf69f:693
+[  637347ms] Error: useModulation must be used within ModulationProvider
+    at useModulation (http://127.0.0.1:5175/phase-space/src/state/modulationState.tsx?t=1779734694780:276:19)
+    at PhaseScene (http://127.0.0.1:5175/phase-space/src/components/canvas/CanvasPanel.tsx?t=1779734694780:64:54)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:5894:26)
+    at updateFunctionComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:9018:28)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:10370:22)
+    at HTMLUnknownElement.callCallback2 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:10591:22)
+    at Object.invokeGuardedCallbackDev (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:10616:24)
+    at invokeGuardedCallback (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:10648:39)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:14206:15)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:13670:20)
+[  637348ms] Error: useModulation must be used within ModulationProvider
+    at useModulation (http://127.0.0.1:5175/phase-space/src/state/modulationState.tsx?t=1779734694780:276:19)
+    at PhaseScene (http://127.0.0.1:5175/phase-space/src/components/canvas/CanvasPanel.tsx?t=1779734694780:64:54)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:5894:26)
+    at updateFunctionComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:9018:28)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:10370:22)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:14194:22)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:13670:20)
+    at workLoopSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:13610:13)
+    at renderRootSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:13589:15)
+    at performSyncWorkOnRoot (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:13317:28)
+[  637966ms] [LOG] [vite] server connection lost. Polling for restart... @ http://127.0.0.1:5175/phase-space/@vite/client:864
+[  638066ms] [LOG] THREE.WebGLRenderer: Context Lost. @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-STVB4E3O.js?v=94acf69f:693
+[  638412ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://127.0.0.1:5175/phase-space/phase-space/site.webmanifest:0
+[  638491ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:21608
+[  638566ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://127.0.0.1:5175/phase-space/phase-space/site.webmanifest:0
+[ 1066628ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://127.0.0.1:5175/phase-space/phase-space/site.webmanifest:0
+[ 1066662ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:21608
+[ 1066688ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[ 1066688ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[ 1066688ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[ 1066688ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[ 1066711ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://127.0.0.1:5175/phase-space/phase-space/site.webmanifest:0
+[ 1357542ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[ 1357543ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[ 1357544ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[ 1357544ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[ 1357576ms] Error: useModulation must be used within ModulationProvider
+    at useModulation (http://127.0.0.1:5175/phase-space/src/state/modulationState.tsx?t=1779735414857:315:19)
+    at PhaseScene (http://127.0.0.1:5175/phase-space/src/components/canvas/CanvasPanel.tsx?t=1779735414857:64:54)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:5894:26)
+    at updateFunctionComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:9018:28)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:10370:22)
+    at HTMLUnknownElement.callCallback2 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:10591:22)
+    at Object.invokeGuardedCallbackDev (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:10616:24)
+    at invokeGuardedCallback (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:10648:39)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:14206:15)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:13670:20)
+[ 1357581ms] Error: useModulation must be used within ModulationProvider
+    at useModulation (http://127.0.0.1:5175/phase-space/src/state/modulationState.tsx?t=1779735414857:315:19)
+    at PhaseScene (http://127.0.0.1:5175/phase-space/src/components/canvas/CanvasPanel.tsx?t=1779735414857:64:54)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:5894:26)
+    at updateFunctionComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:9018:28)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:10370:22)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:14194:22)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:13670:20)
+    at workLoopSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:13610:13)
+    at renderRootSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:13589:15)
+    at performSyncWorkOnRoot (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:13317:28)
+[ 1358250ms] [LOG] THREE.WebGLRenderer: Context Lost. @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-STVB4E3O.js?v=94acf69f:693
+[ 1558183ms] ReferenceError: groupedTargets is not defined
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735616263:426:15)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at updateFunctionComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14630:28)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:15972:22)
+    at HTMLUnknownElement.callCallback2 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3680:22)
+    at Object.invokeGuardedCallbackDev (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3705:24)
+    at invokeGuardedCallback (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3739:39)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19818:15)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19251:20)
+    at workLoopSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19190:13)
+[ 1558191ms] ReferenceError: groupedTargets is not defined
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735616263:426:15)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at updateFunctionComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14630:28)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:15972:22)
+    at HTMLUnknownElement.callCallback2 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3680:22)
+    at Object.invokeGuardedCallbackDev (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3705:24)
+    at invokeGuardedCallback (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3739:39)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19818:15)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19251:20)
+    at workLoopSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19190:13)
+[ 1558191ms] ReferenceError: groupedTargets is not defined
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735616263:426:15)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at updateFunctionComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14630:28)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:15972:22)
+    at HTMLUnknownElement.callCallback2 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3680:22)
+    at Object.invokeGuardedCallbackDev (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3705:24)
+    at invokeGuardedCallback (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3739:39)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19818:15)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19251:20)
+    at workLoopSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19190:13)
+[ 1558191ms] ReferenceError: groupedTargets is not defined
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735616263:426:15)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at updateFunctionComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14630:28)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:15972:22)
+    at HTMLUnknownElement.callCallback2 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3680:22)
+    at Object.invokeGuardedCallbackDev (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3705:24)
+    at invokeGuardedCallback (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3739:39)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19818:15)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19251:20)
+    at workLoopSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19190:13)
+[ 1558192ms] ReferenceError: groupedTargets is not defined
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735616263:426:15)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at updateFunctionComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14630:28)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:15972:22)
+    at HTMLUnknownElement.callCallback2 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3680:22)
+    at Object.invokeGuardedCallbackDev (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3705:24)
+    at invokeGuardedCallback (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3739:39)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19818:15)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19251:20)
+    at workLoopSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19190:13)
+[ 1558193ms] ReferenceError: groupedTargets is not defined
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735616263:426:15)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at updateFunctionComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14630:28)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:15972:22)
+    at HTMLUnknownElement.callCallback2 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3680:22)
+    at Object.invokeGuardedCallbackDev (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3705:24)
+    at invokeGuardedCallback (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3739:39)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19818:15)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19251:20)
+    at workLoopSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19190:13)
+[ 1558194ms] ReferenceError: groupedTargets is not defined
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735616263:426:15)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at updateFunctionComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14630:28)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:15972:22)
+    at HTMLUnknownElement.callCallback2 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3680:22)
+    at Object.invokeGuardedCallbackDev (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3705:24)
+    at invokeGuardedCallback (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3739:39)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19818:15)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19251:20)
+    at workLoopSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19190:13)
+[ 1558194ms] ReferenceError: groupedTargets is not defined
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735616263:426:15)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at updateFunctionComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14630:28)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:15972:22)
+    at HTMLUnknownElement.callCallback2 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3680:22)
+    at Object.invokeGuardedCallbackDev (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3705:24)
+    at invokeGuardedCallback (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3739:39)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19818:15)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19251:20)
+    at workLoopSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19190:13)
+[ 1558196ms] [ERROR] The above error occurred in the <ModulationRow> component:
+
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735616263:290:26)
+    at div
+    at section
+    at ModulationSection (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735616263:513:30)
+    at div
+    at details
+    at div
+    at div
+    at ControlPanelDesktop (http://127.0.0.1:5175/phase-space/src/components/controls/ControlPanelDesktop.tsx?t=1779735414857:157:7)
+    at aside
+    at div
+    at div
+    at MainLayout (http://127.0.0.1:5175/phase-space/src/components/MainLayout.tsx?t=1779735414857:25:20)
+    at ModulationProvider (http://127.0.0.1:5175/phase-space/src/state/modulationState.tsx?t=1779735414857:122:38)
+    at ViewerProvider (http://127.0.0.1:5175/phase-space/src/state/viewerState.tsx?t=1779733572258:62:34)
+    at div
+    at PhaseViewerPage
+    at RenderedRoute (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6002:26)
+    at Routes (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6792:3)
+    at main
+    at div
+    at AppLayout (http://127.0.0.1:5175/phase-space/src/layouts/AppLayout.tsx:22:29)
+    at AudioDevicesProvider (http://127.0.0.1:5175/phase-space/src/state/audioDevicesState.tsx:21:40)
+    at App
+    at Router (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6735:13)
+    at BrowserRouter (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:9844:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:17715
+[ 1558197ms] [ERROR] The above error occurred in the <ModulationRow> component:
+
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735616263:290:26)
+    at div
+    at section
+    at ModulationSection (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735616263:513:30)
+    at div
+    at details
+    at div
+    at div
+    at ControlPanelDesktop (http://127.0.0.1:5175/phase-space/src/components/controls/ControlPanelDesktop.tsx?t=1779735414857:157:7)
+    at aside
+    at div
+    at div
+    at MainLayout (http://127.0.0.1:5175/phase-space/src/components/MainLayout.tsx?t=1779735414857:25:20)
+    at ModulationProvider (http://127.0.0.1:5175/phase-space/src/state/modulationState.tsx?t=1779735414857:122:38)
+    at ViewerProvider (http://127.0.0.1:5175/phase-space/src/state/viewerState.tsx?t=1779733572258:62:34)
+    at div
+    at PhaseViewerPage
+    at RenderedRoute (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6002:26)
+    at Routes (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6792:3)
+    at main
+    at div
+    at AppLayout (http://127.0.0.1:5175/phase-space/src/layouts/AppLayout.tsx:22:29)
+    at AudioDevicesProvider (http://127.0.0.1:5175/phase-space/src/state/audioDevicesState.tsx:21:40)
+    at App
+    at Router (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6735:13)
+    at BrowserRouter (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:9844:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:17715
+[ 1558197ms] [ERROR] The above error occurred in the <ModulationRow> component:
+
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735616263:290:26)
+    at div
+    at section
+    at ModulationSection (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735616263:513:30)
+    at div
+    at details
+    at div
+    at div
+    at ControlPanelDesktop (http://127.0.0.1:5175/phase-space/src/components/controls/ControlPanelDesktop.tsx?t=1779735414857:157:7)
+    at aside
+    at div
+    at div
+    at MainLayout (http://127.0.0.1:5175/phase-space/src/components/MainLayout.tsx?t=1779735414857:25:20)
+    at ModulationProvider (http://127.0.0.1:5175/phase-space/src/state/modulationState.tsx?t=1779735414857:122:38)
+    at ViewerProvider (http://127.0.0.1:5175/phase-space/src/state/viewerState.tsx?t=1779733572258:62:34)
+    at div
+    at PhaseViewerPage
+    at RenderedRoute (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6002:26)
+    at Routes (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6792:3)
+    at main
+    at div
+    at AppLayout (http://127.0.0.1:5175/phase-space/src/layouts/AppLayout.tsx:22:29)
+    at AudioDevicesProvider (http://127.0.0.1:5175/phase-space/src/state/audioDevicesState.tsx:21:40)
+    at App
+    at Router (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6735:13)
+    at BrowserRouter (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:9844:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:17715
+[ 1558197ms] [ERROR] The above error occurred in the <ModulationRow> component:
+
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735616263:290:26)
+    at div
+    at section
+    at ModulationSection (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735616263:513:30)
+    at div
+    at details
+    at div
+    at div
+    at ControlPanelDesktop (http://127.0.0.1:5175/phase-space/src/components/controls/ControlPanelDesktop.tsx?t=1779735414857:157:7)
+    at aside
+    at div
+    at div
+    at MainLayout (http://127.0.0.1:5175/phase-space/src/components/MainLayout.tsx?t=1779735414857:25:20)
+    at ModulationProvider (http://127.0.0.1:5175/phase-space/src/state/modulationState.tsx?t=1779735414857:122:38)
+    at ViewerProvider (http://127.0.0.1:5175/phase-space/src/state/viewerState.tsx?t=1779733572258:62:34)
+    at div
+    at PhaseViewerPage
+    at RenderedRoute (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6002:26)
+    at Routes (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6792:3)
+    at main
+    at div
+    at AppLayout (http://127.0.0.1:5175/phase-space/src/layouts/AppLayout.tsx:22:29)
+    at AudioDevicesProvider (http://127.0.0.1:5175/phase-space/src/state/audioDevicesState.tsx:21:40)
+    at App
+    at Router (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6735:13)
+    at BrowserRouter (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:9844:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:17715
+[ 1558281ms] ReferenceError: groupedTargets is not defined
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735616263:426:15)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at updateFunctionComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14630:28)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:15972:22)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19806:22)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19251:20)
+    at workLoopSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19190:13)
+    at renderRootSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19169:15)
+    at recoverFromConcurrentError (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:18786:28)
+    at performSyncWorkOnRoot (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:18932:28)
+[ 1558804ms] [LOG] THREE.WebGLRenderer: Context Lost. @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-STVB4E3O.js?v=94acf69f:693
+[ 1566534ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[ 1566534ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[ 1566534ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[ 1566534ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[ 1566653ms] ReferenceError: groupedTargets is not defined
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735625127:426:15)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at mountIndeterminateComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14974:21)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3680:22)
+    at Object.invokeGuardedCallbackDev (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3705:24)
+    at invokeGuardedCallback (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3739:39)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19818:15)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19251:20)
+    at workLoopSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19190:13)
+[ 1566653ms] ReferenceError: groupedTargets is not defined
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735625127:426:15)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at mountIndeterminateComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14974:21)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3680:22)
+    at Object.invokeGuardedCallbackDev (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3705:24)
+    at invokeGuardedCallback (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3739:39)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19818:15)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19251:20)
+    at workLoopSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19190:13)
+[ 1566653ms] ReferenceError: groupedTargets is not defined
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735625127:426:15)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at mountIndeterminateComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14974:21)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3680:22)
+    at Object.invokeGuardedCallbackDev (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3705:24)
+    at invokeGuardedCallback (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3739:39)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19818:15)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19251:20)
+    at workLoopSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19190:13)
+[ 1566653ms] ReferenceError: groupedTargets is not defined
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735625127:426:15)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at mountIndeterminateComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14974:21)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3680:22)
+    at Object.invokeGuardedCallbackDev (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3705:24)
+    at invokeGuardedCallback (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3739:39)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19818:15)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19251:20)
+    at workLoopSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19190:13)
+[ 1566653ms] ReferenceError: groupedTargets is not defined
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735625127:426:15)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at mountIndeterminateComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14974:21)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3680:22)
+    at Object.invokeGuardedCallbackDev (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3705:24)
+    at invokeGuardedCallback (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3739:39)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19818:15)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19251:20)
+    at workLoopSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19190:13)
+[ 1566653ms] ReferenceError: groupedTargets is not defined
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735625127:426:15)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at mountIndeterminateComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14974:21)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3680:22)
+    at Object.invokeGuardedCallbackDev (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3705:24)
+    at invokeGuardedCallback (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3739:39)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19818:15)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19251:20)
+    at workLoopSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19190:13)
+[ 1566653ms] ReferenceError: groupedTargets is not defined
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735625127:426:15)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at mountIndeterminateComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14974:21)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3680:22)
+    at Object.invokeGuardedCallbackDev (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3705:24)
+    at invokeGuardedCallback (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3739:39)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19818:15)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19251:20)
+    at workLoopSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19190:13)
+[ 1566653ms] ReferenceError: groupedTargets is not defined
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735625127:426:15)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at mountIndeterminateComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14974:21)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:15962:22)
+    at HTMLUnknownElement.callCallback2 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3680:22)
+    at Object.invokeGuardedCallbackDev (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3705:24)
+    at invokeGuardedCallback (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:3739:39)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19818:15)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19251:20)
+    at workLoopSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19190:13)
+[ 1566567ms] [ERROR] The above error occurred in the <ModulationRow> component:
+
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735625127:290:26)
+    at div
+    at section
+    at ModulationSection (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735625127:513:30)
+    at div
+    at details
+    at div
+    at div
+    at ControlPanelDesktop (http://127.0.0.1:5175/phase-space/src/components/controls/ControlPanelDesktop.tsx?t=1779735414857:157:7)
+    at aside
+    at div
+    at div
+    at MainLayout (http://127.0.0.1:5175/phase-space/src/components/MainLayout.tsx?t=1779735414857:25:20)
+    at ModulationProvider (http://127.0.0.1:5175/phase-space/src/state/modulationState.tsx?t=1779735414857:122:38)
+    at ViewerProvider (http://127.0.0.1:5175/phase-space/src/state/viewerState.tsx?t=1779733572258:62:34)
+    at div
+    at PhaseViewerPage
+    at RenderedRoute (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6002:26)
+    at Routes (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6792:3)
+    at main
+    at div
+    at AppLayout (http://127.0.0.1:5175/phase-space/src/layouts/AppLayout.tsx:22:29)
+    at AudioDevicesProvider (http://127.0.0.1:5175/phase-space/src/state/audioDevicesState.tsx:21:40)
+    at App
+    at Router (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6735:13)
+    at BrowserRouter (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:9844:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:17715
+[ 1566567ms] [ERROR] The above error occurred in the <ModulationRow> component:
+
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735625127:290:26)
+    at div
+    at section
+    at ModulationSection (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735625127:513:30)
+    at div
+    at details
+    at div
+    at div
+    at ControlPanelDesktop (http://127.0.0.1:5175/phase-space/src/components/controls/ControlPanelDesktop.tsx?t=1779735414857:157:7)
+    at aside
+    at div
+    at div
+    at MainLayout (http://127.0.0.1:5175/phase-space/src/components/MainLayout.tsx?t=1779735414857:25:20)
+    at ModulationProvider (http://127.0.0.1:5175/phase-space/src/state/modulationState.tsx?t=1779735414857:122:38)
+    at ViewerProvider (http://127.0.0.1:5175/phase-space/src/state/viewerState.tsx?t=1779733572258:62:34)
+    at div
+    at PhaseViewerPage
+    at RenderedRoute (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6002:26)
+    at Routes (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6792:3)
+    at main
+    at div
+    at AppLayout (http://127.0.0.1:5175/phase-space/src/layouts/AppLayout.tsx:22:29)
+    at AudioDevicesProvider (http://127.0.0.1:5175/phase-space/src/state/audioDevicesState.tsx:21:40)
+    at App
+    at Router (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6735:13)
+    at BrowserRouter (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:9844:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:17715
+[ 1566567ms] [ERROR] The above error occurred in the <ModulationRow> component:
+
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735625127:290:26)
+    at div
+    at section
+    at ModulationSection (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735625127:513:30)
+    at div
+    at details
+    at div
+    at div
+    at ControlPanelDesktop (http://127.0.0.1:5175/phase-space/src/components/controls/ControlPanelDesktop.tsx?t=1779735414857:157:7)
+    at aside
+    at div
+    at div
+    at MainLayout (http://127.0.0.1:5175/phase-space/src/components/MainLayout.tsx?t=1779735414857:25:20)
+    at ModulationProvider (http://127.0.0.1:5175/phase-space/src/state/modulationState.tsx?t=1779735414857:122:38)
+    at ViewerProvider (http://127.0.0.1:5175/phase-space/src/state/viewerState.tsx?t=1779733572258:62:34)
+    at div
+    at PhaseViewerPage
+    at RenderedRoute (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6002:26)
+    at Routes (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6792:3)
+    at main
+    at div
+    at AppLayout (http://127.0.0.1:5175/phase-space/src/layouts/AppLayout.tsx:22:29)
+    at AudioDevicesProvider (http://127.0.0.1:5175/phase-space/src/state/audioDevicesState.tsx:21:40)
+    at App
+    at Router (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6735:13)
+    at BrowserRouter (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:9844:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:17715
+[ 1566567ms] [ERROR] The above error occurred in the <ModulationRow> component:
+
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735625127:290:26)
+    at div
+    at section
+    at ModulationSection (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735625127:513:30)
+    at div
+    at details
+    at div
+    at div
+    at ControlPanelDesktop (http://127.0.0.1:5175/phase-space/src/components/controls/ControlPanelDesktop.tsx?t=1779735414857:157:7)
+    at aside
+    at div
+    at div
+    at MainLayout (http://127.0.0.1:5175/phase-space/src/components/MainLayout.tsx?t=1779735414857:25:20)
+    at ModulationProvider (http://127.0.0.1:5175/phase-space/src/state/modulationState.tsx?t=1779735414857:122:38)
+    at ViewerProvider (http://127.0.0.1:5175/phase-space/src/state/viewerState.tsx?t=1779733572258:62:34)
+    at div
+    at PhaseViewerPage
+    at RenderedRoute (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6002:26)
+    at Routes (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6792:3)
+    at main
+    at div
+    at AppLayout (http://127.0.0.1:5175/phase-space/src/layouts/AppLayout.tsx:22:29)
+    at AudioDevicesProvider (http://127.0.0.1:5175/phase-space/src/state/audioDevicesState.tsx:21:40)
+    at App
+    at Router (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6735:13)
+    at BrowserRouter (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:9844:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:17715
+[ 1566654ms] ReferenceError: groupedTargets is not defined
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735625127:426:15)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at mountIndeterminateComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14974:21)
+    at beginWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:15962:22)
+    at beginWork$1 (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19806:22)
+    at performUnitOfWork (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19251:20)
+    at workLoopSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19190:13)
+    at renderRootSync (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:19169:15)
+    at recoverFromConcurrentError (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:18786:28)
+    at performConcurrentWorkOnRoot (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:18734:30)
+[ 1571677ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[ 1571677ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[ 1571678ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[ 1571678ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[ 1571800ms] TypeError: Cannot read properties of undefined (reading 'values')
+    at http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:273:59
+    at Array.flatMap (<anonymous>)
+    at targetGroupsFor (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:273:34)
+    at http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:297:11
+    at mountMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:12242:27)
+    at Object.useMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:12566:24)
+    at useMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-CYZG5QNB.js?v=94acf69f:1094:29)
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:296:31)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at mountIndeterminateComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14974:21)
+[ 1571801ms] TypeError: Cannot read properties of undefined (reading 'values')
+    at http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:273:59
+    at Array.flatMap (<anonymous>)
+    at targetGroupsFor (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:273:34)
+    at http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:297:11
+    at mountMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:12242:27)
+    at Object.useMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:12566:24)
+    at useMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-CYZG5QNB.js?v=94acf69f:1094:29)
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:296:31)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at mountIndeterminateComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14974:21)
+[ 1571801ms] TypeError: Cannot read properties of undefined (reading 'values')
+    at http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:273:59
+    at Array.flatMap (<anonymous>)
+    at targetGroupsFor (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:273:34)
+    at http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:297:11
+    at mountMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:12242:27)
+    at Object.useMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:12566:24)
+    at useMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-CYZG5QNB.js?v=94acf69f:1094:29)
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:296:31)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at mountIndeterminateComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14974:21)
+[ 1571801ms] TypeError: Cannot read properties of undefined (reading 'values')
+    at http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:273:59
+    at Array.flatMap (<anonymous>)
+    at targetGroupsFor (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:273:34)
+    at http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:297:11
+    at mountMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:12242:27)
+    at Object.useMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:12566:24)
+    at useMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-CYZG5QNB.js?v=94acf69f:1094:29)
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:296:31)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at mountIndeterminateComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14974:21)
+[ 1571801ms] TypeError: Cannot read properties of undefined (reading 'values')
+    at http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:273:59
+    at Array.flatMap (<anonymous>)
+    at targetGroupsFor (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:273:34)
+    at http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:297:11
+    at mountMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:12242:27)
+    at Object.useMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:12566:24)
+    at useMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-CYZG5QNB.js?v=94acf69f:1094:29)
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:296:31)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at mountIndeterminateComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14974:21)
+[ 1571801ms] TypeError: Cannot read properties of undefined (reading 'values')
+    at http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:273:59
+    at Array.flatMap (<anonymous>)
+    at targetGroupsFor (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:273:34)
+    at http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:297:11
+    at mountMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:12242:27)
+    at Object.useMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:12566:24)
+    at useMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-CYZG5QNB.js?v=94acf69f:1094:29)
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:296:31)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at mountIndeterminateComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14974:21)
+[ 1571801ms] TypeError: Cannot read properties of undefined (reading 'values')
+    at http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:273:59
+    at Array.flatMap (<anonymous>)
+    at targetGroupsFor (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:273:34)
+    at http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:297:11
+    at mountMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:12242:27)
+    at Object.useMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:12566:24)
+    at useMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-CYZG5QNB.js?v=94acf69f:1094:29)
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:296:31)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at mountIndeterminateComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14974:21)
+[ 1571801ms] TypeError: Cannot read properties of undefined (reading 'values')
+    at http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:273:59
+    at Array.flatMap (<anonymous>)
+    at targetGroupsFor (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:273:34)
+    at http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:297:11
+    at mountMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:12242:27)
+    at Object.useMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:12566:24)
+    at useMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-CYZG5QNB.js?v=94acf69f:1094:29)
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:296:31)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at mountIndeterminateComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14974:21)
+[ 1571708ms] [ERROR] The above error occurred in the <ModulationRow> component:
+
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:290:26)
+    at div
+    at section
+    at ModulationSection (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:517:30)
+    at div
+    at details
+    at div
+    at div
+    at ControlPanelDesktop (http://127.0.0.1:5175/phase-space/src/components/controls/ControlPanelDesktop.tsx?t=1779735414857:157:7)
+    at aside
+    at div
+    at div
+    at MainLayout (http://127.0.0.1:5175/phase-space/src/components/MainLayout.tsx?t=1779735414857:25:20)
+    at ModulationProvider (http://127.0.0.1:5175/phase-space/src/state/modulationState.tsx?t=1779735414857:122:38)
+    at ViewerProvider (http://127.0.0.1:5175/phase-space/src/state/viewerState.tsx?t=1779733572258:62:34)
+    at div
+    at PhaseViewerPage
+    at RenderedRoute (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6002:26)
+    at Routes (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6792:3)
+    at main
+    at div
+    at AppLayout (http://127.0.0.1:5175/phase-space/src/layouts/AppLayout.tsx:22:29)
+    at AudioDevicesProvider (http://127.0.0.1:5175/phase-space/src/state/audioDevicesState.tsx:21:40)
+    at App
+    at Router (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6735:13)
+    at BrowserRouter (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:9844:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:17715
+[ 1571708ms] [ERROR] The above error occurred in the <ModulationRow> component:
+
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:290:26)
+    at div
+    at section
+    at ModulationSection (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:517:30)
+    at div
+    at details
+    at div
+    at div
+    at ControlPanelDesktop (http://127.0.0.1:5175/phase-space/src/components/controls/ControlPanelDesktop.tsx?t=1779735414857:157:7)
+    at aside
+    at div
+    at div
+    at MainLayout (http://127.0.0.1:5175/phase-space/src/components/MainLayout.tsx?t=1779735414857:25:20)
+    at ModulationProvider (http://127.0.0.1:5175/phase-space/src/state/modulationState.tsx?t=1779735414857:122:38)
+    at ViewerProvider (http://127.0.0.1:5175/phase-space/src/state/viewerState.tsx?t=1779733572258:62:34)
+    at div
+    at PhaseViewerPage
+    at RenderedRoute (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6002:26)
+    at Routes (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6792:3)
+    at main
+    at div
+    at AppLayout (http://127.0.0.1:5175/phase-space/src/layouts/AppLayout.tsx:22:29)
+    at AudioDevicesProvider (http://127.0.0.1:5175/phase-space/src/state/audioDevicesState.tsx:21:40)
+    at App
+    at Router (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6735:13)
+    at BrowserRouter (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:9844:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:17715
+[ 1571708ms] [ERROR] The above error occurred in the <ModulationRow> component:
+
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:290:26)
+    at div
+    at section
+    at ModulationSection (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:517:30)
+    at div
+    at details
+    at div
+    at div
+    at ControlPanelDesktop (http://127.0.0.1:5175/phase-space/src/components/controls/ControlPanelDesktop.tsx?t=1779735414857:157:7)
+    at aside
+    at div
+    at div
+    at MainLayout (http://127.0.0.1:5175/phase-space/src/components/MainLayout.tsx?t=1779735414857:25:20)
+    at ModulationProvider (http://127.0.0.1:5175/phase-space/src/state/modulationState.tsx?t=1779735414857:122:38)
+    at ViewerProvider (http://127.0.0.1:5175/phase-space/src/state/viewerState.tsx?t=1779733572258:62:34)
+    at div
+    at PhaseViewerPage
+    at RenderedRoute (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6002:26)
+    at Routes (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6792:3)
+    at main
+    at div
+    at AppLayout (http://127.0.0.1:5175/phase-space/src/layouts/AppLayout.tsx:22:29)
+    at AudioDevicesProvider (http://127.0.0.1:5175/phase-space/src/state/audioDevicesState.tsx:21:40)
+    at App
+    at Router (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6735:13)
+    at BrowserRouter (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:9844:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:17715
+[ 1571708ms] [ERROR] The above error occurred in the <ModulationRow> component:
+
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:290:26)
+    at div
+    at section
+    at ModulationSection (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:517:30)
+    at div
+    at details
+    at div
+    at div
+    at ControlPanelDesktop (http://127.0.0.1:5175/phase-space/src/components/controls/ControlPanelDesktop.tsx?t=1779735414857:157:7)
+    at aside
+    at div
+    at div
+    at MainLayout (http://127.0.0.1:5175/phase-space/src/components/MainLayout.tsx?t=1779735414857:25:20)
+    at ModulationProvider (http://127.0.0.1:5175/phase-space/src/state/modulationState.tsx?t=1779735414857:122:38)
+    at ViewerProvider (http://127.0.0.1:5175/phase-space/src/state/viewerState.tsx?t=1779733572258:62:34)
+    at div
+    at PhaseViewerPage
+    at RenderedRoute (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6002:26)
+    at Routes (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6792:3)
+    at main
+    at div
+    at AppLayout (http://127.0.0.1:5175/phase-space/src/layouts/AppLayout.tsx:22:29)
+    at AudioDevicesProvider (http://127.0.0.1:5175/phase-space/src/state/audioDevicesState.tsx:21:40)
+    at App
+    at Router (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:6735:13)
+    at BrowserRouter (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/react-router-dom.js?v=bc4a4510:9844:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:17715
+[ 1571801ms] TypeError: Cannot read properties of undefined (reading 'values')
+    at http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:273:59
+    at Array.flatMap (<anonymous>)
+    at targetGroupsFor (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:273:34)
+    at http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:297:11
+    at mountMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:12242:27)
+    at Object.useMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:12566:24)
+    at useMemo (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-CYZG5QNB.js?v=94acf69f:1094:29)
+    at ModulationRow (http://127.0.0.1:5175/phase-space/src/components/controls/ModulationSection.tsx?t=1779735630286:296:31)
+    at renderWithHooks (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:11596:26)
+    at mountIndeterminateComponent (http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:14974:21)
+[ 1575761ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[ 1575761ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[ 1575762ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[ 1575762ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21

@@ -1,0 +1,23 @@
+[     101ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://127.0.0.1:5175/phase-space/phase-space/site.webmanifest:0
+[     131ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:21608
+[     172ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[     172ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[     173ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[     173ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[     191ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://127.0.0.1:5175/phase-space/phase-space/site.webmanifest:0
+[   88164ms] [ERROR] RuntimeError: memory access out of bounds
+    at phasewasm.wasm.dlmalloc::dlmalloc::Dlmalloc<A>::malloc::hfa67c54daa9ae39f (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[51]:0x8ac5)
+    at phasewasm.wasm.__rustc[eb8946e36839644a]::__rdl_alloc (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[509]:0x40f55)
+    at phasewasm.wasm.__rustc[eb8946e36839644a]::__rust_alloc (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[587]:0x41566)
+    at phasewasm.wasm.<phasecore::scene::CameraProgram as core::default::Default>::default::hb925c9206b39cb4f (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[200]:0x31bbf)
+    at phasewasm.wasm.<serde_wasm_bindgen::de::Deserializer as serde_core::de::Deserializer>::deserialize_struct::hab38ba92e776c032 (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[60]:0x11641)
+    at phasewasm.wasm.wasmengine_integrate_scene_value (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[196]:0x3151e)
+    at phasewasm.wasm.wasmengine_integrate_scene_value externref shim (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[537]:0x4122e)
+    at phasewasm.wasm.wasmengine_integrate_scene_value externref shim multivalue shim (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[482]:0x40b86)
+    at WasmEngine.integrate_scene_value (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm.js:299:26)
+    at Object.integrateScene (http://127.0.0.1:5175/phase-space/src/hooks/usePhaseWasmEngine.ts:61:37) @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:17715
+[  254225ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:5175/phase-space/src/components/canvas/renderers/LineRenderer.ts?t=1779733963873:0
+[  254225ms] [ERROR] [vite] Failed to reload /src/components/canvas/CanvasPanel.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:17715
+[  289005ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://127.0.0.1:5175/phase-space/phase-space/site.webmanifest:0
+[  289048ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:21608
+[  289088ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://127.0.0.1:5175/phase-space/phase-space/site.webmanifest:0

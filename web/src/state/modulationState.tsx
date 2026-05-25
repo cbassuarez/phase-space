@@ -15,14 +15,21 @@ import type { ChannelMode } from "../hooks/useAudioDevices";
 import { useAudioDevicesContext } from "./audioDevicesState";
 
 interface ModValues {
-  camera: { r: number | null; theta: number | null; phi: number | null };
+  camera: { r: number | null; theta: number | null; phi: number | null; pulse: number };
   paletteShift: number;
   backgroundBrightness: number;
+  renderEnergy: number;
+  renderPulse: number;
+  lineWidthScale: number | null;
+  cellSizeScale: number | null;
   photonWeaveBrightness: number | null;
+  photonWeaveTrail: number | null;
   emissiveBoost: number | null;
   ribbonWidth: number | null;
+  ribbonGlow: number | null;
   cloudDensity: number | null;
   causticsIntensity: number | null;
+  causticsBlur: number | null;
 }
 
 interface ModulationContextValue {
@@ -61,25 +68,49 @@ const createTargetRegistry = (
     const clamped = Math.max(0.05, Math.min(Math.PI - 0.05, v));
     valuesRef.current.camera.phi = clamped;
   };
+  const setCameraPulse = (v: number) => {
+    valuesRef.current.camera.pulse = clamp01(v);
+  };
   const setPaletteShift = (v: number) => {
     valuesRef.current.paletteShift = clamp01(v);
   };
   const setBackgroundBrightness = (v: number) => {
     valuesRef.current.backgroundBrightness = clamp01(v);
   };
+  const setActiveEnergy = (v: number) => {
+    valuesRef.current.renderEnergy = clamp01(v);
+  };
+  const setActivePulse = (v: number) => {
+    valuesRef.current.renderPulse = clamp01(v);
+  };
+  const setLineWidth = (v: number) => {
+    valuesRef.current.lineWidthScale = Math.max(0.35, Math.min(3.2, v));
+  };
+  const setCellSize = (v: number) => {
+    valuesRef.current.cellSizeScale = Math.max(0.35, Math.min(3.4, v));
+  };
   const setPhotonWeaveBrightness = (v: number) => {
     const clamped = Math.max(0.05, Math.min(3.5, v));
     valuesRef.current.photonWeaveBrightness = clamped;
     valuesRef.current.emissiveBoost = clamped;
   };
+  const setPhotonWeaveTrail = (v: number) => {
+    valuesRef.current.photonWeaveTrail = Math.max(0.35, Math.min(2.8, v));
+  };
   const setRibbonWidth = (v: number) => {
     valuesRef.current.ribbonWidth = Math.max(0.3, Math.min(2.8, v));
   };
+  const setRibbonGlow = (v: number) => {
+    valuesRef.current.ribbonGlow = Math.max(0, Math.min(3.5, v));
+  };
   const setCloudDensity = (v: number) => {
-    valuesRef.current.cloudDensity = clamp01(v);
+    valuesRef.current.cloudDensity = Math.max(0, Math.min(1.6, v));
   };
   const setCausticsIntensity = (v: number) => {
-    valuesRef.current.causticsIntensity = clamp01(v * 2.2);
+    valuesRef.current.causticsIntensity = Math.max(0.05, Math.min(3.5, v));
+  };
+  const setCausticsBlur = (v: number) => {
+    valuesRef.current.causticsBlur = Math.max(0.08, Math.min(1.8, v));
   };
 
   const setVoicePitch = (v: number) => synth.setVoicePitch(0, clamp01(v));
@@ -91,12 +122,20 @@ const createTargetRegistry = (
     "view.camera.r": setCameraR,
     "view.camera.theta": setCameraTheta,
     "view.camera.phi": setCameraPhi,
+    "view.camera.pulse": setCameraPulse,
     "view.palette_shift": setPaletteShift,
     "view.background_brightness": setBackgroundBrightness,
+    "render.active.energy": setActiveEnergy,
+    "render.active.pulse": setActivePulse,
+    "render.line.width": setLineWidth,
+    "render.cells.size": setCellSize,
     "render.photonWeave.brightness": setPhotonWeaveBrightness,
+    "render.photonWeave.trail": setPhotonWeaveTrail,
     "render.ribbon.width": setRibbonWidth,
+    "render.ribbon.glow": setRibbonGlow,
     "render.cloud.density": setCloudDensity,
     "render.caustics.intensity": setCausticsIntensity,
+    "render.caustics.blur": setCausticsBlur,
     "audio.voice_0.pitch": setVoicePitch,
     "audio.voice_0.pan": setVoicePan,
     "audio.voice_0.brightness": setVoiceBrightness,
@@ -138,14 +177,21 @@ export function ModulationProvider({ children }: { children: React.ReactNode }) 
   const activeInputRef = useRef<string | null>(null);
   const audioFrameRef = useRef<AudioFeatureFrame | null>(null);
   const modValuesRef = useRef<ModValues>({
-    camera: { r: null, theta: null, phi: null },
+    camera: { r: null, theta: null, phi: null, pulse: 0 },
     paletteShift: 0,
     backgroundBrightness: 0,
+    renderEnergy: 0,
+    renderPulse: 0,
+    lineWidthScale: null,
+    cellSizeScale: null,
     photonWeaveBrightness: null,
+    photonWeaveTrail: null,
     emissiveBoost: null,
     ribbonWidth: null,
+    ribbonGlow: null,
     cloudDensity: null,
     causticsIntensity: null,
+    causticsBlur: null,
   });
 
   useEffect(() => {

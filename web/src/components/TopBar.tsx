@@ -83,14 +83,8 @@ function TopBar() {
             <NavLink to="/" className={navLinkClass}>
               Viewer
             </NavLink>
-            <NavLink to="/systems" className={navLinkClass}>
-              Systems
-            </NavLink>
-            <NavLink to="/presets" className={navLinkClass}>
-              Presets
-            </NavLink>
-            <NavLink to="/field-notes" className={navLinkClass}>
-              Field Notes
+            <NavLink to="/about" className={navLinkClass}>
+              About
             </NavLink>
             <NavLink to="/credits" className={navLinkClass}>
               Credits

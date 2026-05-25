@@ -4,11 +4,13 @@ mod lorenz;
 mod rossler;
 mod aizawa;
 mod thomas;
+mod chua;
 
 pub use lorenz::{Lorenz, LorenzParams};
 pub use rossler::{Rossler, RosslerParams};
 pub use aizawa::{Aizawa, AizawaParams};
 pub use thomas::{Thomas, ThomasParams};
+pub use chua::{Chua, ChuaParams};
 
 use crate::Vec3;
 

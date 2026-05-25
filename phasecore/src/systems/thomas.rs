@@ -4,7 +4,10 @@ use super::System3;
 
 /// Thomas cyclic attractor parameters.
 ///
-/// Canonical pretty set: b ≈ 0.208186
+/// Chaos boundary is at b ≈ 0.208186 — below it, trajectories perform
+/// the iconic 3D lattice walk; at and above it, motion collapses to
+/// closed loops. b = 0.19 is the classic chaotic value shown in most
+/// references; lower values walk farther but need more simulation time.
 #[derive(Debug, Clone, Copy)]
 pub struct ThomasParams {
     pub b: f32,
@@ -12,7 +15,7 @@ pub struct ThomasParams {
 
 impl Default for ThomasParams {
     fn default() -> Self {
-        Self { b: 0.208186 }
+        Self { b: 0.19 }
     }
 }
 

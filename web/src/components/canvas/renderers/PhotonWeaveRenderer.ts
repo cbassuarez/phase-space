@@ -3,6 +3,7 @@ import {
   BufferAttribute,
   BufferGeometry,
   Color,
+  DataTexture,
   DoubleSide,
   Group,
   Mesh,
@@ -13,7 +14,7 @@ import type { FilamentDensity } from "../../../types";
 import type { RenderQuality } from "../../../visual/renderQuality";
 import { getLighting } from "../../../visual/lighting";
 import type { RendererStrategy, RenderContext, TrajectoryData } from "./base";
-import { colorForTrajectory } from "./utils";
+import { buildPaletteTexture, dynamicScalarAt } from "./utils";
 
 /**
  * Photon Weave renderer — lit with Kajiya-Kay shading.
@@ -41,15 +42,18 @@ import { colorForTrajectory } from "./utils";
 
 const filamentVertex = `
   attribute float t;
+  attribute float colorT;
   attribute float strand;
   attribute vec3  aTangent;     // world-space strand tangent
   varying float vT;
+  varying float vColorT;
   varying float vEdge;
   varying float vStrand;
   varying vec3  vTangent;
   varying vec3  vWorldPos;
   void main() {
     vT = t;
+    vColorT = colorT;
     vEdge = (uv.y - 0.5) * 2.0;
     vStrand = strand;
     vTangent = aTangent;
@@ -61,11 +65,13 @@ const filamentVertex = `
 
 const filamentFragment = `
   varying float vT;
+  varying float vColorT;
   varying float vEdge;
   varying float vStrand;
   varying vec3  vTangent;
   varying vec3  vWorldPos;
-  uniform vec3  uColor;
+  uniform sampler2D uPalette;
+  uniform float uPaletteShift;
   uniform float uBrightness;
   uniform float uTrailPower;
   uniform float uTime;
@@ -78,6 +84,10 @@ const filamentFragment = `
   uniform float uFillI;
   uniform vec3  uAmbient;
   uniform vec3  uCamPos;
+
+  vec3 paletteSample(float t) {
+    return texture2D(uPalette, vec2(fract(t), 0.5)).rgb;
+  }
 
   // Kajiya-Kay diffuse: sqrt(1 - (T.L)^2). Bright where the light
   // direction is perpendicular to the strand, dark where it runs
@@ -99,6 +109,7 @@ const filamentFragment = `
   void main() {
     float core = exp(-vEdge * vEdge * 6.0);
     float trail = pow(1.0 - vT, max(0.3, uTrailPower));
+    vec3 color = paletteSample(vColorT + uPaletteShift);
 
     vec3 T = normalize(vTangent);
     vec3 L = normalize(uKeyDir);
@@ -110,10 +121,10 @@ const filamentFragment = `
     float sKey  = kkSpec(T, L, V, 24.0);
 
     vec3 lit =
-        uColor * uKeyColor  * dKey  * uKeyI
-      + uColor * uFillColor * dFill * uFillI
+        color * uKeyColor  * dKey  * uKeyI
+      + color * uFillColor * dFill * uFillI
       + uKeyColor * sKey * 0.6 * uKeyI
-      + uColor * uAmbient;
+      + color * uAmbient;
 
     float shimmerPhase = uTime * 1.6 + vStrand * 2.1 + vT * 4.0;
     float shimmer = mix(1.0, 0.7 + 0.5 * sin(shimmerPhase), uShimmer);
@@ -129,7 +140,8 @@ const filamentFragment = `
 `;
 
 interface FilamentUniforms {
-  uColor: { value: Color };
+  uPalette: { value: DataTexture | null };
+  uPaletteShift: { value: number };
   uBrightness: { value: number };
   uTrailPower: { value: number };
   uTime: { value: number };
@@ -158,9 +170,21 @@ function strandSampleStep(density: FilamentDensity, quality: RenderQuality | und
 }
 
 function strandWidth(data: TrajectoryData): number {
-  if (data.lineThickness === "thick") return 0.10;
-  if (data.lineThickness === "thin")  return 0.045;
-  return 0.07;
+  if (data.lineThickness === "thick") return 0.18;
+  if (data.lineThickness === "thin")  return 0.035;
+  return 0.09;
+}
+
+function reactiveBrightness(data: TrajectoryData): number {
+  const energy = data.renderEnergy ?? 0;
+  const pulse = data.renderPulse ?? 0;
+  return 1 + energy * 1.35 + pulse * 1.7;
+}
+
+function reactiveTrail(data: TrajectoryData): number {
+  const energy = data.renderEnergy ?? 0;
+  const pulse = data.renderPulse ?? 0;
+  return Math.max(0.4, Math.min(3, 1 + energy * 0.55 + pulse * 0.45));
 }
 
 function buildFrames(points: Vector3[]): { normals: Vector3[]; binormals: Vector3[]; tangents: Vector3[] } {
@@ -218,6 +242,7 @@ export class PhotonWeaveRenderer implements RendererStrategy {
   private group: Group | null = null;
   private meshes: Mesh[] = [];
   private materials: ShaderMaterial[] = [];
+  private paletteTexture: DataTexture | null = null;
   private trajIndexForMesh: number[] = [];
   private data: TrajectoryData | null = null;
   private context: RenderContext | null = null;
@@ -232,6 +257,7 @@ export class PhotonWeaveRenderer implements RendererStrategy {
     this.sampleCountPerStrand = [];
     this.sourceCountPerTrajectory = [];
     this.data = data;
+    this.paletteTexture = buildPaletteTexture(data.palette, data.customPalette);
     this.context = context;
     context.threeScene.add(this.group);
 
@@ -257,7 +283,6 @@ export class PhotonWeaveRenderer implements RendererStrategy {
       if (samples.length < 2) return;
 
       const { normals, binormals, tangents } = buildFrames(samples);
-      const baseColor = colorForTrajectory(trajIdx, data.palette, data.customPalette, data.paletteShift ?? 0);
 
       const perTrajCounts: number[] = [];
       for (let s = 0; s < nStrands; s++) {
@@ -265,6 +290,7 @@ export class PhotonWeaveRenderer implements RendererStrategy {
         const N = samples.length;
         const positions = new Float32Array(N * 6);
         const tAttr     = new Float32Array(N * 2);
+        const colorAttr = new Float32Array(N * 2);
         const strandAttr= new Float32Array(N * 2);
         const uvAttr    = new Float32Array(N * 4);
         const tanAttr   = new Float32Array(N * 6);
@@ -302,6 +328,10 @@ export class PhotonWeaveRenderer implements RendererStrategy {
           const tNorm = sampleT[i];
           tAttr[i * 2 + 0] = tNorm;
           tAttr[i * 2 + 1] = tNorm;
+          const sourceIndex = Math.min(traj.length - 1, i * step);
+          const colorT = dynamicScalarAt(data.dynamics, trajIdx, sourceIndex, tNorm);
+          colorAttr[i * 2 + 0] = colorT;
+          colorAttr[i * 2 + 1] = colorT;
           strandAttr[i * 2 + 0] = s;
           strandAttr[i * 2 + 1] = s;
           uvAttr[i * 4 + 0] = tNorm; uvAttr[i * 4 + 1] = 0;
@@ -318,13 +348,15 @@ export class PhotonWeaveRenderer implements RendererStrategy {
         geometry.setAttribute("position", new BufferAttribute(positions, 3));
         geometry.setAttribute("uv",       new BufferAttribute(uvAttr, 2));
         geometry.setAttribute("t",        new BufferAttribute(tAttr, 1));
+        geometry.setAttribute("colorT",   new BufferAttribute(colorAttr, 1));
         geometry.setAttribute("strand",   new BufferAttribute(strandAttr, 1));
         geometry.setAttribute("aTangent", new BufferAttribute(tanAttr, 3));
 
         const uniforms: FilamentUniforms = {
-          uColor:      { value: baseColor.clone() },
-          uBrightness: { value: data.photonWeave?.brightness ?? 1 },
-          uTrailPower: { value: data.photonWeave?.trailLength ?? 1 },
+          uPalette:    { value: this.paletteTexture },
+          uPaletteShift: { value: data.paletteShift ?? 0 },
+          uBrightness: { value: (data.photonWeave?.brightness ?? 1) * reactiveBrightness(data) },
+          uTrailPower: { value: (data.photonWeave?.trailLength ?? 1) * reactiveTrail(data) },
           uTime:       { value: 0 },
           uShimmer:    { value: data.photonWeave?.shimmer ? 1 : 0 },
           uKeyDir:     { value: new Vector3().fromArray(lighting.keyDir) },
@@ -368,19 +400,17 @@ export class PhotonWeaveRenderer implements RendererStrategy {
   applyDynamic(data: TrajectoryData) {
     if (!this.data || !this.context) return;
     this.data = { ...this.data, ...data };
-    const brightness = data.photonWeave?.brightness ?? 1;
-    const trail = data.photonWeave?.trailLength ?? 1;
+    const brightness = (data.photonWeave?.brightness ?? 1) * reactiveBrightness(data);
+    const trail = (data.photonWeave?.trailLength ?? 1) * reactiveTrail(data);
     const shimmer = data.photonWeave?.shimmer ? 1 : 0;
     const now = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
     const paletteShift = data.paletteShift ?? 0;
     const lighting = getLighting();
     const camPos = this.context.camera.position;
 
-    this.materials.forEach((mat, meshIdx) => {
+    this.materials.forEach((mat) => {
       const u = mat.uniforms as unknown as FilamentUniforms;
-      const trajIdx = this.trajIndexForMesh[meshIdx];
-      const baseColor = colorForTrajectory(trajIdx, this.data!.palette, this.data!.customPalette, paletteShift);
-      u.uColor.value.copy(baseColor);
+      u.uPaletteShift.value = paletteShift;
       u.uBrightness.value = brightness;
       u.uTrailPower.value = trail;
       u.uShimmer.value = shimmer;
@@ -429,6 +459,8 @@ export class PhotonWeaveRenderer implements RendererStrategy {
     this.group = null;
     this.meshes = [];
     this.materials = [];
+    this.paletteTexture?.dispose();
+    this.paletteTexture = null;
     this.trajIndexForMesh = [];
     this.sampleCountPerStrand = [];
     this.sourceCountPerTrajectory = [];

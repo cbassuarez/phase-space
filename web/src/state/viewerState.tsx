@@ -75,7 +75,20 @@ const resolutionPresets: Record<Resolution, IntegratorSpec> = {
 function applyResolution(sceneJson: string, resolution: Resolution): string {
   try {
     const spec = JSON.parse(sceneJson) as SceneSpec;
-    spec.integrator = { ...(spec.integrator ?? {}), ...resolutionPresets[resolution] };
+    const preset = resolutionPresets[resolution];
+    const sceneIntegrator = spec.integrator ?? {};
+    // Resolution controls integration *precision* (dt). Each scene
+    // owns its intended `steps` / `discard_initial` because total
+    // simulation time is system-dependent — Thomas at low `b` needs
+    // many timescales to walk the lattice, Lorenz settles into the
+    // butterfly almost immediately. Fall back to preset values only
+    // when the scene didn't supply them.
+    spec.integrator = {
+      ...sceneIntegrator,
+      dt: preset.dt,
+      steps: sceneIntegrator.steps ?? preset.steps,
+      discard_initial: sceneIntegrator.discard_initial ?? preset.discard_initial,
+    };
     return JSON.stringify(spec, null, 2);
   } catch (err) {
     console.error("Failed to parse scene json", err);
@@ -83,9 +96,26 @@ function applyResolution(sceneJson: string, resolution: Resolution): string {
   }
 }
 
+function cloneCameraProgram(program: CameraProgram): CameraProgram {
+  return JSON.parse(JSON.stringify(program)) as CameraProgram;
+}
+
+function resetCameraParameterGroups(program: CameraProgram | null): CameraProgram {
+  const defaults = createDefaultCameraProgram();
+  const base = cloneCameraProgram(program ?? defaults);
+  return {
+    ...base,
+    survey: { ...defaults.survey },
+    orbit: { ...defaults.orbit },
+    chase: { ...defaults.chase },
+    lobe: { ...defaults.lobe },
+  };
+}
+
 export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const { ready: engineReady, error: engineError, api } = usePhaseWasmEngine();
   const [system, setSystemState] = useState<SystemId>("lorenz");
+  const systemRef = useRef<SystemId>("lorenz");
   const [resolution, setResolutionState] = useState<Resolution>("default");
   const [autoSpin, setAutoSpin] = useState(true);
   const [animateHeadTail, setAnimateHeadTail] = useState(true);
@@ -114,6 +144,8 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const [sceneJson, setSceneJson] = useState("{}");
   const [sceneSpec, setSceneSpec] = useState<SceneSpec | null>(null);
   const [cameraProgram, setCameraProgramState] = useState<CameraProgram | null>(null);
+  const cameraProgramRef = useRef<CameraProgram | null>(null);
+  const lastLoadedSystemRef = useRef<SystemId | null>(null);
   const [trajectories, setTrajectories] = useState<Trajectories>([]);
   const [trajectoryMeta, setTrajectoryMeta] = useState<TrajectoryMeta>({ count: 0, points: 0 });
   const [loading, setLoading] = useState(false);
@@ -134,6 +166,14 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     setError(engineError);
   }, [engineError]);
 
+  useEffect(() => {
+    cameraProgramRef.current = cameraProgram;
+  }, [cameraProgram]);
+
+  useEffect(() => {
+    systemRef.current = system;
+  }, [system]);
+
   const loadScene = useCallback(
     (nextSystem: SystemId, res: Resolution) => {
       if (!api) return;
@@ -143,7 +183,11 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
         const tunedScene = applyResolution(baseScene, res);
         const { trajectories: traj, scene } = api.integrateScene(tunedScene);
         const normalizedView = normalizeViewSpec(scene.view);
-        const normalizedScene = { ...scene, view: normalizedView } as SceneSpec;
+        const systemChanged = lastLoadedSystemRef.current !== nextSystem;
+        const nextCameraProgram = systemChanged
+          ? resetCameraParameterGroups(cameraProgramRef.current)
+          : cloneCameraProgram(cameraProgramRef.current ?? createDefaultCameraProgram());
+        const normalizedScene = { ...scene, view: normalizedView, camera: nextCameraProgram } as SceneSpec;
         if (
           normalizedView.palette === "custom" &&
           normalizedView.palette_spec?.stops &&
@@ -168,11 +212,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
         if (!paletteLockedRef.current && scene.view?.palette) {
           setPaletteState(mapLegacyPalette(scene.view.palette));
         }
-        const rawCamera =
-          (scene.camera as unknown) ??
-          (getDefaultSceneSpec(nextSystem).camera as unknown) ??
-          null;
-        setCameraProgramState(migrateCameraProgram(rawCamera));
+        setCameraProgramState(nextCameraProgram);
         setTrajectories(traj);
         const meta = traj.reduce(
           (acc, t) => {
@@ -183,6 +223,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
           { count: 0, points: 0 }
         );
         setTrajectoryMeta(meta);
+        lastLoadedSystemRef.current = nextSystem;
         setError(null);
       } catch (err) {
         console.error(err);
@@ -227,6 +268,13 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   );
 
   const refreshScene = useCallback(() => loadScene(system, resolution), [loadScene, system, resolution]);
+
+  const setSystem = useCallback((nextSystem: SystemId) => {
+    if (systemRef.current !== nextSystem) {
+      setCameraProgramState((prev) => resetCameraParameterGroups(prev));
+    }
+    setSystemState(nextSystem);
+  }, []);
 
   const setRenderStyle = useCallback(
     (style: RenderStyle) => {
@@ -303,7 +351,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     cameraProgram,
     trajectories,
     trajectoryMeta,
-    setSystem: setSystemState,
+    setSystem,
     setResolution: setResolutionState,
     toggleAutoSpin: () => setAutoSpin((v) => !v),
     toggleAnimateHeadTail: () => setAnimateHeadTail((v) => !v),
@@ -340,6 +388,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     cameraProgram,
     trajectories,
     trajectoryMeta,
+    setSystem,
     setCameraProgram,
     setRenderStyle,
     setPhotonWeaveSettings,

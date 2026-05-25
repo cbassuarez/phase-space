@@ -118,7 +118,7 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
     id: "thomas-default",
     system: "thomas",
     params: {
-      b: 0.208186,
+      b: 0.19,
     },
     initial_seeds: [
       { x: [1.0, 0.0, 0.0], color_index: 0 },
@@ -144,6 +144,50 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
     camera: cameraFor("orbit", (c) => {
       c.orbit.base_radius = 1.4;
       c.orbit.azimuth_speed = 0.07;
+    }),
+  },
+  chua: {
+    id: "chua-default",
+    system: "chua",
+    params: {
+      alpha: 15.6,
+      beta: 28.0,
+      m0: -8 / 7,
+      m1: -5 / 7,
+      bp: 1.0,
+    },
+    initial_seeds: [
+      { x: [0.7, 0.0, 0.0], color_index: 0 },
+      { x: [-0.7, 0.0, 0.0], color_index: 1 },
+      { x: [0.7001, 0.0, 0.0], color_index: 2 },
+    ],
+    integrator: {
+      // Diode kink at |x|=bp is C0-continuous; RK4 handles it fine at
+      // dt=0.01. The dual-scroll has a longer fall-in transient than
+      // Lorenz — trim 2,500 steps.
+      dt: 0.01,
+      steps: 70_000,
+      discard_initial: 2_500,
+      max_radius: 1000.0,
+    },
+    view: {
+      mode: "mode3d",
+      plane: null,
+      camera: { theta: 0.9, phi: 1.05, r: 14.0 },
+      palette: "prism",
+      background: "dark",
+      point_size: 1.0,
+      render_style: "line",
+    },
+    random_seed: 46,
+    // Dual-scroll is THE canonical 2-lobe attractor — lobe mode shows
+    // off the snap mechanism better than orbit does.
+    camera: cameraFor("lobe", (c) => {
+      c.lobe.lobe_count = 2;
+      c.lobe.dwell_time = 7.5;
+      c.lobe.transition_time = 2.8;
+      c.lobe.zoom = 1.2;
+      c.lobe.cycle_mode = "alternate";
     }),
   },
 };

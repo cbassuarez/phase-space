@@ -68,6 +68,7 @@ function ResolutionSlider({ value, onChange }: ResolutionSliderProps) {
                     onChange={handleChange}
                     className="phase-resolution-slider relative z-10 w-full cursor-pointer appearance-none bg-transparent px-[6px] focus:outline-none"
                     aria-label="Resolution"
+                    aria-valuetext={resolutionStops[safeIndex].label}
                 />
             </div>
 

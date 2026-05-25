@@ -1,0 +1,62 @@
+[     212ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://127.0.0.1:5175/phase-space/phase-space/site.webmanifest:0
+[     272ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=94acf69f:21608
+[     313ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[     313ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[     314ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[     314ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:5175/phase-space/src/audio/internalSynth.ts:21
+[     351ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://127.0.0.1:5175/phase-space/phase-space/site.webmanifest:0
+[  116220ms] [ERROR] RuntimeError: memory access out of bounds
+    at phasewasm.wasm.dlmalloc::dlmalloc::Dlmalloc<A>::malloc::hfa67c54daa9ae39f (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[51]:0x8ac5)
+    at phasewasm.wasm.__rustc[eb8946e36839644a]::__rdl_alloc (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[509]:0x40f55)
+    at phasewasm.wasm.__rustc[eb8946e36839644a]::__rust_alloc (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[587]:0x41566)
+    at phasewasm.wasm.<phasecore::scene::CameraProgram as core::default::Default>::default::hb925c9206b39cb4f (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[200]:0x31bbf)
+    at phasewasm.wasm.<serde_wasm_bindgen::de::Deserializer as serde_core::de::Deserializer>::deserialize_struct::hab38ba92e776c032 (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[60]:0x11641)
+    at phasewasm.wasm.wasmengine_integrate_scene_value (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[196]:0x3151e)
+    at phasewasm.wasm.wasmengine_integrate_scene_value externref shim (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[537]:0x4122e)
+    at phasewasm.wasm.wasmengine_integrate_scene_value externref shim multivalue shim (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[482]:0x40b86)
+    at WasmEngine.integrate_scene_value (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm.js:299:26)
+    at Object.integrateScene (http://127.0.0.1:5175/phase-space/src/hooks/usePhaseWasmEngine.ts:61:37) @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:17715
+[  116913ms] [ERROR] RuntimeError: memory access out of bounds
+    at phasewasm.wasm.dlmalloc::dlmalloc::Dlmalloc<A>::malloc::hfa67c54daa9ae39f (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[51]:0x8ac5)
+    at phasewasm.wasm.__rustc[eb8946e36839644a]::__rdl_alloc (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[509]:0x40f55)
+    at phasewasm.wasm.__rustc[eb8946e36839644a]::__rust_alloc (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[587]:0x41566)
+    at phasewasm.wasm.__wbindgen_malloc (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[476]:0x40a7f)
+    at passStringToWasm0 (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm.js:59:15)
+    at imports.wbg.__wbg___wbindgen_string_get_e4f06c90489ad01b (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm.js:427:42)
+    at phasewasm.wasm.wasm_bindgen::__wbindgen_string_get::__wbg___wbindgen_string_get_e4f06c90489ad01b::h90195bdc3d756703 externref shim (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[631]:0x417dc)
+    at phasewasm.wasm.wasm_bindgen::__wbindgen_string_get::h3cdbce29fa14e903 (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[441]:0x400e7)
+    at phasewasm.wasm.<serde_wasm_bindgen::de::EnumAccess as serde_core::de::EnumAccess>::variant_seed::h7432c82c3dfedfdb (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[336]:0x3c2e5)
+    at phasewasm.wasm.<phasecore::scene::_::<impl serde_core::de::Deserialize for phasecore::scene::SystemId>::deserialize::__Visitor as serde_core::de::Visitor>::visit_enum::h7b845ff41bbbdd96 (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[242]:0x35c7e) @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:17715
+[  117594ms] [ERROR] RuntimeError: memory access out of bounds
+    at phasewasm.wasm.dlmalloc::dlmalloc::Dlmalloc<A>::malloc::hfa67c54daa9ae39f (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[51]:0x8ac5)
+    at phasewasm.wasm.__rustc[eb8946e36839644a]::__rdl_alloc (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[509]:0x40f55)
+    at phasewasm.wasm.__rustc[eb8946e36839644a]::__rust_alloc (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[587]:0x41566)
+    at phasewasm.wasm.__wbindgen_malloc (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[476]:0x40a7f)
+    at passStringToWasm0 (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm.js:59:15)
+    at imports.wbg.__wbg___wbindgen_string_get_e4f06c90489ad01b (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm.js:427:42)
+    at phasewasm.wasm.wasm_bindgen::__wbindgen_string_get::__wbg___wbindgen_string_get_e4f06c90489ad01b::h90195bdc3d756703 externref shim (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[631]:0x417dc)
+    at phasewasm.wasm.wasm_bindgen::__wbindgen_string_get::h3cdbce29fa14e903 (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[441]:0x400e7)
+    at phasewasm.wasm.<serde_wasm_bindgen::de::EnumAccess as serde_core::de::EnumAccess>::variant_seed::h7432c82c3dfedfdb (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[336]:0x3c2e5)
+    at phasewasm.wasm.<phasecore::scene::_::<impl serde_core::de::Deserialize for phasecore::scene::SystemId>::deserialize::__Visitor as serde_core::de::Visitor>::visit_enum::h7b845ff41bbbdd96 (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[242]:0x35c7e) @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:17715
+[  118264ms] [ERROR] RuntimeError: memory access out of bounds
+    at phasewasm.wasm.dlmalloc::dlmalloc::Dlmalloc<A>::malloc::hfa67c54daa9ae39f (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[51]:0x8ac5)
+    at phasewasm.wasm.__rustc[eb8946e36839644a]::__rdl_alloc (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[509]:0x40f55)
+    at phasewasm.wasm.__rustc[eb8946e36839644a]::__rust_alloc (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[587]:0x41566)
+    at phasewasm.wasm.__wbindgen_malloc (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[476]:0x40a7f)
+    at passStringToWasm0 (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm.js:59:15)
+    at imports.wbg.__wbg___wbindgen_string_get_e4f06c90489ad01b (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm.js:427:42)
+    at phasewasm.wasm.wasm_bindgen::__wbindgen_string_get::__wbg___wbindgen_string_get_e4f06c90489ad01b::h90195bdc3d756703 externref shim (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[631]:0x417dc)
+    at phasewasm.wasm.wasm_bindgen::__wbindgen_string_get::h3cdbce29fa14e903 (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[441]:0x400e7)
+    at phasewasm.wasm.<serde_wasm_bindgen::de::Deserializer as serde_core::de::Deserializer>::deserialize_struct::hab38ba92e776c032 (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[60]:0x1103f)
+    at phasewasm.wasm.wasmengine_integrate_scene_value (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[196]:0x3151e) @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:17715
+[  118943ms] [ERROR] RuntimeError: memory access out of bounds
+    at phasewasm.wasm.dlmalloc::dlmalloc::Dlmalloc<A>::malloc::hfa67c54daa9ae39f (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[51]:0x8ac5)
+    at phasewasm.wasm.__rustc[eb8946e36839644a]::__rdl_alloc (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[509]:0x40f55)
+    at phasewasm.wasm.__rustc[eb8946e36839644a]::__rust_alloc (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[587]:0x41566)
+    at phasewasm.wasm.__wbindgen_malloc (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[476]:0x40a7f)
+    at passStringToWasm0 (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm.js:59:15)
+    at imports.wbg.__wbg___wbindgen_string_get_e4f06c90489ad01b (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm.js:427:42)
+    at phasewasm.wasm.wasm_bindgen::__wbindgen_string_get::__wbg___wbindgen_string_get_e4f06c90489ad01b::h90195bdc3d756703 externref shim (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[631]:0x417dc)
+    at phasewasm.wasm.wasm_bindgen::__wbindgen_string_get::h3cdbce29fa14e903 (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[441]:0x400e7)
+    at phasewasm.wasm.<serde_wasm_bindgen::de::EnumAccess as serde_core::de::EnumAccess>::variant_seed::h7432c82c3dfedfdb (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[336]:0x3c2e5)
+    at phasewasm.wasm.<phasecore::scene::_::<impl serde_core::de::Deserialize for phasecore::scene::SystemId>::deserialize::__Visitor as serde_core::de::Visitor>::visit_enum::h7b845ff41bbbdd96 (http://127.0.0.1:5175/phase-space/src/wasm/phasewasm_bg.wasm:wasm-function[242]:0x35c7e) @ http://127.0.0.1:5175/phase-space/node_modules/.vite/deps/@react-three_fiber.js?v=a56194a7:17715

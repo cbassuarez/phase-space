@@ -8,18 +8,15 @@ import {
   Matrix4,
   Mesh,
   PlaneGeometry,
-  RedFormat,
   RGBAFormat,
   ShaderMaterial,
-  SRGBColorSpace,
   UnsignedByteType,
   Vector3,
 } from "three";
-import { samplePalette } from "../../../palettes";
-import type { CustomPaletteState } from "../../../palettes";
 import type { Palette } from "../../../types";
 import { getLighting } from "../../../visual/lighting";
 import type { RendererStrategy, RenderContext, TrajectoryData } from "./base";
+import { buildPaletteTexture, dynamicScalarAt } from "./utils";
 
 /**
  * Ray-march renderer — replaces the old VolumetricCloud strategy
@@ -61,6 +58,18 @@ const VOLUME_N = 128;
 const BOX_EXTENT = 7;                 // attractor normalized to r≈6, +1 padding
 const BOX_MIN = new Vector3(-BOX_EXTENT, -BOX_EXTENT, -BOX_EXTENT);
 const BOX_SIZE = new Vector3(BOX_EXTENT * 2, BOX_EXTENT * 2, BOX_EXTENT * 2);
+
+function cloudAudioDensityScale(data: TrajectoryData): number {
+  const energy = data.renderEnergy ?? 0;
+  const pulse = data.renderPulse ?? 0;
+  return 1 + energy * 0.9 + pulse * 0.55;
+}
+
+function cloudAudioExposureScale(data: TrajectoryData): number {
+  const energy = data.renderEnergy ?? 0;
+  const pulse = data.renderPulse ?? 0;
+  return 1 + energy * 0.4 + pulse * 0.7;
+}
 
 const fallbackVertex = `
   void main() { gl_Position = vec4(position.xy, 0.0, 1.0); }
@@ -177,7 +186,8 @@ const rayMarchFragment = `
         continue;
       }
 
-      float density = texture(uVolume, uvw).r;
+      vec4 voxel = texture(uVolume, uvw);
+      float density = voxel.r;
       if (density > 0.01) {
         // Shadow march toward the key light. Each shadow step
         // accumulates inverse-transmittance — denser regions cast
@@ -196,7 +206,7 @@ const rayMarchFragment = `
         // Palette colour by density (head/tail of the palette read
         // as low-density haze vs. high-density cores). Apply
         // palette shift like the other modes.
-        float paletteT = mod(density + uPaletteShift, 1.0);
+        float paletteT = mod(voxel.g + uPaletteShift, 1.0);
         vec3 paletteColor = paletteSample(paletteT);
 
         // Simple two-light shading. Fill is unshadowed (cheap
@@ -253,17 +263,19 @@ interface RayMarchUniforms {
  * splat density (typically very long-tailed for chaotic attractors)
  * doesn't crush all interesting structure into a single voxel.
  */
-function buildVolumeTexture(trajectories: number[][][]): Data3DTexture {
+function buildVolumeTexture(trajectories: number[][][], dynamics: TrajectoryData["dynamics"]): Data3DTexture {
   const N = VOLUME_N;
   const accum = new Float32Array(N * N * N);
-  const data = new Uint8Array(N * N * N);
+  const colorAccum = new Float32Array(N * N * N);
+  const data = new Uint8Array(N * N * N * 4);
 
   const minX = -BOX_EXTENT;
   const sizeX = BOX_EXTENT * 2;
 
-  for (const traj of trajectories) {
+  trajectories.forEach((traj, trajIdx) => {
     for (let i = 0; i < traj.length; i++) {
       const p = traj[i];
+      const colorT = dynamicScalarAt(dynamics, trajIdx, i, traj.length > 1 ? i / (traj.length - 1) : 0);
       const fx = ((p[0] - minX) / sizeX) * N - 0.5;
       const fy = ((p[1] - minX) / sizeX) * N - 0.5;
       const fz = ((p[2] - minX) / sizeX) * N - 0.5;
@@ -283,12 +295,15 @@ function buildVolumeTexture(trajectories: number[][][]): Data3DTexture {
           const yIdx = (y0 + dy) * N;
           for (let dx = 0; dx <= 1; dx++) {
             const wx = dx ? tx : 1 - tx;
-            accum[zIdx + yIdx + (x0 + dx)] += wx * wy * wz;
+            const weight = wx * wy * wz;
+            const idx = zIdx + yIdx + (x0 + dx);
+            accum[idx] += weight;
+            colorAccum[idx] += weight * colorT;
           }
         }
       }
     }
-  }
+  });
 
   let maxV = 0;
   for (let i = 0; i < accum.length; i++) if (accum[i] > maxV) maxV = accum[i];
@@ -298,11 +313,15 @@ function buildVolumeTexture(trajectories: number[][][]): Data3DTexture {
   const scale = maxV > 0 ? 255 / Math.sqrt(maxV) : 0;
   for (let i = 0; i < accum.length; i++) {
     const v = Math.sqrt(accum[i]) * scale;
-    data[i] = v >= 255 ? 255 : v <= 0 ? 0 : Math.floor(v);
+    const out = i * 4;
+    data[out] = v >= 255 ? 255 : v <= 0 ? 0 : Math.floor(v);
+    data[out + 1] = accum[i] > 0 ? Math.max(0, Math.min(255, Math.round((colorAccum[i] / accum[i]) * 255))) : 0;
+    data[out + 2] = 0;
+    data[out + 3] = 255;
   }
 
   const tex = new Data3DTexture(data, N, N, N);
-  tex.format = RedFormat;
+  tex.format = RGBAFormat;
   tex.type = UnsignedByteType;
   tex.minFilter = LinearFilter;
   tex.magFilter = LinearFilter;
@@ -310,23 +329,6 @@ function buildVolumeTexture(trajectories: number[][][]): Data3DTexture {
   tex.wrapT = ClampToEdgeWrapping;
   tex.wrapR = ClampToEdgeWrapping;
   tex.unpackAlignment = 1;
-  tex.needsUpdate = true;
-  return tex;
-}
-
-function buildPaletteTexture(id: Palette, customPalette: CustomPaletteState): DataTexture {
-  const size = 256;
-  const data = new Uint8Array(size * 4);
-  for (let i = 0; i < size; i++) {
-    const t = i / (size - 1);
-    const color = samplePalette(id, t, customPalette).clone().convertLinearToSRGB();
-    data[i * 4 + 0] = Math.round(color.r * 255);
-    data[i * 4 + 1] = Math.round(color.g * 255);
-    data[i * 4 + 2] = Math.round(color.b * 255);
-    data[i * 4 + 3] = 255;
-  }
-  const tex = new DataTexture(data, size, 1, RGBAFormat, UnsignedByteType);
-  tex.colorSpace = SRGBColorSpace;
   tex.needsUpdate = true;
   return tex;
 }
@@ -379,7 +381,7 @@ export class RayMarchRenderer implements RendererStrategy {
       return;
     }
 
-    this.volumeTexture = buildVolumeTexture(data.trajectories);
+    this.volumeTexture = buildVolumeTexture(data.trajectories, data.dynamics);
     this.paletteTexture = buildPaletteTexture(data.palette as Palette, data.customPalette);
     const lighting = getLighting();
     const bgColor = backgroundColorFor(data.background);
@@ -453,8 +455,9 @@ export class RayMarchRenderer implements RendererStrategy {
     // Re-tonemap aggressiveness with the cloudDensity slider, since
     // ray-march doesn't have its own dedicated control. Higher
     // density slider -> heavier extinction, denser-looking medium.
-    const density = this.data.cloudDensity ?? 1;
+    const density = (this.data.cloudDensity ?? 1) * cloudAudioDensityScale(this.data);
     u.uExtinction.value = 1.4 + density * 2.2;
+    u.uExposure.value = 1.7 * cloudAudioExposureScale(this.data);
   }
 
   dispose({ threeScene }: RenderContext) {

@@ -7,8 +7,21 @@ import {
   Points,
   PointsMaterial,
 } from "three";
-import { colorForTrajectory } from "./utils";
+import { buildVertexColorArray } from "./utils";
 import type { RendererStrategy, RenderContext, TrajectoryData } from "./base";
+
+function cellScale(data: TrajectoryData): number {
+  const energy = data.renderEnergy ?? 0;
+  const pulse = data.renderPulse ?? 0;
+  const specific = data.cellSizeScale ?? 1;
+  return Math.max(0.35, Math.min(3.4, specific * (1 + energy * 1.2 + pulse * 1.45)));
+}
+
+function pointOpacity(data: TrajectoryData, density: number): number {
+  const energy = data.renderEnergy ?? 0;
+  const pulse = data.renderPulse ?? 0;
+  return Math.max(0.16, Math.min(1, 0.75 * (0.35 + density * 0.72 + energy * 0.25 + pulse * 0.2)));
+}
 
 /**
  * Soft point-sprite cells. Slightly larger and softer than the
@@ -35,19 +48,34 @@ export class CellsRenderer implements RendererStrategy {
       }
       const geom = new BufferGeometry();
       geom.setAttribute("position", new Float32BufferAttribute(positions, 3));
+      geom.setAttribute(
+        "color",
+        new Float32BufferAttribute(
+          buildVertexColorArray(
+            idx,
+            traj.length,
+            data.dynamics,
+            data.palette,
+            data.customPalette,
+            data.paletteShift ?? 0
+          ),
+          3
+        )
+      );
       const useAdditive = data.background !== "light";
       const density = data.cloudDensity ?? 1;
       const size =
         (data.lineThickness === "thick" ? 0.26 : data.lineThickness === "thin" ? 0.14 : 0.2) *
-        (0.7 + density * 0.6);
+        (0.7 + density * 0.6) *
+        cellScale(data);
       const mat = new PointsMaterial({
         size,
         sizeAttenuation: true,
         transparent: true,
-        opacity: Math.max(0.18, 0.75 * (0.4 + density * 0.8)),
+        opacity: pointOpacity(data, density),
         depthWrite: false,
         blending: useAdditive ? AdditiveBlending : NormalBlending,
-        color: colorForTrajectory(idx, data.palette, data.customPalette, data.paletteShift ?? 0),
+        vertexColors: true,
       });
       const cloud = new Points(geom, mat);
       this.points.push(cloud);
@@ -68,16 +96,26 @@ export class CellsRenderer implements RendererStrategy {
 
     this.points.forEach((cloud, idx) => {
       const mat = cloud.material as PointsMaterial;
-      mat.color = colorForTrajectory(
-        idx,
-        this.data!.palette,
-        this.data!.customPalette,
-        this.data?.paletteShift ?? 0
+      const pointCount = this.data!.trajectories[idx]?.length ?? 0;
+      cloud.geometry.setAttribute(
+        "color",
+        new Float32BufferAttribute(
+          buildVertexColorArray(
+            idx,
+            pointCount,
+            this.data!.dynamics,
+            this.data!.palette,
+            this.data!.customPalette,
+            this.data?.paletteShift ?? 0
+          ),
+          3
+        )
       );
-      mat.opacity = Math.max(0.18, 0.75 * (0.4 + density * 0.8));
       mat.size =
         (this.data.lineThickness === "thick" ? 0.26 : this.data.lineThickness === "thin" ? 0.14 : 0.2) *
-        (0.7 + density * 0.6);
+        (0.7 + density * 0.6) *
+        cellScale(this.data);
+      mat.opacity = pointOpacity(this.data, density);
       mat.blending = useAdditive ? AdditiveBlending : NormalBlending;
       mat.needsUpdate = true;
     });

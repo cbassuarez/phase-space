@@ -28,6 +28,10 @@ export class WasmEngine {
    * Return a default Rössler scene spec JSON string.
    */
   default_rossler_scene(): string;
+  /**
+   * Integrate a scene described by a JavaScript SceneSpec object.
+   */
+  integrate_scene_value(scene_value: any): any;
   constructor();
 }
 
@@ -42,11 +46,14 @@ export interface InitOutput {
   readonly wasmengine_default_rossler_scene: (a: number) => [number, number];
   readonly wasmengine_default_thomas_scene: (a: number) => [number, number];
   readonly wasmengine_integrate_scene: (a: number, b: number, c: number) => [number, number, number];
+  readonly wasmengine_integrate_scene_value: (a: number, b: any) => [number, number, number];
   readonly wasmengine_new: () => number;
   readonly __wbindgen_malloc: (a: number, b: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
-  readonly __wbindgen_free: (a: number, b: number, c: number) => void;
+  readonly __wbindgen_exn_store: (a: number) => void;
+  readonly __externref_table_alloc: () => number;
   readonly __wbindgen_externrefs: WebAssembly.Table;
+  readonly __wbindgen_free: (a: number, b: number, c: number) => void;
   readonly __externref_table_dealloc: (a: number) => void;
   readonly __wbindgen_start: () => void;
 }

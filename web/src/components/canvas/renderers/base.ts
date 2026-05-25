@@ -10,17 +10,24 @@ import type { CustomPaletteState } from "../../../palettes";
 import type { RenderQuality } from "../../../visual/renderQuality";
 import type { PerspectiveCamera, Scene, WebGLRenderer } from "three";
 import type { NormalizedTrajectories } from "./normalize";
+import type { DynamicScalars } from "./utils";
 
 export interface TrajectoryData {
   trajectories: number[][][];
   normalized?: NormalizedTrajectories;
+  dynamics?: DynamicScalars;
   palette: Palette;
   customPalette: CustomPaletteState;
   lineThickness: LineThickness;
   background: Background;
   paletteShift?: number;
+  renderEnergy?: number;
+  renderPulse?: number;
+  lineWidthScale?: number | null;
+  cellSizeScale?: number | null;
   emissiveBoost?: number | null;
   ribbonWidth?: number | null;
+  ribbonGlow?: number | null;
   cloudDensity?: number | null;
   backgroundBrightness?: number;
   photonWeave?: PhotonWeaveSettings;

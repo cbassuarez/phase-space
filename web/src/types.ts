@@ -1,7 +1,7 @@
 import type { CameraProgram } from "./camera/types";
 import type { PaletteId } from "./palettes";
 
-export type SystemId = "lorenz" | "rossler" | "aizawa" | "thomas";
+export type SystemId = "lorenz" | "rossler" | "aizawa" | "thomas" | "chua";
 export type Resolution = "fast" | "default" | "high" | "ultra";
 export type Palette = PaletteId;
 export type Background = "dark" | "light" | "dim";

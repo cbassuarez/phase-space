@@ -6,13 +6,22 @@ export interface AudioFeatureFrame {
   low_band: number; // 0..1
   mid_band: number; // 0..1
   high_band: number; // 0..1
-  onset: number; // 0 or 1 impulse
+  onset: number; // 0..1 decaying transient pulse
   pitch?: number; // 0..1 or undefined (v1 can omit pitch detection)
 }
 
 type AudioFeatureListener = (frame: AudioFeatureFrame) => void;
+type AudioConditionKey = "level" | "brightness" | "low_band" | "mid_band" | "high_band";
+
+interface FeatureCondition {
+  floor: number;
+  peak: number;
+  envelope: number;
+  minSpan: number;
+}
 
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 export class AudioIO {
   private context: AudioContext | null = null;
@@ -26,6 +35,14 @@ export class AudioIO {
   private running = false;
   private lastLevel = 0;
   private lastOnsetLevel = 0;
+  private onsetPulse = 0;
+  private conditions: Record<AudioConditionKey, FeatureCondition> = {
+    level: { floor: 0.01, peak: 0.18, envelope: 0, minSpan: 0.08 },
+    brightness: { floor: 0.12, peak: 0.72, envelope: 0, minSpan: 0.24 },
+    low_band: { floor: 0.01, peak: 0.22, envelope: 0, minSpan: 0.08 },
+    mid_band: { floor: 0.01, peak: 0.18, envelope: 0, minSpan: 0.08 },
+    high_band: { floor: 0.005, peak: 0.12, envelope: 0, minSpan: 0.06 },
+  };
   private channelMode: ChannelMode = { type: "stereo", channels: [1, 2] };
   private channelCount = 2;
   private micStream: MediaStream | null = null;
@@ -106,6 +123,11 @@ export class AudioIO {
     this.splitter = null;
     this.merger = null;
     this.lastLevel = 0;
+    this.lastOnsetLevel = 0;
+    this.onsetPulse = 0;
+    (Object.keys(this.conditions) as AudioConditionKey[]).forEach((key) => {
+      this.conditions[key].envelope = 0;
+    });
   }
 
   getContext(): AudioContext | null {
@@ -212,24 +234,46 @@ export class AudioIO {
     const meterLevel = clamp((db + 60) / 60, 0, 1); // -60dBFS floor
     this.lastLevel = this.lastLevel * 0.55 + meterLevel * 0.45;
 
-    const level = Math.max(spectralLevel, meterLevel);
+    const rawLevel = Math.max(spectralLevel, meterLevel);
     const centroidNorm = sum > 0 ? weighted / (sum * n) : 0;
 
-    const low_band = Math.min(1, lowSum / (n * 0.15));
-    const mid_band = Math.min(1, midSum / (n * 0.45));
-    const high_band = Math.min(1, highSum / (n * 0.4));
+    const rawLowBand = Math.min(1, lowSum / (n * 0.15));
+    const rawMidBand = Math.min(1, midSum / (n * 0.45));
+    const rawHighBand = Math.min(1, highSum / (n * 0.4));
 
-    const onsetThreshold = 0.08;
-    const onset = spectralLevel - this.lastOnsetLevel > onsetThreshold ? 1 : 0;
-    this.lastOnsetLevel = spectralLevel * 0.8 + this.lastOnsetLevel * 0.2;
+    const level = this.conditionFeature("level", rawLevel, 0.55);
+    const brightness = this.conditionFeature("brightness", centroidNorm, 0.85);
+    const low_band = this.conditionFeature("low_band", rawLowBand, 0.6);
+    const mid_band = this.conditionFeature("mid_band", rawMidBand, 0.65);
+    const high_band = this.conditionFeature("high_band", rawHighBand, 0.7);
+
+    const flux = Math.max(0, rawLevel - this.lastOnsetLevel);
+    const onsetThreshold = Math.max(0.035, this.lastOnsetLevel * 0.35);
+    this.onsetPulse = flux > onsetThreshold ? 1 : this.onsetPulse * 0.78;
+    this.lastOnsetLevel = rawLevel * 0.35 + this.lastOnsetLevel * 0.65;
 
     return {
       level,
-      brightness: centroidNorm,
+      brightness,
       low_band,
       mid_band,
       high_band,
-      onset,
+      onset: this.onsetPulse,
     };
+  }
+
+  private conditionFeature(key: AudioConditionKey, raw: number, curve = 0.75): number {
+    const state = this.conditions[key];
+    const value = clamp(raw, 0, 1);
+    state.floor = lerp(state.floor, value, value < state.floor ? 0.04 : 0.003);
+    state.peak = lerp(state.peak, value, value > state.peak ? 0.08 : 0.004);
+    if (state.peak - state.floor < state.minSpan) {
+      state.peak = Math.min(1, state.floor + state.minSpan);
+    }
+    const normalized = clamp((value - state.floor) / Math.max(state.minSpan, state.peak - state.floor), 0, 1);
+    const shaped = Math.pow(normalized, curve);
+    const alpha = shaped > state.envelope ? 0.5 : 0.13;
+    state.envelope = lerp(state.envelope, shaped, alpha);
+    return state.envelope;
   }
 }
