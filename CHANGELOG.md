@@ -1,3 +1,10 @@
+## [1.0.7](https://github.com/cbassuarez/phase-space/compare/v1.0.6...v1.0.7) (2026-05-25)
+
+
+### Bug Fixes
+
+* renderers ([d2cd998](https://github.com/cbassuarez/phase-space/commit/d2cd99861dd691afe374ca4eff9f49832e4c0df7))
+
 ## [1.0.6](https://github.com/cbassuarez/phase-space/compare/v1.0.5...v1.0.6) (2025-11-21)
 
 
