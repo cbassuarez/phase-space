@@ -311,6 +311,7 @@ const visual = computeVisualFeatures({ camera: cameraState, trajectories: normal
         palette,
         lineThickness,
         background,
+        customPalette,
         paletteShift: modValues.paletteShift,
         emissiveBoost: modValues.emissiveBoost,
         ribbonWidth: modValues.ribbonWidth,
@@ -328,10 +329,11 @@ const visual = computeVisualFeatures({ camera: cameraState, trajectories: normal
     const bgMix = bgBase.clone().lerp(bgAlt, modValues.backgroundBrightness);
     gl.setClearColor(bgMix, 1);
 
-    if (strategy && strategy.updateDrawWindow) {
+    const updateDrawWindow = strategy?.updateDrawWindow;
+    if (updateDrawWindow) {
       countsRef.current.forEach((count, idx) => {
         if (showFullTrajectory) {
-          strategy.updateDrawWindow(idx, 0, count);
+          updateDrawWindow(idx, 0, count);
           return;
         }
         const windowSize = Math.max(8, Math.floor(count * 0.35));
@@ -342,10 +344,10 @@ const visual = computeVisualFeatures({ camera: cameraState, trajectories: normal
           if (start + drawCount > count) {
             drawCount = count - start;
           }
-          strategy.updateDrawWindow(idx, start, drawCount);
+          updateDrawWindow(idx, start, drawCount);
         } else {
           const start = Math.max(0, count - windowSize);
-          strategy.updateDrawWindow(idx, start, windowSize);
+          updateDrawWindow(idx, start, windowSize);
         }
       });
     }

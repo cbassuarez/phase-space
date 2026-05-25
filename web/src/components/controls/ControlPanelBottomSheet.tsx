@@ -130,7 +130,7 @@ function ControlPanelBottomSheet() {
           <ToggleSwitch label="Animate head/tail" checked={animateHeadTail} onToggle={toggleAnimateHeadTail} />
           <ToggleSwitch label="Show full trajectory" checked={showFullTrajectory} onToggle={toggleShowFullTrajectory} />
           <div className="grid grid-cols-3 gap-2 text-xs">
-            {[{ id: "volumetric-cloud", label: "Cloud" }, { id: "ribbon", label: "Ribbon" }, { id: "cells", label: "Cells" }].map((opt) => (
+            {[{ id: "line", label: "Line" }, { id: "volumetric-cloud", label: "Cloud" }, { id: "cells", label: "Cells" }].map((opt) => (
               <button
                 key={opt.id}
                 onClick={() => setRenderStyle(opt.id as typeof renderStyle)}
@@ -144,7 +144,7 @@ function ControlPanelBottomSheet() {
                 {opt.label}
               </button>
             ))}
-            {[{ id: "photon-weave", label: "Photon Weave" }, { id: "caustics", label: "Caustics" }].map((opt) => (
+            {[{ id: "ribbon", label: "Ribbon" }, { id: "photon-weave", label: "Weave" }, { id: "caustics", label: "Caustics" }].map((opt) => (
               <button
                 key={opt.id}
                 onClick={() => setRenderStyle(opt.id as typeof renderStyle)}

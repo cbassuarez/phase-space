@@ -38,9 +38,10 @@ const lobeCountOptions = [
 ] as const;
 
 const renderStyles = [
+  { id: "line", label: "Line" },
   { id: "volumetric-cloud", label: "Cloud" },
-  { id: "ribbon", label: "Ribbon" },
   { id: "cells", label: "Cells" },
+  { id: "ribbon", label: "Ribbon" },
   { id: "photon-weave", label: "Weave" },
   { id: "caustics", label: "Caustics" },
 ] as const;

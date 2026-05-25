@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { usePhaseWasmEngine } from "../hooks/usePhaseWasmEngine";
 import type { CameraProgram } from "../camera/types";
 import { createDefaultCameraProgram, migrateCameraProgram } from "../camera/migrate";
@@ -91,7 +91,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const [animateHeadTail, setAnimateHeadTail] = useState(true);
   const [showFullTrajectory, setShowFullTrajectory] = useState(true);
   const [lineThickness, setLineThickness] = useState<LineThickness>("default");
-  const [renderStyle, setRenderStyleState] = useState<RenderStyle>("volumetric-cloud");
+  const [renderStyle, setRenderStyleState] = useState<RenderStyle>("line");
   const [photonWeaveSettings, setPhotonWeaveSettingsState] =
     useState<PhotonWeaveSettings>({
       brightness: 1,
@@ -107,6 +107,8 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   });
   const [palette, setPaletteState] = useState<Palette>("prism");
   const [paletteLocked, setPaletteLocked] = useState(false);
+  const paletteLockedRef = useRef(false);
+  useEffect(() => { paletteLockedRef.current = paletteLocked; }, [paletteLocked]);
   const [customPalette, setCustomPaletteState] = useState<CustomPaletteState>(loadCustomPalette());
   const [background, setBackgroundState] = useState<Background>("light");
   const [sceneJson, setSceneJson] = useState("{}");
@@ -150,10 +152,10 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
           const sortedStops = [...(normalizedView.palette_spec.stops ?? [])].sort(
             (a, b) => (a.t ?? 0) - (b.t ?? 0)
           );
-          const low = sortedStops[0]?.color ?? customPalette.low ?? "#000000";
-          const mid = sortedStops[Math.floor(sortedStops.length / 2)]?.color ?? customPalette.mid ?? low;
-          const high = sortedStops[sortedStops.length - 1]?.color ?? customPalette.high ?? mid;
           setCustomPaletteState((prev) => {
+            const low = sortedStops[0]?.color ?? prev.low ?? "#000000";
+            const mid = sortedStops[Math.floor(sortedStops.length / 2)]?.color ?? prev.mid ?? low;
+            const high = sortedStops[sortedStops.length - 1]?.color ?? prev.high ?? mid;
             const next = { ...prev, low, mid, high } as CustomPaletteState;
             saveCustomPalette(next);
             return next;
@@ -161,9 +163,9 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
         }
         setSceneJson(JSON.stringify({ ...normalizedScene }, null, 2));
         setSceneSpec(normalizedScene);
-        const normalizedStyle = normalizedView.render_style ?? "volumetric-cloud";
+        const normalizedStyle = normalizedView.render_style ?? "line";
         setRenderStyleState(normalizedStyle);
-        if (!paletteLocked && scene.view?.palette) {
+        if (!paletteLockedRef.current && scene.view?.palette) {
           setPaletteState(mapLegacyPalette(scene.view.palette));
         }
         const rawCamera =
@@ -189,7 +191,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
       }
     },
-    [api, customPalette, paletteLocked]
+    [api]
   );
 
   useEffect(() => {

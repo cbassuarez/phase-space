@@ -7,6 +7,7 @@ export type Palette = PaletteId;
 export type Background = "dark" | "light" | "dim";
 export type LineThickness = "thin" | "default" | "thick";
 export type RenderStyle =
+  | "line"
   | "photon-weave"
   | "volumetric-cloud"
   | "caustics"
@@ -77,6 +78,7 @@ function mapLegacyRenderStyle(style: RenderStyle | string | undefined | null): R
       return "photon-weave";
     case "crt-scope":
       return "caustics";
+    case "line":
     case "volumetric-cloud":
     case "ribbon":
     case "cells":
@@ -84,9 +86,9 @@ function mapLegacyRenderStyle(style: RenderStyle | string | undefined | null): R
     case "caustics":
       return style;
     case "path-trace":
-      return "cells";
+      return "line";
     default:
-      return "cells";
+      return "line";
   }
 }
 

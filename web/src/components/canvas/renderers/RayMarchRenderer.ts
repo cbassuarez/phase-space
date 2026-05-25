@@ -146,10 +146,9 @@ const rayMarchFragment = `
 
     vec2 hit = intersectBox(uCamPos, rayDir, uBoxMin, uBoxMax);
     if (hit.x > hit.y || hit.y < 0.0) {
-      // Ray missed the volume entirely. Output background so the
-      // mode doesn't look like a hole in the scene.
-      fragColor = vec4(uBackground, 1.0);
-      return;
+      // Ray missed the volume entirely. Emit fully transparent so the
+      // canvas background (CSS gradient) shows through.
+      discard;
     }
     float tEnter = max(hit.x, 0.0);
     float tExit  = hit.y;
@@ -219,11 +218,10 @@ const rayMarchFragment = `
       pos += dpos;
     }
 
-    // Composite the volume over the background colour.
-    vec3 col = accum.rgb + uBackground * (1.0 - accum.a);
-    // Reinhard-ish tone map for HDR comfort.
-    col = vec3(1.0) - exp(-col * uExposure);
-    fragColor = vec4(col, 1.0);
+    // Tonemap accumulated radiance only; leave alpha as accum.a so the
+    // canvas/CSS background shows through where the volume is empty.
+    vec3 col = vec3(1.0) - exp(-accum.rgb * uExposure);
+    fragColor = vec4(col, accum.a);
   }
 `;
 
@@ -414,7 +412,7 @@ export class RayMarchRenderer implements RendererStrategy {
       glslVersion: GLSL3,
       depthWrite: false,
       depthTest: false,
-      transparent: false,
+      transparent: true,
       toneMapped: false,
     });
 

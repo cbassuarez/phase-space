@@ -20,8 +20,8 @@ export class AudioIO {
   private source: MediaStreamAudioSourceNode | null = null;
   private splitter: ChannelSplitterNode | null = null;
   private merger: ChannelMergerNode | null = null;
-  private data: Uint8Array | null = null;
-  private timeData: Float32Array | null = null;
+  private data: Uint8Array<ArrayBuffer> | null = null;
+  private timeData: Float32Array<ArrayBuffer> | null = null;
   private listeners = new Set<AudioFeatureListener>();
   private running = false;
   private lastLevel = 0;
@@ -165,8 +165,8 @@ export class AudioIO {
   };
 
   private computeFeatures(
-    spectrum: Uint8Array,
-    timeDomain: Float32Array | null
+    spectrum: Uint8Array<ArrayBuffer>,
+    timeDomain: Float32Array<ArrayBuffer> | null
   ): AudioFeatureFrame {
     const n = spectrum.length;
     if (n === 0) {

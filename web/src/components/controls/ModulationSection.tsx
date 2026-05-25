@@ -5,6 +5,7 @@ import type { ModBus, ModBusRuntimeState, ModTarget } from "../../modulation/typ
 import type { TargetPath } from "../../modulation/modEngine";
 import { useModulation } from "../../state/modulationState";
 import { useAudioDevicesContext } from "../../state/audioDevicesState";
+import type { ChannelMode } from "../../hooks/useAudioDevices";
 
 interface TargetOption {
   value: TargetPath;

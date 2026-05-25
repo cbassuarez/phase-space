@@ -12,7 +12,7 @@ type WasmEngineClass = new () => {
 
 interface PhaseWasmApi {
   WasmEngine: WasmEngineClass;
-  default: () => Promise<void>;
+  default: () => Promise<unknown>;
 }
 
 type EngineInstance = {

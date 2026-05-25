@@ -35,7 +35,7 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       palette: "prism",
       background: "dark",
       point_size: 1.0,
-      render_style: "volumetric-cloud",
+      render_style: "line",
     },
     random_seed: 42,
     camera: cameraFor("chase", (c) => {
@@ -68,7 +68,7 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       palette: "viridis",
       background: "dark",
       point_size: 1.0,
-      render_style: "volumetric-cloud",
+      render_style: "line",
     },
     random_seed: 43,
     camera: cameraFor("survey", (c) => {
@@ -105,7 +105,7 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       palette: "prism",
       background: "dark",
       point_size: 1.0,
-      render_style: "volumetric-cloud",
+      render_style: "line",
     },
     random_seed: 44,
     camera: cameraFor("lobe", (c) => {
@@ -138,7 +138,7 @@ const defaultScenes: Record<SystemId, SceneSpec> = {
       palette: "plasma",
       background: "dark",
       point_size: 1.0,
-      render_style: "volumetric-cloud",
+      render_style: "line",
     },
     random_seed: 45,
     camera: cameraFor("orbit", (c) => {

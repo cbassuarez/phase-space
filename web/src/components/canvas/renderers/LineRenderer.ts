@@ -3,55 +3,55 @@ import {
   BufferGeometry,
   Float32BufferAttribute,
   Group,
+  Line,
+  LineBasicMaterial,
   NormalBlending,
-  Points,
-  PointsMaterial,
 } from "three";
 import { colorForTrajectory } from "./utils";
 import type { RendererStrategy, RenderContext, TrajectoryData } from "./base";
 
 /**
- * Soft point-sprite cells. Slightly larger and softer than the
- * previous shader-impostor cells — reads as a stippled / particle
- * cloud rather than discrete spheres.
+ * Thin polyline rendering of each trajectory. Wireframe-style — the
+ * crispest possible read of the attractor's shape. Uses
+ * LineBasicMaterial so it works in every browser without needing the
+ * three.js extras bundle (Line2 would let us thicken beyond 1px but
+ * costs extra deps).
  */
-export class CellsRenderer implements RendererStrategy {
-  readonly style = "cells" as const;
+export class LineRenderer implements RendererStrategy {
+  readonly style = "line" as const;
   private group: Group | null = null;
-  private points: Points[] = [];
+  private lines: Line[] = [];
   private data: TrajectoryData | null = null;
 
   init({ threeScene }: RenderContext, data: TrajectoryData) {
     this.group = new Group();
-    this.points = [];
+    this.lines = [];
     this.data = data;
     threeScene.add(this.group);
 
+    const useAdditive = data.background !== "light";
+    const opacity = data.background === "light" ? 0.9 : 0.85;
+
     data.trajectories.forEach((traj, idx) => {
-      const positions: number[] = [];
+      const positions = new Float32Array(traj.length * 3);
       for (let i = 0; i < traj.length; i++) {
-        const [x, y, z] = traj[i];
-        positions.push(x, y, z);
+        const p = traj[i];
+        positions[i * 3] = p[0];
+        positions[i * 3 + 1] = p[1];
+        positions[i * 3 + 2] = p[2];
       }
       const geom = new BufferGeometry();
       geom.setAttribute("position", new Float32BufferAttribute(positions, 3));
-      const useAdditive = data.background !== "light";
-      const density = data.cloudDensity ?? 1;
-      const size =
-        (data.lineThickness === "thick" ? 0.26 : data.lineThickness === "thin" ? 0.14 : 0.2) *
-        (0.7 + density * 0.6);
-      const mat = new PointsMaterial({
-        size,
-        sizeAttenuation: true,
+      const mat = new LineBasicMaterial({
+        color: colorForTrajectory(idx, data.palette, data.customPalette, data.paletteShift ?? 0),
         transparent: true,
-        opacity: Math.max(0.18, 0.75 * (0.4 + density * 0.8)),
+        opacity,
         depthWrite: false,
         blending: useAdditive ? AdditiveBlending : NormalBlending,
-        color: colorForTrajectory(idx, data.palette, data.customPalette, data.paletteShift ?? 0),
       });
-      const cloud = new Points(geom, mat);
-      this.points.push(cloud);
-      this.group?.add(cloud);
+      const line = new Line(geom, mat);
+      this.lines.push(line);
+      this.group?.add(line);
     });
   }
 
@@ -63,45 +63,42 @@ export class CellsRenderer implements RendererStrategy {
   applyDynamic(data: TrajectoryData) {
     if (!this.data) return;
     this.data = { ...this.data, ...data };
-    const density = this.data.cloudDensity ?? 1;
     const useAdditive = this.data.background !== "light";
+    const opacity = this.data.background === "light" ? 0.9 : 0.85;
 
-    this.points.forEach((cloud, idx) => {
-      const mat = cloud.material as PointsMaterial;
+    this.lines.forEach((line, idx) => {
+      const mat = line.material as LineBasicMaterial;
       mat.color = colorForTrajectory(
         idx,
         this.data!.palette,
         this.data!.customPalette,
         this.data?.paletteShift ?? 0
       );
-      mat.opacity = Math.max(0.18, 0.75 * (0.4 + density * 0.8));
-      mat.size =
-        (this.data.lineThickness === "thick" ? 0.26 : this.data.lineThickness === "thin" ? 0.14 : 0.2) *
-        (0.7 + density * 0.6);
+      mat.opacity = opacity;
       mat.blending = useAdditive ? AdditiveBlending : NormalBlending;
       mat.needsUpdate = true;
     });
   }
 
   updateDrawWindow(trajectoryIndex: number, start: number, count: number) {
-    const pts = this.points[trajectoryIndex];
-    if (!pts) return;
-    pts.geometry.setDrawRange(start, count);
+    const line = this.lines[trajectoryIndex];
+    if (!line) return;
+    line.geometry.setDrawRange(start, count);
   }
 
   dispose({ threeScene }: RenderContext) {
     if (this.group) {
       threeScene.remove(this.group);
       this.group.traverse((obj) => {
-        const p = obj as Points;
-        if (p.geometry) p.geometry.dispose();
-        if (p.material) {
-          const mat = p.material as PointsMaterial;
+        const l = obj as Line;
+        if (l.geometry) l.geometry.dispose();
+        if (l.material) {
+          const mat = l.material as LineBasicMaterial;
           mat.dispose();
         }
       });
     }
     this.group = null;
-    this.points = [];
+    this.lines = [];
   }
 }
