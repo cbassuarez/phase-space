@@ -231,7 +231,7 @@ const normalized = useMemo(() => normalizeTrajectories(trajectories), [trajector
       const ctx: CameraContext = {
         t: timeRef.current,
         dt: frameDelta,
-        randomSeed: randomSeed ?? 32,
+        randomSeed: randomSeed ?? 42,
         aspect,
         bboxMin: bounds.bboxMin,
         bboxMax: bounds.bboxMax,
