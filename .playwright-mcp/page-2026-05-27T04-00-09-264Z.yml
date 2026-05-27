@@ -1,0 +1,258 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - link "phase-space" [ref=e6] [cursor=pointer]:
+        - /url: /phase-space
+        - generic [ref=e7]: phase-space
+      - generic [ref=e8]:
+        - navigation [ref=e9]:
+          - link "Viewer" [ref=e10] [cursor=pointer]:
+            - /url: /phase-space
+          - link "About" [ref=e11] [cursor=pointer]:
+            - /url: /phase-space/about
+          - link "Credits" [ref=e12] [cursor=pointer]:
+            - /url: /phase-space/credits
+        - generic [ref=e13]:
+          - generic [ref=e14]: "Output:"
+          - combobox [ref=e15]:
+            - option "Default (System)" [selected]
+        - generic [ref=e21]: phase-space v1.0.6 • beta
+        - link "Open GitHub repository" [ref=e22] [cursor=pointer]:
+          - /url: https://github.com/cbassuarez/phase-space
+          - img [ref=e23]
+  - main [ref=e25]:
+    - generic [ref=e28]:
+      - complementary [ref=e29]:
+        - generic [ref=e30]:
+          - generic [ref=e31]:
+            - generic [ref=e32]:
+              - generic [ref=e33]: phase-space
+              - paragraph [ref=e34]: Interactive phase-space viewer
+              - generic [ref=e37]: lorenz
+            - generic [ref=e38]:
+              - generic [ref=e39]: SYSTEM
+              - generic [ref=e40]:
+                - button "Lorenz" [pressed] [ref=e41] [cursor=pointer]
+                - button "Rössler" [ref=e42] [cursor=pointer]
+                - button "Aizawa" [ref=e43] [cursor=pointer]
+                - button "Thomas" [ref=e44] [cursor=pointer]
+                - button "Chua" [ref=e45] [cursor=pointer]
+              - generic [ref=e46]:
+                - generic [ref=e48]: RESOLUTION
+                - slider "Resolution" [ref=e50] [cursor=pointer]: "1"
+                - generic [ref=e51]:
+                  - button "Fast" [ref=e52] [cursor=pointer]
+                  - button "Default" [pressed] [ref=e53] [cursor=pointer]
+                  - button "High" [ref=e54] [cursor=pointer]
+                  - button "Ultra" [ref=e55] [cursor=pointer]
+            - generic [ref=e56]:
+              - generic [ref=e57]: CAMERA
+              - generic [ref=e58]:
+                - button "Survey" [disabled]
+                - button "Orbit" [disabled]
+                - button "Chase" [disabled]
+                - button "Lobe" [disabled]
+            - generic [ref=e59]:
+              - generic [ref=e60]: LOOK
+              - generic [ref=e61]:
+                - generic [ref=e62]: Style
+                - generic [ref=e63]:
+                  - button "Line" [pressed] [ref=e64] [cursor=pointer]
+                  - button "Cloud" [ref=e65] [cursor=pointer]
+                  - button "Cells" [ref=e66] [cursor=pointer]
+                  - button "Ribbon" [ref=e67] [cursor=pointer]
+                  - button "Weave" [ref=e68] [cursor=pointer]
+                  - button "Caustics" [ref=e69] [cursor=pointer]
+              - generic [ref=e70]:
+                - generic [ref=e71]: Thickness
+                - generic [ref=e72]:
+                  - button "Thin" [ref=e73] [cursor=pointer]
+                  - button "Default" [pressed] [ref=e74] [cursor=pointer]
+                  - button "Thick" [ref=e75] [cursor=pointer]
+              - generic [ref=e76]:
+                - generic [ref=e77]: Material
+                - generic [ref=e78]:
+                  - button "Glass" [pressed] [ref=e79] [cursor=pointer]
+                  - button "Metal" [ref=e80] [cursor=pointer]
+                  - button "Plasma" [ref=e81] [cursor=pointer]
+              - generic [ref=e82]:
+                - paragraph [ref=e83]: Palette
+                - generic [ref=e84] [cursor=pointer]:
+                  - generic [ref=e87]: Signal
+                  - radio "Signal" [checked] [ref=e88]
+                - generic [ref=e90] [cursor=pointer]:
+                  - generic [ref=e93]: Ion
+                  - radio "Ion" [ref=e94]
+                - generic [ref=e96] [cursor=pointer]:
+                  - generic [ref=e99]: Biolume
+                  - radio "Biolume" [ref=e100]
+                - generic [ref=e102] [cursor=pointer]:
+                  - generic [ref=e105]: Arc
+                  - radio "Arc" [ref=e106]
+                - generic [ref=e108] [cursor=pointer]:
+                  - generic [ref=e111]: X-Ray
+                  - radio "X-Ray" [ref=e112]
+                - generic [ref=e114] [cursor=pointer]:
+                  - generic [ref=e117]: Graphite
+                  - radio "Graphite" [ref=e118]
+                - generic [ref=e120] [cursor=pointer]:
+                  - generic [ref=e123]: Custom
+                  - radio "Custom" [ref=e124]
+              - generic [ref=e126]:
+                - paragraph [ref=e127]: Background
+                - generic [ref=e128]:
+                  - button "Light" [pressed] [ref=e129] [cursor=pointer]
+                  - button "Dim" [ref=e130] [cursor=pointer]
+              - generic [ref=e132]:
+                - generic [ref=e133]:
+                  - generic [ref=e134]: Lighting
+                  - generic [ref=e135]: studio
+                - generic [ref=e136]:
+                  - button "Studio" [pressed] [ref=e137] [cursor=pointer]
+                  - button "Noir" [ref=e138] [cursor=pointer]
+                  - button "Twilight" [ref=e139] [cursor=pointer]
+                  - button "Aurora" [ref=e140] [cursor=pointer]
+                  - button "Flat" [ref=e141] [cursor=pointer]
+                - generic [ref=e142]:
+                  - generic [ref=e143]:
+                    - generic [ref=e144]: key azimuth
+                    - generic [ref=e145]: 36°
+                  - slider "key azimuth 36°" [ref=e146]: "0.628407346410207"
+                - generic [ref=e147]:
+                  - generic [ref=e148]:
+                    - generic [ref=e149]: key intensity
+                    - generic [ref=e150]: "1.00"
+                  - slider "key intensity 1.00" [ref=e151]: "1"
+                - generic [ref=e152]:
+                  - generic [ref=e153]:
+                    - generic [ref=e154]: ambient
+                    - generic [ref=e155]: "0.181"
+                  - slider "ambient 0.181" [ref=e156]: "0.18"
+                - generic [ref=e157]:
+                  - generic [ref=e158]:
+                    - generic [ref=e159]:
+                      - text: shadow density
+                      - generic [ref=e160]: (ray-march)
+                    - generic [ref=e161]: "0.55"
+                  - slider "shadow density(ray-march) 0.55" [ref=e162]: "0.55"
+            - generic [ref=e163]:
+              - generic [ref=e164]: MOTION
+              - generic [ref=e165]:
+                - generic [ref=e166]: Auto-spin camera
+                - button "Pause" [pressed] [ref=e167] [cursor=pointer]:
+                  - img [ref=e168]
+                  - generic [ref=e171]: Pause
+              - button "Animate head/tail" [pressed] [ref=e172] [cursor=pointer]:
+                - generic [ref=e173]: Animate head/tail
+              - button "Show full trajectory" [pressed] [ref=e176] [cursor=pointer]:
+                - generic [ref=e177]: Show full trajectory
+            - group [ref=e180]:
+              - generic "AUDIO REACTIVITY" [ref=e181] [cursor=pointer]:
+                - generic [ref=e182]: AUDIO REACTIVITY
+                - img [ref=e183]
+              - option "Default (System)" [selected]
+              - option "Default (System)" [selected]
+              - option "Level" [selected]
+              - option "Brightness"
+              - option "Low band"
+              - option "Mid band"
+              - option "High band"
+              - option "Onset"
+              - option "Camera orbit"
+              - option "Camera radius"
+              - option "Average speed"
+              - option "Curvature"
+              - option "Trajectory density"
+              - option "Select a target" [disabled]
+              - option "Active energy" [selected]
+              - option "Hit pulse"
+              - option "Radius"
+              - option "Theta"
+              - option "Phi"
+              - option "Camera pulse"
+              - option "Line width"
+              - option "Palette phase"
+              - option "Background brightness"
+              - option "Voice pitch"
+              - option "Voice pan"
+              - option "Voice brightness"
+              - option "Master gain"
+              - option "Level"
+              - option "Brightness"
+              - option "Low band" [selected]
+              - option "Mid band"
+              - option "High band"
+              - option "Onset"
+              - option "Camera orbit"
+              - option "Camera radius"
+              - option "Average speed"
+              - option "Curvature"
+              - option "Trajectory density"
+              - option "Select a target" [disabled]
+              - option "Active energy"
+              - option "Hit pulse"
+              - option "Radius"
+              - option "Theta"
+              - option "Phi"
+              - option "Camera pulse" [selected]
+              - option "Line width"
+              - option "Palette phase"
+              - option "Background brightness"
+              - option "Voice pitch"
+              - option "Voice pan"
+              - option "Voice brightness"
+              - option "Master gain"
+              - option "Level"
+              - option "Brightness" [selected]
+              - option "Low band"
+              - option "Mid band"
+              - option "High band"
+              - option "Onset"
+              - option "Camera orbit"
+              - option "Camera radius"
+              - option "Average speed"
+              - option "Curvature"
+              - option "Trajectory density"
+              - option "Select a target" [disabled]
+              - option "Active energy"
+              - option "Hit pulse"
+              - option "Radius"
+              - option "Theta"
+              - option "Phi"
+              - option "Camera pulse"
+              - option "Line width"
+              - option "Palette phase" [selected]
+              - option "Background brightness"
+              - option "Voice pitch"
+              - option "Voice pan"
+              - option "Voice brightness"
+              - option "Master gain"
+              - option "Level"
+              - option "Brightness"
+              - option "Low band"
+              - option "Mid band"
+              - option "High band"
+              - option "Onset" [selected]
+              - option "Camera orbit"
+              - option "Camera radius"
+              - option "Average speed"
+              - option "Curvature"
+              - option "Trajectory density"
+              - option "Select a target" [disabled]
+              - option "Active energy"
+              - option "Hit pulse" [selected]
+              - option "Radius"
+              - option "Theta"
+              - option "Phi"
+              - option "Camera pulse"
+              - option "Line width"
+              - option "Palette phase"
+              - option "Background brightness"
+              - option "Voice pitch"
+              - option "Voice pan"
+              - option "Voice brightness"
+              - option "Master gain"
+          - button "INSPECTOR" [ref=e186] [cursor=pointer]:
+            - generic [ref=e187]: INSPECTOR
+            - img [ref=e189]
+      - generic [ref=e194]: Loading engine…

@@ -1,0 +1,15 @@
+[     116ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://localhost:5173/phase-space/phase-space/site.webmanifest:0
+[     260ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5173/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=85f8750f:21608
+[     662ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:5173/phase-space/src/audio/internalSynth.ts:21
+[     662ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:5173/phase-space/src/audio/internalSynth.ts:21
+[     664ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:5173/phase-space/src/audio/internalSynth.ts:21
+[     664ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:5173/phase-space/src/audio/internalSynth.ts:21
+[     794ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://localhost:5173/phase-space/phase-space/site.webmanifest:0
+[   31827ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/phase-space/@vite/client:864
+[   32144ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://localhost:5173/phase-space/phase-space/site.webmanifest:0
+[   32303ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5173/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=85f8750f:21608
+[   32708ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://localhost:5173/phase-space/phase-space/site.webmanifest:0
+[  256119ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/phase-space/@vite/client:864
+[  256163ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://localhost:5173/phase-space/phase-space/site.webmanifest:0
+[  256185ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5173/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=85f8750f:21608
+[  256215ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://localhost:5173/phase-space/phase-space/site.webmanifest:0

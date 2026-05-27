@@ -13,6 +13,7 @@ import type {
   SystemId,
   Trajectories,
   LineThickness,
+  MaterialStyle,
   RenderStyle,
   CausticsSettings,
 } from "../types";
@@ -34,6 +35,7 @@ interface ViewerContextValue {
   animateHeadTail: boolean;
   showFullTrajectory: boolean;
   lineThickness: LineThickness;
+  materialStyle: MaterialStyle;
   renderStyle: RenderStyle;
   photonWeaveSettings: PhotonWeaveSettings;
   causticsSettings: CausticsSettings;
@@ -51,6 +53,7 @@ interface ViewerContextValue {
   toggleAnimateHeadTail: () => void;
   toggleShowFullTrajectory: () => void;
   setLineThickness: (t: LineThickness) => void;
+  setMaterialStyle: (s: MaterialStyle) => void;
   setRenderStyle: (s: RenderStyle) => void;
   setPhotonWeaveSettings: (updates: Partial<PhotonWeaveSettings>) => void;
   setCausticsSettings: (updates: Partial<CausticsSettings>) => void;
@@ -121,6 +124,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const [animateHeadTail, setAnimateHeadTail] = useState(true);
   const [showFullTrajectory, setShowFullTrajectory] = useState(true);
   const [lineThickness, setLineThickness] = useState<LineThickness>("default");
+  const [materialStyle, setMaterialStyleState] = useState<MaterialStyle>("glass");
   const [renderStyle, setRenderStyleState] = useState<RenderStyle>("line");
   const [photonWeaveSettings, setPhotonWeaveSettingsState] =
     useState<PhotonWeaveSettings>({
@@ -209,6 +213,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
         setSceneSpec(normalizedScene);
         const normalizedStyle = normalizedView.render_style ?? "line";
         setRenderStyleState(normalizedStyle);
+        setMaterialStyleState(normalizedView.material_style ?? "glass");
         if (!paletteLockedRef.current && scene.view?.palette) {
           setPaletteState(mapLegacyPalette(scene.view.palette));
         }
@@ -293,6 +298,23 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     [setSceneJson]
   );
 
+  const setMaterialStyle = useCallback(
+    (style: MaterialStyle) => {
+      setMaterialStyleState(style);
+      setSceneSpec((prev) => {
+        if (!prev) return prev;
+        const updatedView = normalizeViewSpec(prev.view);
+        const nextScene = {
+          ...prev,
+          view: { ...updatedView, material_style: style },
+        } as SceneSpec;
+        setSceneJson(JSON.stringify(nextScene, null, 2));
+        return nextScene;
+      });
+    },
+    [setSceneJson]
+  );
+
   const setPalette = useCallback(
     (next: Palette) => {
       setPaletteLocked(true);
@@ -340,6 +362,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     animateHeadTail,
     showFullTrajectory,
     lineThickness,
+    materialStyle,
     renderStyle,
     photonWeaveSettings,
     causticsSettings,
@@ -357,6 +380,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     toggleAnimateHeadTail: () => setAnimateHeadTail((v) => !v),
     toggleShowFullTrajectory: () => setShowFullTrajectory((v) => !v),
     setLineThickness,
+    setMaterialStyle,
     setRenderStyle,
     setPhotonWeaveSettings,
     setCausticsSettings,
@@ -377,6 +401,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     animateHeadTail,
     showFullTrajectory,
     lineThickness,
+    materialStyle,
     renderStyle,
     photonWeaveSettings,
     causticsSettings,
@@ -391,6 +416,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     setSystem,
     setCameraProgram,
     setRenderStyle,
+    setMaterialStyle,
     setPhotonWeaveSettings,
     setCausticsSettings,
     setCustomPalette,

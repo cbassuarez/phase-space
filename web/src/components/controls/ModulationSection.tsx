@@ -8,6 +8,14 @@ import { useViewerState } from "../../state/viewerState";
 import { useAudioDevicesContext } from "../../state/audioDevicesState";
 import type { ChannelMode } from "../../hooks/useAudioDevices";
 import type { RenderStyle } from "../../types";
+import {
+  commandButtonClass,
+  passiveChipClass,
+  rangeClass,
+  sectionHeadingClass,
+  segmentedButtonClass,
+  selectClass,
+} from "./controlStyles";
 
 interface TargetOption {
   value: TargetPath;
@@ -349,19 +357,18 @@ function ModulationRow({ bus, renderStyle }: { bus: ModBusRuntimeState; renderSt
   const sourceValue = `${bus.bus.source.domain}:${bus.bus.source.feature}`;
 
   return (
-    <div className="rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-white/60 p-3 shadow-[var(--ps-shadow-subtle)]">
+    <div className="rounded-[10px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-control-bg)] p-3 [box-shadow:var(--ps-control-shadow)]">
       <div className="flex items-center justify-between text-[11px] font-semibold text-[color:var(--ps-text)]">
         <span>{bus.bus.id}</span>
-        <label className="inline-flex items-center gap-2 text-[color:var(--ps-text-soft)]">
-          <span className="text-[11px]">{bus.bus.enabled ? "On" : "Off"}</span>
-          <input
-            type="checkbox"
-            checked={bus.bus.enabled}
-            disabled={disabled}
-            onChange={handleToggle}
-            className="h-4 w-4 accent-[color:var(--ps-accent-subtle)]"
-          />
-        </label>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={handleToggle}
+          aria-pressed={bus.bus.enabled}
+          className={commandButtonClass(bus.bus.enabled, { size: "touch" })}
+        >
+          {bus.bus.enabled ? "On" : "Off"}
+        </button>
       </div>
 
       <div className="mt-2 grid grid-cols-1 gap-2 text-[11px] text-[color:var(--ps-text-soft)] md:grid-cols-2">
@@ -371,7 +378,7 @@ function ModulationRow({ bus, renderStyle }: { bus: ModBusRuntimeState; renderSt
             value={sourceValue}
             onChange={(e) => handleSourceChange(e.target.value)}
             disabled={disabled}
-            className="rounded-lg border border-[color:var(--ps-border-subtle)] bg-white px-2 py-1 text-[11px]"
+            className={selectClass}
           >
             {sourceOptions.map((group) => (
               <optgroup key={group.label} label={group.label}>
@@ -391,7 +398,7 @@ function ModulationRow({ bus, renderStyle }: { bus: ModBusRuntimeState; renderSt
             value={selectedTarget ?? ""}
             onChange={(e) => handleTargetChange(e.target.value)}
             disabled={disabled}
-            className="rounded-lg border border-[color:var(--ps-border-subtle)] bg-white px-2 py-1 text-[11px]"
+            className={selectClass}
           >
             <option value="" disabled>
               Select a target
@@ -422,7 +429,7 @@ function ModulationRow({ bus, renderStyle }: { bus: ModBusRuntimeState; renderSt
           value={depth}
           disabled={disabled || !selectedTarget}
           onChange={(e) => handleDepthChange(parseFloat(e.target.value))}
-          className="accent-[color:var(--ps-accent-subtle)]"
+          className={rangeClass}
         />
       </div>
     </div>
@@ -524,12 +531,12 @@ function ModulationSection({ compact = false }: { compact?: boolean }) {
   return (
     <section className="mt-2 flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">
+        <div className={sectionHeadingClass}>
           I/O & ROUTING
         </div>
       </div>
 
-      <div className="rounded-[10px] border border-[color:var(--ps-border-subtle)] bg-white px-3 py-3 shadow-sm">
+      <div className="rounded-[10px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-control-bg)] px-3 py-3 [box-shadow:var(--ps-control-shadow)]">
         {notice && (
           <div className="mb-2 rounded-md bg-amber-100/80 px-2 py-1 text-xs text-amber-800/90 dark:bg-amber-900/40 dark:text-amber-100">
             {notice}
@@ -540,12 +547,8 @@ function ModulationSection({ compact = false }: { compact?: boolean }) {
           <button
             type="button"
             onClick={toggleMic}
-            className={clsx(
-              "rounded-full px-3 py-1 text-[11px] transition",
-              micEnabled
-                ? "bg-[color:var(--ps-panel-alt-bg)] text-[color:var(--ps-text)]"
-                : "border border-[color:var(--ps-border-subtle)] text-[color:var(--ps-text-soft)]"
-            )}
+            aria-pressed={micEnabled}
+            className={commandButtonClass(micEnabled, { size: "touch" })}
           >
             Audio: {micEnabled ? "On" : "Off"}
           </button>
@@ -561,7 +564,7 @@ function ModulationSection({ compact = false }: { compact?: boolean }) {
               value={audioDevices.selectedInputId}
               onChange={(e) => audioDevices.setInputDevice(e.target.value)}
               disabled={!audioDevices.hasPermission}
-              className="rounded-lg border border-[color:var(--ps-border-subtle)] bg-white px-2 py-1 text-[11px] text-[color:var(--ps-text)] disabled:text-[color:var(--ps-text-muted)]"
+              className={selectClass}
             >
               <option value="default">Default (System)</option>
               {audioDevices.inputs.map((device) => (
@@ -578,7 +581,7 @@ function ModulationSection({ compact = false }: { compact?: boolean }) {
               <select
                 value={audioDevices.selectedOutputId}
                 onChange={(e) => audioDevices.setOutputDevice(e.target.value)}
-                className="rounded-lg border border-[color:var(--ps-border-subtle)] bg-white px-2 py-1 text-[11px] text-[color:var(--ps-text)]"
+                className={selectClass}
               >
                 <option value="default">Default (System)</option>
                 {audioDevices.outputs.map((device) => (
@@ -588,7 +591,7 @@ function ModulationSection({ compact = false }: { compact?: boolean }) {
                 ))}
               </select>
             ) : (
-              <div className="rounded-lg border border-dashed border-[color:var(--ps-border-subtle)] px-2 py-2 text-[color:var(--ps-text-muted)]">
+              <div className="rounded-[8px] border border-dashed border-[color:var(--ps-border-subtle)] px-2 py-2 text-[color:var(--ps-text-muted)]">
                 Output: System default
               </div>
             )}
@@ -606,12 +609,8 @@ function ModulationSection({ compact = false }: { compact?: boolean }) {
                 key={`${label}-${mode.type === "stereo" ? mode.channels.join("-") : mode.channel}`}
                 type="button"
                 onClick={() => setChannelMode(mode)}
-                className={clsx(
-                  "rounded-full border px-3 py-1 text-[11px] transition",
-                  isModeActive(mode)
-                    ? "border-[color:var(--ps-accent)] bg-[color:var(--ps-panel-alt-bg)] text-[color:var(--ps-text)]"
-                    : "border-[color:var(--ps-border-subtle)] text-[color:var(--ps-text-muted)] hover:border-[color:var(--ps-border-strong)]"
-                )}
+                aria-pressed={isModeActive(mode)}
+                className={segmentedButtonClass(isModeActive(mode), { size: "touch", fill: false, marker: false })}
               >
                 {label}
               </button>
@@ -628,7 +627,7 @@ function ModulationSection({ compact = false }: { compact?: boolean }) {
             {outputChannels.map((label) => (
               <div
                 key={label}
-                className="rounded-full border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-bg)] px-3 py-1 text-[11px] text-[color:var(--ps-text-soft)]"
+                className={passiveChipClass}
               >
                 {label}
               </div>
@@ -659,7 +658,7 @@ function ModulationSection({ compact = false }: { compact?: boolean }) {
       </div>
 
       {!modEngine && (
-        <div className="rounded-[10px] border border-[color:var(--ps-border-subtle)] bg-white px-3 py-2 text-[11px] text-[color:var(--ps-text-soft)]">
+        <div className="rounded-[10px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-control-bg)] px-3 py-2 text-[11px] text-[color:var(--ps-text-soft)] [box-shadow:var(--ps-control-shadow)]">
           Loading modulation routing…
         </div>
       )}

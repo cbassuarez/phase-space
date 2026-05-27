@@ -2,6 +2,7 @@ import type {
   Background,
   CausticsSettings,
   LineThickness,
+  MaterialStyle,
   Palette,
   PhotonWeaveSettings,
   RenderStyle,
@@ -10,15 +11,16 @@ import type { CustomPaletteState } from "../../../palettes";
 import type { RenderQuality } from "../../../visual/renderQuality";
 import type { PerspectiveCamera, Scene, WebGLRenderer } from "three";
 import type { NormalizedTrajectories } from "./normalize";
-import type { DynamicScalars } from "./utils";
+import type { VisualField } from "./utils";
 
 export interface TrajectoryData {
   trajectories: number[][][];
   normalized?: NormalizedTrajectories;
-  dynamics?: DynamicScalars;
+  dynamics?: VisualField;
   palette: Palette;
   customPalette: CustomPaletteState;
   lineThickness: LineThickness;
+  materialStyle: MaterialStyle;
   background: Background;
   paletteShift?: number;
   renderEnergy?: number;

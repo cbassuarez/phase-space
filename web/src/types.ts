@@ -6,6 +6,7 @@ export type Resolution = "fast" | "default" | "high" | "ultra";
 export type Palette = PaletteId;
 export type Background = "dark" | "light" | "dim";
 export type LineThickness = "thin" | "default" | "thick";
+export type MaterialStyle = "glass" | "metal" | "plasma";
 export type RenderStyle =
   | "line"
   | "photon-weave"
@@ -70,6 +71,7 @@ export interface ViewSpec {
   background?: Background;
   point_size?: number;
   render_style?: RenderStyle;
+  material_style?: MaterialStyle;
 }
 
 function mapLegacyRenderStyle(style: RenderStyle | string | undefined | null): RenderStyle {
@@ -89,6 +91,17 @@ function mapLegacyRenderStyle(style: RenderStyle | string | undefined | null): R
       return "line";
     default:
       return "line";
+  }
+}
+
+function mapLegacyMaterialStyle(style: MaterialStyle | string | undefined | null): MaterialStyle {
+  switch (style) {
+    case "metal":
+    case "plasma":
+    case "glass":
+      return style;
+    default:
+      return "glass";
   }
 }
 
@@ -140,6 +153,7 @@ export function normalizeViewSpec(view: ViewSpec | undefined): ViewSpec {
     background: "dark",
     point_size: 1,
     render_style: "volumetric-cloud",
+    material_style: "glass",
   };
 
   if (!view) {
@@ -151,8 +165,10 @@ export function normalizeViewSpec(view: ViewSpec | undefined): ViewSpec {
     ...view,
     palette: mapLegacyPalette(view.palette ?? defaultView.palette),
     render_style: mapLegacyRenderStyle(view.render_style ?? defaultView.render_style),
+    material_style: mapLegacyMaterialStyle(view.material_style ?? defaultView.material_style),
   };
 }
 
 export { mapLegacyRenderStyle };
+export { mapLegacyMaterialStyle };
 export { mapLegacyPalette };

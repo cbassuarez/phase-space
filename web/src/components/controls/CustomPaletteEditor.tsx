@@ -1,4 +1,5 @@
 import type { CustomPaletteState } from "../../palettes";
+import { controlFocusRing, controlTransition } from "./controlStyles";
 
 interface CustomPaletteEditorProps {
   state: CustomPaletteState;
@@ -23,7 +24,7 @@ function CustomPaletteEditor({ state, onChange }: CustomPaletteEditorProps) {
               type="color"
               value={(state as any)[stop.key] as string}
               onChange={(e) => onChange({ [stop.key]: e.target.value } as Partial<CustomPaletteState>)}
-              className="h-9 w-full rounded-md border border-[color:var(--ps-border-subtle)] bg-white p-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-md [&::-webkit-color-swatch]:border-0"
+              className={`${controlTransition} ${controlFocusRing} h-11 w-full rounded-[8px] border border-[color:var(--ps-control-border)] bg-[color:var(--ps-control-bg)] p-1 [box-shadow:var(--ps-control-shadow)] hover:-translate-y-[1px] hover:border-[color:var(--ps-control-hover-border)] hover:[box-shadow:var(--ps-control-hover-shadow)] [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-[6px] [&::-webkit-color-swatch]:border-0`}
             />
           </label>
         ))}

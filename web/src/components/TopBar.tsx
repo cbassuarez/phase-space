@@ -3,13 +3,21 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import VersionBadge from "./VersionBadge";
 import { PHASE_SPACE_VERSION } from "../version";
 import { useAudioDevicesContext } from "../state/audioDevicesState";
+import clsx from "clsx";
+import {
+  controlFocusRing,
+  iconButtonClass,
+  segmentedButtonClass,
+  selectClass,
+} from "./controls/controlStyles";
 
 const githubUrl = "https://github.com/cbassuarez/phase-space";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `relative text-xs font-medium transition-colors hover:text-[color:var(--ps-text)] md:text-sm ${
-    isActive ? "text-[color:var(--ps-text)]" : "text-[color:var(--ps-text-soft)]"
-  }`;
+  clsx(
+    segmentedButtonClass(isActive, { size: "touch", fill: false }),
+    "md:min-h-8 md:px-2.5 md:py-1 md:text-[11px]"
+  );
 
 function useMediaQuery(query: string) {
   const [matches, setMatches] = useState(false);
@@ -66,7 +74,13 @@ function TopBar() {
   return (
     <header className="w-full border-b border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-bg)]">
       <div className="mx-auto flex h-14 w-full max-w-[1440px] items-center justify-between px-[clamp(12px,3vw,24px)] md:h-16">
-        <Link to="/" className="text-lg font-semibold tracking-tight text-[color:var(--ps-text)]">
+        <Link
+          to="/"
+          className={clsx(
+            "inline-flex min-h-11 items-center rounded-[8px] px-2 py-1 text-lg font-semibold tracking-tight text-[color:var(--ps-text)] transition hover:bg-[color:var(--ps-control-hover-bg)] hover:[box-shadow:var(--ps-control-shadow)] md:min-h-0",
+            controlFocusRing
+          )}
+        >
           <span ref={wordmarkRef} className="block whitespace-normal">
             {wordmark === "phase-space" ? (
               <>
@@ -78,8 +92,8 @@ function TopBar() {
             )}
           </span>
         </Link>
-        <div className="flex items-center gap-4">
-          <nav className="flex flex-wrap items-center gap-3 text-xs text-[color:var(--ps-text-soft)] sm:gap-4 md:flex-nowrap md:text-sm">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3 md:gap-4">
+          <nav className="flex flex-wrap items-center gap-1.5 text-xs text-[color:var(--ps-text-soft)] md:flex-nowrap md:text-sm">
             <NavLink to="/" className={navLinkClass}>
               Viewer
             </NavLink>
@@ -91,12 +105,12 @@ function TopBar() {
             </NavLink>
           </nav>
           {audioDevices.supportsSetSinkId ? (
-            <div className="flex items-center gap-1 text-xs">
+            <div className="hidden items-center gap-1 text-xs lg:flex">
               <span className="text-slate-500 dark:text-slate-400">Output:</span>
               <select
                 value={audioDevices.selectedOutputId}
                 onChange={(e) => audioDevices.setOutputDevice(e.target.value)}
-                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                className={clsx(selectClass, "max-w-[150px] text-xs")}
               >
                 <option value="default">Default (System)</option>
                 {audioDevices.outputs.map((dev) => (
@@ -107,14 +121,16 @@ function TopBar() {
               </select>
             </div>
           ) : (
-            <span className="text-xs text-slate-500 dark:text-slate-400">Output: System default</span>
+            <span className="hidden text-xs text-slate-500 dark:text-slate-400 lg:inline">
+              Output: System default
+            </span>
           )}
           {!mobilePortrait && <VersionBadge label={versionLabel} />}
           <a
             href={githubUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[color:var(--ps-border-subtle)] transition hover:bg-white hover:shadow-md"
+            className={clsx(iconButtonClass(false, { size: "md" }), "min-h-11 min-w-11 md:h-8 md:min-h-0 md:w-8 md:min-w-0")}
             aria-label="Open GitHub repository"
           >
             <svg

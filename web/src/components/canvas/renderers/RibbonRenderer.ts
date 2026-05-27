@@ -1,7 +1,6 @@
 import {
   BufferAttribute,
   BufferGeometry,
-  Color,
   DataTexture,
   DoubleSide,
   Group,
@@ -9,8 +8,17 @@ import {
   ShaderMaterial,
   Vector3,
 } from "three";
-import { buildPaletteTexture, dynamicScalarAt } from "./utils";
+import { buildPaletteTexture, dynamicScalarAt, writeVisualFieldVector } from "./utils";
 import { getLighting } from "../../../visual/lighting";
+import {
+  applyLightingUniforms,
+  applyMaterialUniforms,
+  createLightingUniforms,
+  createMaterialUniforms,
+  materialShaderChunk,
+  type LightingUniforms,
+  type MaterialUniforms,
+} from "./materials";
 import type { RendererStrategy, RenderContext, TrajectoryData } from "./base";
 
 /**
@@ -34,14 +42,20 @@ const ribbonVertex = `
   attribute float t;
   attribute float colorT;
   attribute vec3 aNormal;     // world-space surface normal
+  attribute vec4 aField;
   varying vec3  vNormal;
   varying float vT;
   varying float vColorT;
+  varying vec4  vField;
+  varying vec3  vWorldPos;
   void main() {
     vNormal = aNormal;
     vT = t;
     vColorT = colorT;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    vField = aField;
+    vec4 wp = modelMatrix * vec4(position, 1.0);
+    vWorldPos = wp.xyz;
+    gl_Position = projectionMatrix * viewMatrix * wp;
   }
 `;
 
@@ -49,6 +63,8 @@ const ribbonFragment = `
   varying vec3 vNormal;
   varying float vT;
   varying float vColorT;
+  varying vec4 vField;
+  varying vec3 vWorldPos;
   uniform sampler2D uPalette;
   uniform float uPaletteShift;
   uniform vec3  uKeyDir;
@@ -58,7 +74,8 @@ const ribbonFragment = `
   uniform vec3  uFillColor;
   uniform float uFillI;
   uniform vec3  uAmbient;
-  uniform float uEmissive;
+  uniform vec3  uCamPos;
+  ${materialShaderChunk}
 
   vec3 paletteSample(float t) {
     return texture2D(uPalette, vec2(fract(t), 0.5)).rgb;
@@ -66,44 +83,39 @@ const ribbonFragment = `
 
   void main() {
     vec3 n = normalize(vNormal);
-    vec3 color = paletteSample(vColorT + uPaletteShift);
-
-    // Lambert on key, but allow both sides of the ribbon to receive
-    // light: |dot| because the ribbon has no "inside". This is what
-    // most attractor ribbons want, otherwise half of every band is
-    // pitch black.
-    float key  = abs(dot(n, normalize(uKeyDir)));
-    // Half-Lambert fill: (n.l*0.5 + 0.5)^2 — softer than full Lambert,
-    // good as a sky-bounce term.
-    float halfFill = dot(n, normalize(uFillDir)) * 0.5 + 0.5;
-    float fill = halfFill * halfFill;
-
-    vec3 lit =
-        color * uKeyColor  * key  * uKeyI
-      + color * uFillColor * fill * uFillI
-      + color * uAmbient;
+    if (!gl_FrontFacing) n = -n;
+    vec3 viewDir = normalize(uCamPos - vWorldPos);
+    float fieldEnergy = psFieldEnergy(vField);
+    vec3 color = paletteSample(psPaletteT(vColorT, vField, uPaletteShift));
+    vec3 lit = psMaterialShade(
+      color,
+      n,
+      viewDir,
+      uKeyDir,
+      uKeyColor,
+      uKeyI,
+      uFillDir,
+      uFillColor,
+      uFillI,
+      uAmbient,
+      fieldEnergy,
+      0.7
+    );
 
     // Tail aging dims the band; head stays at full lit value.
     float age = mix(0.55, 1.0, vT);
-    vec3 col = lit * age * (1.0 + uEmissive * 0.3);
+    vec3 col = psFilmicToneMap(lit * age * uExposure);
 
-    float alpha = mix(0.6, 1.0, vT * vT);
+    float alpha = uMaterialAlpha * mix(0.6, 1.0, vT * vT);
     gl_FragColor = vec4(col, alpha);
   }
 `;
 
-interface RibbonUniforms {
+type RibbonUniforms = LightingUniforms & MaterialUniforms & {
   uPalette: { value: DataTexture | null };
   uPaletteShift: { value: number };
-  uEmissive: { value: number };
-  uKeyDir: { value: Vector3 };
-  uKeyColor: { value: Color };
-  uKeyI: { value: number };
-  uFillDir: { value: Vector3 };
-  uFillColor: { value: Color };
-  uFillI: { value: number };
-  uAmbient: { value: Color };
-}
+  uCamPos: { value: Vector3 };
+};
 
 function ribbonWidthFor(data: TrajectoryData): number {
   const base =
@@ -182,12 +194,15 @@ export class RibbonRenderer implements RendererStrategy {
   private materials: ShaderMaterial[] = [];
   private paletteTexture: DataTexture | null = null;
   private data: TrajectoryData | null = null;
+  private context: RenderContext | null = null;
 
-  init({ threeScene }: RenderContext, data: TrajectoryData) {
+  init(context: RenderContext, data: TrajectoryData) {
+    const { threeScene } = context;
     this.group = new Group();
     this.meshes = [];
     this.materials = [];
     this.data = data;
+    this.context = context;
     this.paletteTexture = buildPaletteTexture(data.palette, data.customPalette);
     threeScene.add(this.group);
 
@@ -203,6 +218,7 @@ export class RibbonRenderer implements RendererStrategy {
       const vertNormals = new Float32Array(traj.length * 6);
       const tAttr = new Float32Array(traj.length * 2);
       const colorAttr = new Float32Array(traj.length * 2);
+      const fieldAttr = new Float32Array(traj.length * 8);
 
       for (let i = 0; i < traj.length; i++) {
         const p = points[i];
@@ -230,6 +246,8 @@ export class RibbonRenderer implements RendererStrategy {
         const colorT = dynamicScalarAt(data.dynamics, idx, i, tNorm);
         colorAttr[i * 2 + 0] = colorT;
         colorAttr[i * 2 + 1] = colorT;
+        writeVisualFieldVector(fieldAttr, i * 8, data.dynamics, idx, i, tNorm);
+        writeVisualFieldVector(fieldAttr, i * 8 + 4, data.dynamics, idx, i, tNorm);
       }
 
       const indices: number[] = [];
@@ -244,19 +262,16 @@ export class RibbonRenderer implements RendererStrategy {
       geometry.setAttribute("aNormal", new BufferAttribute(vertNormals, 3));
       geometry.setAttribute("t", new BufferAttribute(tAttr, 1));
       geometry.setAttribute("colorT", new BufferAttribute(colorAttr, 1));
+      geometry.setAttribute("aField", new BufferAttribute(fieldAttr, 4));
 
       const uniforms: RibbonUniforms = {
         uPalette: { value: this.paletteTexture },
         uPaletteShift: { value: data.paletteShift ?? 0 },
-        uEmissive: { value: data.emissiveBoost ?? 0 },
-        uKeyDir: { value: new Vector3().fromArray(lighting.keyDir) },
-        uKeyColor: { value: new Color().fromArray(lighting.keyColor) },
-        uKeyI: { value: lighting.keyIntensity },
-        uFillDir: { value: new Vector3().fromArray(lighting.fillDir) },
-        uFillColor: { value: new Color().fromArray(lighting.fillColor) },
-        uFillI: { value: lighting.fillIntensity },
-        uAmbient: { value: new Color().fromArray(lighting.ambient) },
+        uCamPos: { value: context.camera.position.clone() },
+        ...createLightingUniforms(lighting),
+        ...createMaterialUniforms(data.materialStyle),
       };
+      applyMaterialUniforms(uniforms, data.materialStyle, reactiveRibbonGlow(data));
       const material = new ShaderMaterial({
         uniforms: uniforms as unknown as Record<string, { value: unknown }>,
         vertexShader: ribbonVertex,
@@ -282,9 +297,9 @@ export class RibbonRenderer implements RendererStrategy {
     if (!this.data) return;
     this.data = { ...this.data, ...data };
     const widthScale = this.data.ribbonWidth ?? 1;
-    const emissive = reactiveRibbonGlow(this.data);
     const paletteShift = this.data.paletteShift ?? 0;
     const lighting = getLighting();
+    const camPos = this.context?.camera.position;
 
     this.meshes.forEach((mesh, idx) => {
       mesh.scale.setScalar(Math.max(0.4, Math.min(2.8, widthScale * reactiveRibbonScale(this.data!))));
@@ -292,14 +307,9 @@ export class RibbonRenderer implements RendererStrategy {
       if (!mat) return;
       const u = mat.uniforms as unknown as RibbonUniforms;
       u.uPaletteShift.value = paletteShift;
-      u.uEmissive.value = emissive;
-      u.uKeyDir.value.fromArray(lighting.keyDir);
-      u.uKeyColor.value.fromArray(lighting.keyColor);
-      u.uKeyI.value = lighting.keyIntensity;
-      u.uFillDir.value.fromArray(lighting.fillDir);
-      u.uFillColor.value.fromArray(lighting.fillColor);
-      u.uFillI.value = lighting.fillIntensity;
-      u.uAmbient.value.fromArray(lighting.ambient);
+      if (camPos) u.uCamPos.value.copy(camPos);
+      applyLightingUniforms(u, lighting);
+      applyMaterialUniforms(u, this.data.materialStyle, reactiveRibbonGlow(this.data));
       mat.needsUpdate = true;
     });
   }
@@ -326,5 +336,6 @@ export class RibbonRenderer implements RendererStrategy {
     this.paletteTexture?.dispose();
     this.paletteTexture = null;
     this.data = null;
+    this.context = null;
   }
 }

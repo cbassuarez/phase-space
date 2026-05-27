@@ -5,6 +5,16 @@ import { samplePalette } from "../../../palettes";
 import type { Palette } from "../../../types";
 
 export type DynamicScalars = Float32Array[];
+export interface VisualField {
+  color: Float32Array[];
+  progress: Float32Array[];
+  speed: Float32Array[];
+  curvature: Float32Array[];
+  density: Float32Array[];
+  hash: Float32Array[];
+}
+
+export type VisualFieldChannel = "color" | "progress" | "speed" | "curvature" | "density" | "hash";
 
 function clamp01(v: number): number {
   return Math.min(1, Math.max(0, v));
@@ -31,7 +41,35 @@ function robustNormalizeValues(values: number[], lowT = 0.04, highT = 0.96): num
   return values.map((v) => clamp01((v - low) / range));
 }
 
-export function computeDynamicScalars(trajectories: number[][][]): DynamicScalars {
+function trajectoryHash(index: number): number {
+  return ((Math.sin((index + 1) * 12.9898) * 43758.5453) % 1 + 1) % 1;
+}
+
+function buildSpatialDensity(trajectories: number[][][], refs: { trajIdx: number; pointIdx: number }[]): number[] {
+  const bins = new Map<string, number>();
+  const grid = 18;
+  const extent = 7.5;
+  const invSize = grid / (extent * 2);
+  const keys: string[] = [];
+
+  refs.forEach((ref) => {
+    const p = trajectories[ref.trajIdx]?.[ref.pointIdx];
+    if (!p) {
+      keys.push("0,0,0");
+      return;
+    }
+    const ix = Math.max(0, Math.min(grid - 1, Math.floor((p[0] + extent) * invSize)));
+    const iy = Math.max(0, Math.min(grid - 1, Math.floor((p[1] + extent) * invSize)));
+    const iz = Math.max(0, Math.min(grid - 1, Math.floor((p[2] + extent) * invSize)));
+    const key = `${ix},${iy},${iz}`;
+    keys.push(key);
+    bins.set(key, (bins.get(key) ?? 0) + 1);
+  });
+
+  return keys.map((key) => bins.get(key) ?? 0);
+}
+
+export function computeDynamicScalars(trajectories: number[][][]): VisualField {
   const speeds: number[] = [];
   const curvatures: number[] = [];
   const refs: { trajIdx: number; pointIdx: number; progress: number }[] = [];
@@ -72,30 +110,74 @@ export function computeDynamicScalars(trajectories: number[][][]): DynamicScalar
 
   const speedNorm = robustNormalizeValues(speeds);
   const curvatureNorm = robustNormalizeValues(curvatures);
+  const densityNorm = robustNormalizeValues(buildSpatialDensity(trajectories, refs), 0.08, 0.98);
   const combined = refs.map((ref, i) => {
     const speed = Number.isFinite(speedNorm[i]) ? speedNorm[i] : ref.progress;
     const curvature = Number.isFinite(curvatureNorm[i]) ? curvatureNorm[i] : ref.progress;
-    return 0.65 * curvature + 0.25 * speed + 0.1 * ref.progress;
+    const density = Number.isFinite(densityNorm[i]) ? densityNorm[i] : 0;
+    const hash = trajectoryHash(ref.trajIdx);
+    const inverseSpeed = 1 - speed;
+    const wave = 0.5 + 0.5 * Math.sin((ref.progress * 2.7 + curvature * 0.9 + density * 0.6 + hash * 1.7) * Math.PI * 2);
+    return 0.32 * curvature + 0.23 * inverseSpeed + 0.2 * density + 0.15 * wave + 0.1 * ref.progress;
   });
   const combinedNorm = robustNormalizeValues(combined, 0.02, 0.98);
 
-  const result = trajectories.map((traj) => new Float32Array(traj.length));
+  const result: VisualField = {
+    color: trajectories.map((traj) => new Float32Array(traj.length)),
+    progress: trajectories.map((traj) => new Float32Array(traj.length)),
+    speed: trajectories.map((traj) => new Float32Array(traj.length)),
+    curvature: trajectories.map((traj) => new Float32Array(traj.length)),
+    density: trajectories.map((traj) => new Float32Array(traj.length)),
+    hash: trajectories.map((traj) => new Float32Array(traj.length)),
+  };
   refs.forEach((ref, i) => {
     const fallback = ref.progress;
-    const value = Number.isFinite(combinedNorm[i]) ? combinedNorm[i] : fallback;
-    result[ref.trajIdx][ref.pointIdx] = value;
+    result.color[ref.trajIdx][ref.pointIdx] = Number.isFinite(combinedNorm[i]) ? combinedNorm[i] : fallback;
+    result.progress[ref.trajIdx][ref.pointIdx] = fallback;
+    result.speed[ref.trajIdx][ref.pointIdx] = Number.isFinite(speedNorm[i]) ? speedNorm[i] : fallback;
+    result.curvature[ref.trajIdx][ref.pointIdx] = Number.isFinite(curvatureNorm[i]) ? curvatureNorm[i] : fallback;
+    result.density[ref.trajIdx][ref.pointIdx] = Number.isFinite(densityNorm[i]) ? densityNorm[i] : 0;
+    result.hash[ref.trajIdx][ref.pointIdx] = trajectoryHash(ref.trajIdx);
   });
   return result;
 }
 
-export function dynamicScalarAt(
-  dynamics: DynamicScalars | undefined,
+export function visualFieldAt(
+  dynamics: VisualField | DynamicScalars | undefined,
+  channel: VisualFieldChannel,
   trajIdx: number,
   pointIdx: number,
   fallback = 0
 ): number {
-  const value = dynamics?.[trajIdx]?.[pointIdx];
+  if (!dynamics) return clamp01(fallback);
+  const value =
+    Array.isArray(dynamics)
+      ? (channel === "color" ? dynamics[trajIdx]?.[pointIdx] : fallback)
+      : dynamics[channel]?.[trajIdx]?.[pointIdx];
   return Number.isFinite(value) ? clamp01(value as number) : clamp01(fallback);
+}
+
+export function dynamicScalarAt(
+  dynamics: VisualField | DynamicScalars | undefined,
+  trajIdx: number,
+  pointIdx: number,
+  fallback = 0
+): number {
+  return visualFieldAt(dynamics, "color", trajIdx, pointIdx, fallback);
+}
+
+export function writeVisualFieldVector(
+  out: Float32Array,
+  offset: number,
+  dynamics: VisualField | DynamicScalars | undefined,
+  trajIdx: number,
+  pointIdx: number,
+  fallbackProgress = 0
+) {
+  out[offset] = visualFieldAt(dynamics, "speed", trajIdx, pointIdx, fallbackProgress);
+  out[offset + 1] = visualFieldAt(dynamics, "curvature", trajIdx, pointIdx, fallbackProgress);
+  out[offset + 2] = visualFieldAt(dynamics, "density", trajIdx, pointIdx, 0);
+  out[offset + 3] = visualFieldAt(dynamics, "hash", trajIdx, pointIdx, trajectoryHash(trajIdx));
 }
 
 export function colorForDynamicScalar(
@@ -111,7 +193,7 @@ export function colorForDynamicScalar(
 export function buildVertexColorArray(
   trajectoryIndex: number,
   pointCount: number,
-  dynamics: DynamicScalars | undefined,
+  dynamics: VisualField | DynamicScalars | undefined,
   palette: Palette,
   customPalette: CustomPaletteState,
   shift = 0

@@ -1,5 +1,6 @@
 import type { ChangeEvent } from "react";
 import type { Resolution } from "../../types";
+import { commandButtonClass } from "./controlStyles";
 
 const resolutionStops: { id: Resolution; label: string; position: string }[] = [
     { id: "fast", label: "Fast", position: "0%" },
@@ -76,7 +77,9 @@ function ResolutionSlider({ value, onChange }: ResolutionSliderProps) {
                 {resolutionStops.map((stop) => (
                     <button
                         key={stop.id}
-                        className="relative -top-0.5 text-[10px] font-medium"
+                        type="button"
+                        aria-pressed={stop.id === value}
+                        className={`${commandButtonClass(stop.id === value, { size: "touch" })} relative -top-0.5 px-2 md:min-h-7 md:py-1 md:text-[10px]`}
                         onClick={() => onChange(stop.id)}
                     >
                         {stop.label}

@@ -17,6 +17,7 @@ function MainLayout() {
         animateHeadTail,
         showFullTrajectory,
         lineThickness,
+        materialStyle,
         renderStyle,
         resolution,
         photonWeaveSettings,
@@ -49,6 +50,7 @@ function MainLayout() {
                             animateHeadTail={animateHeadTail}
                             showFullTrajectory={showFullTrajectory}
                             lineThickness={lineThickness}
+                            materialStyle={materialStyle}
                             renderStyle={renderStyle}
                             resolution={resolution}
                             photonWeaveSettings={photonWeaveSettings}
@@ -81,6 +83,7 @@ function MainLayout() {
                             animateHeadTail={animateHeadTail}
                             showFullTrajectory={showFullTrajectory}
                             lineThickness={lineThickness}
+                            materialStyle={materialStyle}
                             renderStyle={renderStyle}
                             resolution={resolution}
                             photonWeaveSettings={photonWeaveSettings}

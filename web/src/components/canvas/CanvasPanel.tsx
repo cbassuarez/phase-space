@@ -10,6 +10,7 @@ import type {
   Palette,
   Trajectories,
   LineThickness,
+  MaterialStyle,
   RenderStyle,
   Resolution,
   PhotonWeaveSettings,
@@ -40,6 +41,7 @@ interface CanvasPanelProps {
   animateHeadTail: boolean;
   showFullTrajectory: boolean;
   lineThickness: LineThickness;
+  materialStyle: MaterialStyle;
   renderStyle: RenderStyle;
   resolution: Resolution;
   photonWeaveSettings: PhotonWeaveSettings;
@@ -62,6 +64,7 @@ function PhaseScene({
   randomSeed,
   camera,
   lineThickness,
+  materialStyle,
   renderStyle,
   resolution,
   photonWeaveSettings,
@@ -182,6 +185,7 @@ function PhaseScene({
       palette,
       customPalette,
       lineThickness,
+      materialStyle,
       background,
       paletteShift: modValues.paletteShift,
       renderEnergy: modValues.renderEnergy,
@@ -223,6 +227,7 @@ function PhaseScene({
     palette,
     customPalette,
     lineThickness,
+    materialStyle,
     background,
     renderStyle,
     quality,
@@ -339,6 +344,7 @@ function PhaseScene({
         dynamics: dynamicScalars,
         palette,
         lineThickness,
+        materialStyle,
         background,
         customPalette,
         paletteShift: modValues.paletteShift,
@@ -410,6 +416,7 @@ function CanvasPanel({
   animateHeadTail,
   showFullTrajectory,
   lineThickness,
+  materialStyle,
   renderStyle,
   resolution,
   photonWeaveSettings,
@@ -473,6 +480,7 @@ function CanvasPanel({
               showFullTrajectory={showFullTrajectory}
               camera={camera}
               lineThickness={lineThickness}
+              materialStyle={materialStyle}
               renderStyle={renderStyle}
               resolution={resolution}
               photonWeaveSettings={photonWeaveSettings}

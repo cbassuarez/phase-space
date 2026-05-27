@@ -62,12 +62,12 @@ export const DEFAULT_LIGHTING: LightingConfig = {
 export const LIGHTING_PRESETS: { id: string; label: string; config: LightingConfig }[] = [
   {
     id: "studio",
-    label: "studio",
+    label: "Studio",
     config: DEFAULT_LIGHTING,
   },
   {
     id: "noir",
-    label: "noir",
+    label: "Noir",
     config: {
       keyDir: norm([0.9, 0.3, 0.2]),
       keyColor: [1.0, 0.85, 0.7],
@@ -81,7 +81,7 @@ export const LIGHTING_PRESETS: { id: string; label: string; config: LightingConf
   },
   {
     id: "twilight",
-    label: "twilight",
+    label: "Twilight",
     config: {
       keyDir: norm([0.3, -0.2, 0.9]),
       keyColor: [1.0, 0.6, 0.35],
@@ -95,7 +95,7 @@ export const LIGHTING_PRESETS: { id: string; label: string; config: LightingConf
   },
   {
     id: "aurora",
-    label: "aurora",
+    label: "Aurora",
     config: {
       keyDir: norm([0.1, 0.95, 0.2]),
       keyColor: [0.65, 1.0, 0.85],
@@ -109,7 +109,7 @@ export const LIGHTING_PRESETS: { id: string; label: string; config: LightingConf
   },
   {
     id: "flat",
-    label: "flat",
+    label: "Flat",
     config: {
       keyDir: norm([0, 1, 0]),
       keyColor: [1, 1, 1],

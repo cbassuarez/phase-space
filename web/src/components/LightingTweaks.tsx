@@ -9,6 +9,11 @@ import {
   setLightingPreset,
   subscribeLighting,
 } from "../visual/lighting";
+import {
+  rangeClass,
+  segmentedButtonClass,
+  sectionHeadingClass,
+} from "./controls/controlStyles";
 
 /**
  * LightingTweaks — small floating panel that lets the user reshape
@@ -35,7 +40,7 @@ import {
  * subscribing.
  */
 
-export function LightingTweaks() {
+export function LightingControlGroup() {
   const [, setVersion] = useState(0);
   const [presetId, setPresetId] = useState<string>(getLightingPresetId());
 
@@ -56,14 +61,9 @@ export function LightingTweaks() {
     (light.ambient[0] * 0.299 + light.ambient[1] * 0.587 + light.ambient[2] * 0.114);
 
   return (
-    <div
-      className="pointer-events-auto fixed bottom-4 left-4 z-30 w-[260px] border border-[color:var(--ps-border-subtle,#e0e4f2)] bg-[color:var(--ps-panel-bg,#ffffff)] p-3 text-[color:var(--ps-text,#141722)] shadow-[var(--ps-shadow-soft,0_4px_24px_rgba(0,0,0,0.08))]"
-      style={{ borderRadius: 0 }}
-    >
+    <div className="text-[color:var(--ps-text,#141722)]">
       <div className="mb-2 flex items-baseline justify-between">
-        <span className="text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--ps-text-soft,#5b6074)]">
-          lighting
-        </span>
+        <span className={sectionHeadingClass}>Lighting</span>
         <span className="text-[10px] text-[color:var(--ps-text-muted,#8b90a5)]">
           {presetId}
         </span>
@@ -77,13 +77,8 @@ export function LightingTweaks() {
               key={p.id}
               type="button"
               onClick={() => setLightingPreset(p.id)}
-              className={
-                "px-1 py-1 text-[10px] transition " +
-                (active
-                  ? "bg-[color:var(--ps-accent,#111827)] text-white"
-                  : "border border-[color:var(--ps-border-subtle,#e0e4f2)] bg-transparent hover:bg-[color:var(--ps-panel-alt-bg,#f0f2f9)]")
-              }
-              style={{ borderRadius: 0 }}
+              aria-pressed={active}
+              className={`${segmentedButtonClass(active, { size: "touch", fill: false, marker: false })} w-full md:min-h-7 md:px-2 md:py-1 md:text-[10px]`}
               title={p.label}
             >
               {p.label}
@@ -148,6 +143,16 @@ export function LightingTweaks() {
   );
 }
 
+export function LightingTweaks() {
+  return (
+    <div
+      className="pointer-events-auto fixed bottom-4 left-4 z-30 w-[260px] rounded-[10px] border border-[color:var(--ps-border-subtle,#e0e4f2)] bg-[color:var(--ps-panel-bg,#ffffff)] p-3 shadow-[var(--ps-shadow-soft,0_4px_24px_rgba(0,0,0,0.08))]"
+    >
+      <LightingControlGroup />
+    </div>
+  );
+}
+
 interface LightingSliderProps {
   label: string;
   value: number;
@@ -191,8 +196,7 @@ function LightingSlider({
         step={step}
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full"
-        style={{ borderRadius: 0 }}
+        className={rangeClass}
       />
     </label>
   );

@@ -19,7 +19,15 @@ import {
 } from "three";
 import type { Palette, ProjectionAxis } from "../../../types";
 import type { RendererStrategy, RenderContext, TrajectoryData } from "./base";
-import { buildPaletteTexture, dynamicScalarAt } from "./utils";
+import { buildPaletteTexture, dynamicScalarAt, visualFieldAt } from "./utils";
+import { getLighting } from "../../../visual/lighting";
+import {
+  applyLightingUniforms,
+  applyMaterialUniforms,
+  createLightingUniforms,
+  createMaterialUniforms,
+  materialShaderChunk,
+} from "./materials";
 
 /**
  * Caustics renderer — "screen-space light density / spill, caustic-like".
@@ -116,11 +124,20 @@ const outputFragment = `
   uniform sampler2D uPaletteWarm;
   uniform sampler2D uPaletteCool;
   uniform float uIntensity;
-  uniform float uExposure;
+  uniform float uCausticExposure;
   uniform float uThreshold;
   uniform float uBloomStrength;
   uniform float uPaletteShift;
   uniform int   uColorMode;
+  uniform vec2  uTexel;
+  uniform vec3  uKeyDir;
+  uniform vec3  uKeyColor;
+  uniform float uKeyI;
+  uniform vec3  uFillDir;
+  uniform vec3  uFillColor;
+  uniform float uFillI;
+  uniform vec3  uAmbient;
+  ${materialShaderChunk}
 
   vec3 samplePaletteColor(sampler2D tex, float t) {
     return texture2D(tex, vec2(clamp(t, 0.0, 1.0), 0.5)).rgb;
@@ -134,20 +151,41 @@ const outputFragment = `
     float energy     = mix(baseEnergy, blurred, uBloomStrength);
     float colorEnergy = mix(baseSample.g, blurSample.g, uBloomStrength);
     float softened   = max(energy - uThreshold, 0.0);
-    float tone       = clamp(1.0 - exp(-uExposure * softened), 0.0, 1.0);
+    float tone       = clamp(1.0 - exp(-uCausticExposure * softened), 0.0, 1.0);
     float dynamicT   = energy > 0.00001 ? colorEnergy / energy : tone;
     dynamicT = fract(dynamicT + uPaletteShift);
+    float fieldEnergy = energy > 0.00001 ? mix(baseSample.b, blurSample.b, uBloomStrength) / energy : tone;
 
     vec3 paletteColor = samplePaletteColor(uPalette, dynamicT);
     if (uColorMode == 1) paletteColor = samplePaletteColor(uPaletteWarm, dynamicT);
     else if (uColorMode == 2) paletteColor = samplePaletteColor(uPaletteCool, dynamicT);
 
+    float eL = texture2D(uTexture, vUv - vec2(uTexel.x, 0.0)).r;
+    float eR = texture2D(uTexture, vUv + vec2(uTexel.x, 0.0)).r;
+    float eD = texture2D(uTexture, vUv - vec2(0.0, uTexel.y)).r;
+    float eU = texture2D(uTexture, vUv + vec2(0.0, uTexel.y)).r;
+    vec3 normal = normalize(vec3((eL - eR) * 2.8, (eD - eU) * 2.8, 0.65));
+    vec3 lit = psMaterialShade(
+      paletteColor,
+      normal,
+      vec3(0.0, 0.0, 1.0),
+      uKeyDir,
+      uKeyColor,
+      uKeyI,
+      uFillDir,
+      uFillColor,
+      uFillI,
+      uAmbient,
+      clamp(fieldEnergy, 0.0, 1.0),
+      tone
+    );
+
     // Slight watery base mix so even the "dark" regions feel like a
     // medium rather than a flat black plate.
     vec3 watery = mix(vec3(0.02, 0.05, 0.12), vec3(0.95, 1.0, 1.0), tone);
-    vec3 color  = mix(watery, paletteColor, 0.6) * (0.65 + tone * 0.7) * uIntensity;
+    vec3 color  = mix(watery, lit, 0.78) * (0.65 + tone * 0.7) * uIntensity;
 
-    gl_FragColor = vec4(color, 1.0);
+    gl_FragColor = vec4(psFilmicToneMap(color * uExposure), 1.0);
   }
 `;
 
@@ -208,7 +246,7 @@ function buildVelocityWeights(
   trajectories: number[][][],
   dynamics: TrajectoryData["dynamics"],
   step: number
-): { positions: Float32Array; energies: Float32Array; colorScalars: Float32Array; pointCount: number } {
+): { positions: Float32Array; energies: Float32Array; colorScalars: Float32Array; fieldScalars: Float32Array; pointCount: number } {
   let total = 0;
   trajectories.forEach((t) => {
     total += Math.ceil(t.length / step);
@@ -216,6 +254,7 @@ function buildVelocityWeights(
   const positions = new Float32Array(total * 3);
   const energies = new Float32Array(total);
   const colorScalars = new Float32Array(total);
+  const fieldScalars = new Float32Array(total);
 
   let offset = 0;
   let energyOffset = 0;
@@ -258,10 +297,17 @@ function buildVelocityWeights(
         i,
         traj.length > 1 ? i / (traj.length - 1) : 0
       );
+      fieldScalars[energyOffset - 1] = visualFieldAt(
+        dynamics,
+        "density",
+        trajIdx,
+        i,
+        0
+      );
     }
   });
 
-  return { positions, energies, colorScalars, pointCount: total };
+  return { positions, energies, colorScalars, fieldScalars, pointCount: total };
 }
 
 function projectionAxisCamera(axis: ProjectionAxis, halfExtent: number): OrthographicCamera | null {
@@ -350,7 +396,7 @@ export class CausticsRenderer implements RendererStrategy {
 
     // --- Splat geometry ----------------------------------------
     const pointStep = Math.max(1, Math.round(data.quality?.causticsPointStep ?? 2));
-    const { positions, energies, colorScalars, pointCount } = buildVelocityWeights(
+    const { positions, energies, colorScalars, fieldScalars, pointCount } = buildVelocityWeights(
       data.trajectories,
       data.dynamics,
       pointStep
@@ -362,6 +408,7 @@ export class CausticsRenderer implements RendererStrategy {
     splatGeom.setAttribute("position", new BufferAttribute(positions, 3));
     splatGeom.setAttribute("aEnergy", new BufferAttribute(energies, 1));
     splatGeom.setAttribute("aColorT", new BufferAttribute(colorScalars, 1));
+    splatGeom.setAttribute("aFieldT", new BufferAttribute(fieldScalars, 1));
 
     // Soft point sprite with per-vertex energy. We rely on the main
     // camera's projection in "auto" mode, or the axis-locked ortho
@@ -370,12 +417,15 @@ export class CausticsRenderer implements RendererStrategy {
     const splatVert = `
       attribute float aEnergy;
       attribute float aColorT;
+      attribute float aFieldT;
       varying float vEnergy;
       varying float vColorT;
+      varying float vFieldT;
       uniform float uPointSize;
       void main() {
         vEnergy = aEnergy;
         vColorT = aColorT;
+        vFieldT = aFieldT;
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
         gl_Position = projectionMatrix * mv;
         // Keep splat size constant in framebuffer pixels — exposure
@@ -387,13 +437,14 @@ export class CausticsRenderer implements RendererStrategy {
     const splatFrag = `
       varying float vEnergy;
       varying float vColorT;
+      varying float vFieldT;
       uniform float uEnergyGain;
       void main() {
         vec2 c = gl_PointCoord - vec2(0.5);
         float d = dot(c, c);
         float falloff = exp(-d * 18.0);
         float energy = falloff * vEnergy * uEnergyGain;
-        gl_FragColor = vec4(energy, energy * vColorT, 0.0, energy);
+        gl_FragColor = vec4(energy, energy * vColorT, energy * vFieldT, energy);
       }
     `;
     this.splatMaterial = new ShaderMaterial({
@@ -454,6 +505,7 @@ export class CausticsRenderer implements RendererStrategy {
     this.paletteTexture     = buildPaletteTexture(data.palette as Palette, data.customPalette);
     this.warmPaletteTexture = buildPaletteTexture("solar", data.customPalette);
     this.coolPaletteTexture = buildPaletteTexture("abyss", data.customPalette);
+    const lighting = getLighting();
 
     this.outputMaterial = new ShaderMaterial({
       uniforms: {
@@ -462,7 +514,7 @@ export class CausticsRenderer implements RendererStrategy {
         uIntensity:     { value: causticsOutputIntensity(data) },
         // Exposure + threshold are tuned together with the new
         // energyGain so realistic caustic peaks reach tone ~0.8.
-        uExposure:      { value: 2.4 },
+        uCausticExposure: { value: 2.4 },
         uThreshold:     { value: 0.008 },
         uBloomStrength: { value: 0.72 },
         uPaletteShift:  { value: data.paletteShift ?? 0 },
@@ -471,6 +523,9 @@ export class CausticsRenderer implements RendererStrategy {
         uPaletteCool:   { value: this.coolPaletteTexture },
         uColorMode:     { value: data.caustics?.colorMode === "warm" ? 1 : data.caustics?.colorMode === "cool" ? 2 : 0 },
         uDebugScale:    { value: 1.7 },
+        uTexel:         { value: new Vector2(1 / this.texSize, 1 / this.texSize) },
+        ...createLightingUniforms(lighting),
+        ...createMaterialUniforms(data.materialStyle),
       },
       vertexShader: outputVertex,
       fragmentShader: CAUSTICS_DEBUG_MODE === "accum" ? accumDebugFragment : outputFragment,
@@ -479,6 +534,7 @@ export class CausticsRenderer implements RendererStrategy {
       transparent: false,
       toneMapped: false,
     });
+    applyMaterialUniforms(this.outputMaterial.uniforms as any, data.materialStyle, data.emissiveBoost ?? 0);
 
     const outputQuad = new Mesh(new PlaneGeometry(2, 2), this.outputMaterial);
     outputQuad.frustumCulled = false;
@@ -589,6 +645,8 @@ export class CausticsRenderer implements RendererStrategy {
       this.outputMaterial.uniforms.uColorMode.value =
         mode === "warm" ? 1 : mode === "cool" ? 2 : 0;
       this.outputMaterial.uniforms.uPaletteShift.value = data.paletteShift ?? 0;
+      applyLightingUniforms(this.outputMaterial.uniforms as any, getLighting());
+      applyMaterialUniforms(this.outputMaterial.uniforms as any, this.data.materialStyle, this.data.emissiveBoost ?? 0);
       this.outputMaterial.needsUpdate = true;
     }
     if (this.blurMaterialH && this.blurMaterialV) {

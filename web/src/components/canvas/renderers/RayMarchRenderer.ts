@@ -16,7 +16,16 @@ import {
 import type { Palette } from "../../../types";
 import { getLighting } from "../../../visual/lighting";
 import type { RendererStrategy, RenderContext, TrajectoryData } from "./base";
-import { buildPaletteTexture, dynamicScalarAt } from "./utils";
+import { buildPaletteTexture, dynamicScalarAt, visualFieldAt } from "./utils";
+import {
+  applyLightingUniforms,
+  applyMaterialUniforms,
+  createLightingUniforms,
+  createMaterialUniforms,
+  materialShaderChunk,
+  type LightingUniforms,
+  type MaterialUniforms,
+} from "./materials";
 
 /**
  * Ray-march renderer — replaces the old VolumetricCloud strategy
@@ -115,9 +124,10 @@ const rayMarchFragment = `
   uniform float uShadowDensity;
 
   uniform float uExtinction;      // alpha per unit density per unit length
-  uniform float uExposure;
   uniform float uPaletteShift;
   uniform vec3  uBackground;
+  uniform float uVoxelStep;
+  ${materialShaderChunk}
 
   const int MARCH_STEPS  = 72;
   const int SHADOW_STEPS = 6;
@@ -145,6 +155,21 @@ const rayMarchFragment = `
   // that's otherwise visible at low MARCH_STEPS counts.
   float dither(vec2 ndc) {
     return fract(sin(dot(ndc, vec2(12.9898, 78.233))) * 43758.5453);
+  }
+
+  float volumeDensity(vec3 uvw) {
+    return texture(uVolume, clamp(uvw, vec3(0.0), vec3(1.0))).r;
+  }
+
+  vec3 volumeNormal(vec3 uvw, vec3 fallback) {
+    float h = uVoxelStep;
+    vec3 g = vec3(
+      volumeDensity(uvw + vec3(h, 0.0, 0.0)) - volumeDensity(uvw - vec3(h, 0.0, 0.0)),
+      volumeDensity(uvw + vec3(0.0, h, 0.0)) - volumeDensity(uvw - vec3(0.0, h, 0.0)),
+      volumeDensity(uvw + vec3(0.0, 0.0, h)) - volumeDensity(uvw - vec3(0.0, 0.0, h))
+    );
+    if (dot(g, g) < 0.000001) return normalize(fallback);
+    return normalize(g);
   }
 
   void main() {
@@ -206,15 +231,28 @@ const rayMarchFragment = `
         // Palette colour by density (head/tail of the palette read
         // as low-density haze vs. high-density cores). Apply
         // palette shift like the other modes.
-        float paletteT = mod(voxel.g + uPaletteShift, 1.0);
+        float fieldEnergy = clamp(voxel.b, 0.0, 1.0);
+        float paletteT = mod(voxel.g + fieldEnergy * 0.08 + uPaletteShift, 1.0);
         vec3 paletteColor = paletteSample(paletteT);
 
-        // Simple two-light shading. Fill is unshadowed (cheap
-        // approximation; ambient backlight).
-        vec3 lit =
-            paletteColor * uKeyColor  * uKeyI  * keyTransmit
-          + paletteColor * uFillColor * uFillI * 0.5
-          + paletteColor * uAmbient;
+        vec3 normal = volumeNormal(uvw, -rayDir);
+        if (dot(normal, -rayDir) < 0.0) normal = -normal;
+        vec3 lit = psMaterialShade(
+          paletteColor,
+          normal,
+          -rayDir,
+          uKeyDir,
+          uKeyColor,
+          uKeyI * keyTransmit,
+          uFillDir,
+          uFillColor,
+          uFillI * 0.55,
+          uAmbient,
+          fieldEnergy,
+          density
+        );
+        float forwardScatter = pow(max(dot(rayDir, keyL), 0.0), 3.0);
+        lit += paletteColor * uKeyColor * forwardScatter * uTransmission * (0.4 + fieldEnergy * 0.8);
 
         // Front-to-back compositing. Opacity per step scales with
         // density and step length; we keep marchLen ~ box diagonal
@@ -235,26 +273,20 @@ const rayMarchFragment = `
   }
 `;
 
-interface RayMarchUniforms {
+type RayMarchUniforms = LightingUniforms & MaterialUniforms & {
   uVolume: { value: Data3DTexture | null };
   uPalette: { value: DataTexture | null };
   uInvViewProj: { value: Matrix4 };
   uCamPos: { value: Vector3 };
   uBoxMin: { value: Vector3 };
   uBoxMax: { value: Vector3 };
-  uKeyDir: { value: Vector3 };
-  uKeyColor: { value: Color };
-  uKeyI: { value: number };
-  uFillDir: { value: Vector3 };
-  uFillColor: { value: Color };
-  uFillI: { value: number };
-  uAmbient: { value: Color };
   uShadowDensity: { value: number };
   uExtinction: { value: number };
   uExposure: { value: number };
   uPaletteShift: { value: number };
   uBackground: { value: Color };
-}
+  uVoxelStep: { value: number };
+};
 
 /**
  * Build a 128³ density volume from trajectories. Trilinear-weighted
@@ -267,6 +299,7 @@ function buildVolumeTexture(trajectories: number[][][], dynamics: TrajectoryData
   const N = VOLUME_N;
   const accum = new Float32Array(N * N * N);
   const colorAccum = new Float32Array(N * N * N);
+  const fieldAccum = new Float32Array(N * N * N);
   const data = new Uint8Array(N * N * N * 4);
 
   const minX = -BOX_EXTENT;
@@ -276,6 +309,7 @@ function buildVolumeTexture(trajectories: number[][][], dynamics: TrajectoryData
     for (let i = 0; i < traj.length; i++) {
       const p = traj[i];
       const colorT = dynamicScalarAt(dynamics, trajIdx, i, traj.length > 1 ? i / (traj.length - 1) : 0);
+      const fieldT = visualFieldAt(dynamics, "density", trajIdx, i, 0);
       const fx = ((p[0] - minX) / sizeX) * N - 0.5;
       const fy = ((p[1] - minX) / sizeX) * N - 0.5;
       const fz = ((p[2] - minX) / sizeX) * N - 0.5;
@@ -299,6 +333,7 @@ function buildVolumeTexture(trajectories: number[][][], dynamics: TrajectoryData
             const idx = zIdx + yIdx + (x0 + dx);
             accum[idx] += weight;
             colorAccum[idx] += weight * colorT;
+            fieldAccum[idx] += weight * fieldT;
           }
         }
       }
@@ -316,7 +351,7 @@ function buildVolumeTexture(trajectories: number[][][], dynamics: TrajectoryData
     const out = i * 4;
     data[out] = v >= 255 ? 255 : v <= 0 ? 0 : Math.floor(v);
     data[out + 1] = accum[i] > 0 ? Math.max(0, Math.min(255, Math.round((colorAccum[i] / accum[i]) * 255))) : 0;
-    data[out + 2] = 0;
+    data[out + 2] = accum[i] > 0 ? Math.max(0, Math.min(255, Math.round((fieldAccum[i] / accum[i]) * 255))) : 0;
     data[out + 3] = 255;
   }
 
@@ -393,19 +428,16 @@ export class RayMarchRenderer implements RendererStrategy {
       uCamPos:        { value: new Vector3() },
       uBoxMin:        { value: BOX_MIN.clone() },
       uBoxMax:        { value: BOX_MIN.clone().add(BOX_SIZE) },
-      uKeyDir:        { value: new Vector3().fromArray(lighting.keyDir) },
-      uKeyColor:      { value: new Color().fromArray(lighting.keyColor) },
-      uKeyI:          { value: lighting.keyIntensity },
-      uFillDir:       { value: new Vector3().fromArray(lighting.fillDir) },
-      uFillColor:     { value: new Color().fromArray(lighting.fillColor) },
-      uFillI:         { value: lighting.fillIntensity },
-      uAmbient:       { value: new Color().fromArray(lighting.ambient) },
       uShadowDensity: { value: lighting.shadowDensity * 4.0 }, // 0..1 maps to a useful exp() range
       uExtinction:    { value: 2.4 },
       uExposure:      { value: 1.7 },
       uPaletteShift:  { value: data.paletteShift ?? 0 },
       uBackground:    { value: bgColor },
+      uVoxelStep:     { value: 1 / VOLUME_N },
+      ...createLightingUniforms(lighting),
+      ...createMaterialUniforms(data.materialStyle),
     };
+    applyMaterialUniforms(uniforms, data.materialStyle, data.emissiveBoost ?? 0);
 
     this.material = new ShaderMaterial({
       uniforms: uniforms as unknown as Record<string, { value: unknown }>,
@@ -441,13 +473,8 @@ export class RayMarchRenderer implements RendererStrategy {
     const lighting = getLighting();
     const u = this.material.uniforms as unknown as RayMarchUniforms;
     u.uCamPos.value.copy(camera.position);
-    u.uKeyDir.value.fromArray(lighting.keyDir);
-    u.uKeyColor.value.fromArray(lighting.keyColor);
-    u.uKeyI.value = lighting.keyIntensity;
-    u.uFillDir.value.fromArray(lighting.fillDir);
-    u.uFillColor.value.fromArray(lighting.fillColor);
-    u.uFillI.value = lighting.fillIntensity;
-    u.uAmbient.value.fromArray(lighting.ambient);
+    applyLightingUniforms(u, lighting);
+    applyMaterialUniforms(u, data.materialStyle, data.emissiveBoost ?? 0);
     u.uShadowDensity.value = lighting.shadowDensity * 4.0;
     u.uPaletteShift.value = data.paletteShift ?? 0;
     u.uBackground.value.copy(backgroundColorFor(this.data.background));
