@@ -13,3 +13,31 @@
 [  256163ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://localhost:5173/phase-space/phase-space/site.webmanifest:0
 [  256185ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5173/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=85f8750f:21608
 [  256215ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://localhost:5173/phase-space/phase-space/site.webmanifest:0
+[ 7356898ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/phase-space/@vite/client:864
+[ 7357084ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://localhost:5173/phase-space/phase-space/site.webmanifest:0
+[ 7357125ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5173/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=85f8750f:21608
+[ 7357226ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://localhost:5173/phase-space/phase-space/site.webmanifest:0
+[ 7846397ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/phase-space/@vite/client:864
+[ 7846552ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://localhost:5173/phase-space/phase-space/site.webmanifest:0
+[ 7846672ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5173/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=85f8750f:21608
+[ 7848032ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://localhost:5173/phase-space/phase-space/site.webmanifest:0
+[10997150ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/phase-space/@vite/client:864
+[10997202ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://localhost:5173/phase-space/phase-space/site.webmanifest:0
+[10997213ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5173/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=85f8750f:21608
+[10997241ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://localhost:5173/phase-space/phase-space/site.webmanifest:0
+[12124930ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/phase-space/@vite/client:864
+[12124984ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://localhost:5173/phase-space/phase-space/site.webmanifest:0
+[12124996ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5173/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=85f8750f:21608
+[12125025ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://localhost:5173/phase-space/phase-space/site.webmanifest:0
+[73170448ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/phase-space/@vite/client:864
+[73170711ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://localhost:5173/phase-space/phase-space/site.webmanifest:0
+[73170740ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5173/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=85f8750f:21608
+[73170823ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://localhost:5173/phase-space/phase-space/site.webmanifest:0
+[86222180ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/phase-space/@vite/client:864
+[86222321ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5173/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=85f8750f:21608
+[86222348ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://localhost:5173/phase-space/phase-space/site.webmanifest:0
+[86222373ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://localhost:5173/phase-space/phase-space/site.webmanifest:0
+[86599848ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/phase-space/@vite/client:864
+[86599891ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://localhost:5173/phase-space/phase-space/site.webmanifest:0
+[86599900ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5173/phase-space/node_modules/.vite/deps/chunk-T654KI65.js?v=85f8750f:21608
+[86599930ms] [ERROR] Manifest: Line: 1, column: 1, Syntax error. @ http://localhost:5173/phase-space/phase-space/site.webmanifest:0

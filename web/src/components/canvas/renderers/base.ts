@@ -1,6 +1,7 @@
 import type {
   Background,
   CausticsSettings,
+  CellShape,
   LineThickness,
   MaterialStyle,
   Palette,
@@ -20,6 +21,7 @@ export interface TrajectoryData {
   palette: Palette;
   customPalette: CustomPaletteState;
   lineThickness: LineThickness;
+  cellShape?: CellShape;
   materialStyle: MaterialStyle;
   background: Background;
   paletteShift?: number;
@@ -41,6 +43,18 @@ export interface RenderContext {
   threeScene: Scene;
   camera: PerspectiveCamera;
   renderer: WebGLRenderer;
+}
+
+/**
+ * Additive blending gives the luminous "neon on black" look, but it
+ * accumulates overlapping segments in the framebuffer and clips to white
+ * on dense, wound attractors. Reserve it for the true `dark` background
+ * where that glow is the intent. `dim` (and `light`) use normal alpha
+ * compositing so colors stay readable instead of washing out to a white
+ * blob.
+ */
+export function useAdditiveBlending(background: Background): boolean {
+  return background === "dark";
 }
 
 export interface RendererStrategy {

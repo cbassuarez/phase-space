@@ -1,18 +1,21 @@
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronRight, Clipboard, Pause, Play } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { PanelLeftClose, Pause, Play } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useViewerState } from "../../state/viewerState";
 import type { Palette, SystemId } from "../../types";
 import ResolutionSlider from "./ResolutionSlider";
 import ToggleSwitch from "./ToggleSwitch";
 import ModulationSection from "./ModulationSection";
+import { SidebarTabs, SIDEBAR_TAB_ORDER, type SidebarTabId } from "./SidebarTabs";
+import StatusBadge from "./StatusBadge";
+import InspectorPanel from "./InspectorPanel";
+import StyleDetail from "./StyleDetail";
 import { builtinPalettes } from "../../palettes";
 import CustomPaletteEditor from "./CustomPaletteEditor";
 import { LightingControlGroup } from "../LightingTweaks";
 import {
   commandButtonClass,
-  disclosureSummaryClass,
   radioIndicatorClass,
   radioRowClass,
   rangeClass,
@@ -35,6 +38,7 @@ const cameraModes = [
   { id: "orbit", label: "Orbit" },
   { id: "chase", label: "Chase" },
   { id: "lobe", label: "Lobe" },
+  { id: "free", label: "Free" },
 ] as const;
 
 const surveyDirPresets = [
@@ -59,21 +63,10 @@ const renderStyles = [
   { id: "caustics", label: "Caustics" },
 ] as const;
 
-const lineThicknessOptions = [
-  { id: "thin", label: "Thin" },
-  { id: "default", label: "Default" },
-  { id: "thick", label: "Thick" },
-] as const;
-
 const materialStyleOptions = [
   { id: "glass", label: "Glass" },
   { id: "metal", label: "Metal" },
   { id: "plasma", label: "Plasma" },
-] as const;
-
-const backgroundOptions = [
-  { id: "light", label: "Light" },
-  { id: "dim", label: "Dim" },
 ] as const;
 
 function CameraSlider({
@@ -113,88 +106,50 @@ function CameraSlider({
 const sectionHeading = sectionHeadingClass;
 const pillRow = segmentedGroupClass;
 
-function ControlPanelDesktop() {
+// Tab panels slide in the direction of travel and cross-fade. `custom` is the
+// signed travel direction (+1 moving right through the tab order, -1 left).
+const tabPanelVariants = {
+  enter: (dir: number) => ({ opacity: 0, x: dir >= 0 ? 18 : -18 }),
+  center: { opacity: 1, x: 0 },
+  exit: (dir: number) => ({ opacity: 0, x: dir >= 0 ? -18 : 18 }),
+};
+const tabPanelTransition = { duration: 0.22, ease: [0.22, 0.61, 0.36, 1] as const };
+
+function ControlPanelDesktop({ onCollapse }: { onCollapse?: () => void }) {
   const {
     system,
     resolution,
     autoSpin,
     animateHeadTail,
     showFullTrajectory,
-    lineThickness,
     materialStyle,
     renderStyle,
-    photonWeaveSettings,
-    setPhotonWeaveSettings,
-    causticsSettings,
-    setCausticsSettings,
     palette,
     customPalette,
-    background,
+    attractorOpacity,
+    setAttractorOpacity,
     setSystem,
     setResolution,
     toggleAutoSpin,
     toggleAnimateHeadTail,
     toggleShowFullTrajectory,
-    setLineThickness,
     setMaterialStyle,
     setRenderStyle,
     setPalette,
     setCustomPalette,
-    setBackground,
     cameraProgram,
     setCameraProgram,
-    trajectoryMeta,
-    sceneJson,
   } = useViewerState();
 
-  const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<SidebarTabId>("scene");
+  const [tabDirection, setTabDirection] = useState(0);
 
-  // Custom scroll indicator: track scroll progress of the main content column.
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const [isScrolling, setIsScrolling] = useState(false);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-
-    let idleTimer: number | undefined;
-
-    const updateProgress = () => {
-      const max = el.scrollHeight - el.clientHeight;
-      const ratio = max > 0 ? el.scrollTop / max : 0;
-      setScrollProgress(ratio);
-    };
-
-    const handleScroll = () => {
-      updateProgress();
-      setIsScrolling(true);
-      if (idleTimer !== undefined) {
-        window.clearTimeout(idleTimer);
-      }
-      idleTimer = window.setTimeout(() => {
-        setIsScrolling(false);
-      }, 450);
-    };
-
-    updateProgress();
-
-    el.addEventListener("scroll", handleScroll);
-    window.addEventListener("resize", updateProgress);
-
-    return () => {
-      el.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", updateProgress);
-      if (idleTimer !== undefined) {
-        window.clearTimeout(idleTimer);
-      }
-    };
-  }, []);
-
-  const clampedProgress = Math.min(1, Math.max(0, scrollProgress));
-  const ladderStepCount = 8;
-  const snappedProgress = Math.round(clampedProgress * ladderStepCount) / ladderStepCount;
-  const orbOffsetPercent = 6 + (clampedProgress * 0.7 + snappedProgress * 0.3) * 88;
+  const selectTab = (next: SidebarTabId) => {
+    setTabDirection(
+      SIDEBAR_TAB_ORDER.indexOf(next) >= SIDEBAR_TAB_ORDER.indexOf(activeTab) ? 1 : -1
+    );
+    setActiveTab(next);
+  };
 
   const paletteOptions: { id: Palette; label: string; swatch: string }[] = useMemo(() => {
     const base = builtinPalettes.map((p) => {
@@ -216,36 +171,52 @@ function ControlPanelDesktop() {
     return [...base, customOption];
   }, [customPalette]);
 
-  const copySceneJson = async () => {
-    try {
-      await navigator.clipboard.writeText(sceneJson);
-    } catch (err) {
-      console.error("Clipboard unsupported", err);
-    }
-  };
-
   const updateCamera = (mutate: (c: NonNullable<typeof cameraProgram>) => NonNullable<typeof cameraProgram>) => {
     if (!cameraProgram) return;
     setCameraProgram((prev) => mutate(prev ?? cameraProgram));
   };
 
-  const hasStyleOptions = renderStyle === "photon-weave" || renderStyle === "caustics";
-
   return (
     <div className="relative flex h-full min-h-0 w-full flex-col gap-4 overflow-hidden rounded-[18px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-bg)] p-4 shadow-[var(--ps-shadow-soft)]">
-      <div
-        ref={scrollRef}
-        className="phase-control-scroll flex-1 min-h-0 space-y-5 overflow-y-auto pr-3"
-      >
-        <div className="flex flex-col gap-1 border-b border-[color:var(--ps-border-subtle)] pb-3">
-          <div className="text-lg font-semibold tracking-tight text-[color:var(--ps-text)]">phase-space</div>
-          <p className="text-xs text-[color:var(--ps-text-soft)]">Interactive phase-space viewer</p>
-          <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-[color:var(--ps-panel-alt-bg)] px-3 py-1 text-[11px] font-medium text-[color:var(--ps-text-soft)]">
-            <span className="h-2 w-2 rounded-full bg-[color:var(--ps-traj-1)]" />
-            <span className="capitalize">{system}</span>
-          </div>
+      {onCollapse && (
+        <button
+          type="button"
+          onClick={onCollapse}
+          aria-label="Hide controls"
+          title="Hide controls"
+          className="absolute right-3 top-3 z-10 inline-flex h-7 w-7 items-center justify-center rounded-full border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] text-[color:var(--ps-text-soft)] transition hover:text-[color:var(--ps-text)]"
+        >
+          <PanelLeftClose size={15} />
+        </button>
+      )}
+      {/* Header — constant across tabs, with a live indicator of the current system */}
+      <div className="flex items-center justify-between gap-2 pr-9">
+        <div className="flex flex-col gap-0.5">
+          <div className="text-lg font-semibold leading-tight tracking-tight text-[color:var(--ps-text)]">phase-space</div>
+          <p className="text-[11px] text-[color:var(--ps-text-soft)]">Interactive phase-space viewer</p>
         </div>
+        <StatusBadge system={system} />
+      </div>
 
+      {/* Folder: tab strip + body. The active tab merges into the body below. */}
+      <div className="flex flex-1 min-h-0 flex-col">
+        <SidebarTabs active={activeTab} onSelect={selectTab} />
+
+        {/* Folder body — animated tab panels, each scrolls independently */}
+        <div className="relative flex-1 min-h-0 overflow-hidden rounded-b-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-bg)]">
+          <AnimatePresence initial={false} custom={tabDirection}>
+            <motion.div
+              key={activeTab}
+              custom={tabDirection}
+              variants={tabPanelVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={tabPanelTransition}
+              className="phase-control-scroll absolute inset-0 space-y-5 overflow-y-auto p-3 pr-2"
+            >
+            {activeTab === "scene" && (
+              <>
         {/* SYSTEM — what to view; resolution belongs here because both re-integrate. */}
         <section className="flex flex-col gap-3">
           <div className={sectionHeading}>SYSTEM</div>
@@ -264,7 +235,11 @@ function ControlPanelDesktop() {
           </div>
           <ResolutionSlider value={resolution} onChange={setResolution} />
         </section>
+              </>
+            )}
 
+            {activeTab === "camera" && (
+              <>
         {/* CAMERA — how you see it. */}
         <section className="flex flex-col gap-3 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] p-3">
           <div className={sectionHeading}>CAMERA</div>
@@ -308,11 +283,15 @@ function ControlPanelDesktop() {
                 onChange={(v) => updateCamera((c) => ({ ...c, stability: v }))}
               />
 
-              <details className="group rounded-[10px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-control-bg)] px-1 py-1 text-xs text-[color:var(--ps-text-soft)] [box-shadow:var(--ps-control-shadow)]">
-                <summary className={disclosureSummaryClass}>
-                  <span>Mode tuning</span>
-                  <ChevronRight className="h-3.5 w-3.5 transition-transform group-open:rotate-90" />
-                </summary>
+              <div className="rounded-[10px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-control-bg)] p-2 text-xs text-[color:var(--ps-text-soft)] [box-shadow:var(--ps-control-shadow)]">
+                <div className={clsx(sectionHeading, "px-1 pb-1")}>Mode tuning</div>
+                {cameraProgram.mode === "free" && (
+                  <p className="mt-1 px-2 pb-2 text-[11px] leading-relaxed text-[color:var(--ps-text-soft)]">
+                    Drag to orbit, scroll to zoom — release to coast. Stability sets the
+                    inertia (lower glides longer), Speed the drag gain. Drag in any other mode
+                    to nudge the camera; it eases back on its own.
+                  </p>
+                )}
                 {cameraProgram.mode === "survey" && (
                   <div className="mt-2 space-y-2 px-2 pb-2">
                     <ToggleSwitch
@@ -509,11 +488,35 @@ function ControlPanelDesktop() {
                     />
                   </div>
                 )}
-              </details>
+              </div>
             </div>
           )}
         </section>
 
+        {/* MOTION — playback & trail behaviour; lives with the camera. */}
+        <section className="flex flex-col gap-2">
+          <div className={sectionHeading}>MOTION</div>
+          <div className="flex items-center justify-between py-1">
+            <span className="text-xs text-[color:var(--ps-text-soft)]">Auto-spin camera</span>
+            <button
+              type="button"
+              onClick={toggleAutoSpin}
+              aria-pressed={autoSpin}
+              className={commandButtonClass(autoSpin, { size: "sm" })}
+            >
+              {autoSpin ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+              <span className="hidden sm:inline">{autoSpin ? "Pause" : "Play"}</span>
+              <span className="sm:hidden">{autoSpin ? "Pause" : "Play"}</span>
+            </button>
+          </div>
+          <ToggleSwitch label="Animate head/tail" checked={animateHeadTail} onToggle={toggleAnimateHeadTail} />
+          <ToggleSwitch label="Show full trajectory" checked={showFullTrajectory} onToggle={toggleShowFullTrajectory} />
+        </section>
+              </>
+            )}
+
+            {activeTab === "scene" && (
+              <>
         {/* LOOK — how it renders. Style-specific knobs are tucked behind a disclosure. */}
         <section className="flex flex-col gap-3">
           <div className={sectionHeading}>LOOK</div>
@@ -535,22 +538,7 @@ function ControlPanelDesktop() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <span className="text-[11px] text-[color:var(--ps-text-soft)]">Thickness</span>
-            <div className={pillRow}>
-              {lineThicknessOptions.map((opt) => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => setLineThickness(opt.id as typeof lineThickness)}
-                  aria-pressed={lineThickness === opt.id}
-                  className={segmentedButtonClass(lineThickness === opt.id)}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <StyleDetail />
 
           <div className="flex flex-col gap-2">
             <span className="text-[11px] text-[color:var(--ps-text-soft)]">Material</span>
@@ -567,6 +555,17 @@ function ControlPanelDesktop() {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <CameraSlider
+              label="Opacity"
+              value={attractorOpacity}
+              min={0.1}
+              max={1}
+              step={0.01}
+              onChange={setAttractorOpacity}
+            />
           </div>
 
           <div className="space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] px-3 py-2">
@@ -594,220 +593,30 @@ function ControlPanelDesktop() {
             {palette === "custom" && <CustomPaletteEditor state={customPalette} onChange={setCustomPalette} />}
           </div>
 
-          <div className="space-y-1 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] px-3 py-2">
-            <p className={sectionHeading}>Background</p>
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              {backgroundOptions.map((opt) => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => setBackground(opt.id)}
-                  aria-pressed={background === opt.id}
-                  className={commandButtonClass(background === opt.id, { size: "touch", full: true })}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
           <div className="space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] px-3 py-2">
             <LightingControlGroup />
           </div>
-
-          {hasStyleOptions && (
-            <details className="group rounded-[10px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-control-bg)] px-1 py-1 text-xs text-[color:var(--ps-text-soft)] [box-shadow:var(--ps-control-shadow)]">
-              <summary className={disclosureSummaryClass}>
-                <span>Style options</span>
-                <ChevronRight className="h-3.5 w-3.5 transition-transform group-open:rotate-90" />
-              </summary>
-              {renderStyle === "photon-weave" && (
-                <div className="mt-2 space-y-2 px-2 pb-2">
-                  <CameraSlider
-                    label="Brightness"
-                    value={photonWeaveSettings.brightness}
-                    min={0}
-                    max={2}
-                    step={0.01}
-                    onChange={(v) => setPhotonWeaveSettings({ brightness: v })}
-                  />
-                  <CameraSlider
-                    label="Trail length"
-                    value={photonWeaveSettings.trailLength}
-                    min={0.5}
-                    max={2}
-                    step={0.01}
-                    onChange={(v) => setPhotonWeaveSettings({ trailLength: v })}
-                  />
-                  <div className="flex flex-col gap-1">
-                    <span>Filament density</span>
-                    <div className={pillRow}>
-                      {[{ id: "low", label: "Low" }, { id: "medium", label: "Medium" }, { id: "high", label: "High" }].map((opt) => (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          onClick={() => setPhotonWeaveSettings({ filamentDensity: opt.id as typeof photonWeaveSettings.filamentDensity })}
-                          aria-pressed={photonWeaveSettings.filamentDensity === opt.id}
-                          className={segmentedButtonClass(photonWeaveSettings.filamentDensity === opt.id, { size: "sm" })}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <ToggleSwitch
-                    label="Shimmer"
-                    checked={photonWeaveSettings.shimmer}
-                    onToggle={() => setPhotonWeaveSettings({ shimmer: !photonWeaveSettings.shimmer })}
-                  />
-                </div>
-              )}
-
-              {renderStyle === "caustics" && (
-                <div className="mt-2 space-y-2 px-2 pb-2">
-                  <CameraSlider
-                    label="Intensity"
-                    value={causticsSettings.intensity}
-                    min={0}
-                    max={2.5}
-                    step={0.01}
-                    onChange={(v) => setCausticsSettings({ intensity: v })}
-                  />
-                  <CameraSlider
-                    label="Blur radius"
-                    value={causticsSettings.blurRadius}
-                    min={0.1}
-                    max={1.2}
-                    step={0.01}
-                    onChange={(v) => setCausticsSettings({ blurRadius: v })}
-                  />
-                  <div className="flex flex-col gap-1">
-                    <span>Projection</span>
-                    <div className="grid grid-cols-4 gap-1 text-xs">
-                      {[{ id: "auto", label: "Auto" }, { id: "xy", label: "XY" }, { id: "xz", label: "XZ" }, { id: "yz", label: "YZ" }].map((opt) => (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          onClick={() => setCausticsSettings({ projectionAxis: opt.id as typeof causticsSettings.projectionAxis })}
-                          aria-pressed={causticsSettings.projectionAxis === opt.id}
-                          className={segmentedButtonClass(causticsSettings.projectionAxis === opt.id, { size: "sm", marker: false })}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span>Color mode</span>
-                    <div className="grid grid-cols-3 gap-1 text-xs">
-                      {[{ id: "global", label: "Palette" }, { id: "warm", label: "Warm" }, { id: "cool", label: "Cool" }].map((opt) => (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          onClick={() => setCausticsSettings({ colorMode: opt.id as typeof causticsSettings.colorMode })}
-                          aria-pressed={causticsSettings.colorMode === opt.id}
-                          className={segmentedButtonClass(causticsSettings.colorMode === opt.id, { size: "sm", marker: false })}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </details>
-          )}
         </section>
-
-        {/* MOTION — playback & trail behaviour. */}
-        <section className="flex flex-col gap-2">
-          <div className={sectionHeading}>MOTION</div>
-          <div className="flex items-center justify-between py-1">
-            <span className="text-xs text-[color:var(--ps-text-soft)]">Auto-spin camera</span>
-            <button
-              type="button"
-              onClick={toggleAutoSpin}
-              aria-pressed={autoSpin}
-              className={commandButtonClass(autoSpin, { size: "sm" })}
-            >
-              {autoSpin ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">{autoSpin ? "Pause" : "Play"}</span>
-              <span className="sm:hidden">{autoSpin ? "Pause" : "Play"}</span>
-            </button>
-          </div>
-          <ToggleSwitch label="Animate head/tail" checked={animateHeadTail} onToggle={toggleAnimateHeadTail} />
-          <ToggleSwitch label="Show full trajectory" checked={showFullTrajectory} onToggle={toggleShowFullTrajectory} />
-        </section>
-
-        {/* AUDIO — collapsed by default; advanced. */}
-        <details className="group rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] px-1 py-1">
-          <summary className={disclosureSummaryClass}>
-            <span>AUDIO REACTIVITY</span>
-            <ChevronRight className="h-3.5 w-3.5 transition-transform group-open:rotate-90" />
-          </summary>
-          <div className="pt-2">
-            <ModulationSection />
-          </div>
-        </details>
-      </div>
-
-      {/* INSPECTOR — debug info, pinned at the bottom and collapsed by default. */}
-      <section className="mt-auto">
-        <button
-          type="button"
-          onClick={() => setInspectorOpen((v) => !v)}
-          className={clsx(
-            disclosureSummaryClass,
-            "w-full rounded-none border-x-0 border-b-0 border-t border-[color:var(--ps-border-subtle)] px-0 pt-3"
-          )}
-          aria-expanded={inspectorOpen}
-        >
-          <span>INSPECTOR</span>
-          <motion.span animate={{ rotate: inspectorOpen ? 90 : 0 }} className="text-[10px]">
-            <ChevronRight className="h-3.5 w-3.5" />
-          </motion.span>
-        </button>
-        <AnimatePresence initial={false}>
-          {inspectorOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mt-2 space-y-2 text-[11px] text-[color:var(--ps-text-soft)]"
-            >
-              <div>
-                Trajectories: {trajectoryMeta.count} · Points: ~{trajectoryMeta.points}
-              </div>
-              <button
-                type="button"
-                onClick={copySceneJson}
-                className={commandButtonClass(false, { size: "sm" })}
-              >
-                <Clipboard className="h-3.5 w-3.5" />
-                Copy scene JSON
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </section>
-
-      {/* Overlay dot ladder + orb scroll indicator */}
-      <div className="pointer-events-none absolute inset-y-3 right-2 flex items-stretch">
-        <div
-          className={clsx(
-            "phase-scroll-rail h-full",
-            (scrollProgress > 0 || isScrolling) && "phase-scroll-rail--visible"
-          )}
-        >
-          <div
-            className={clsx(
-              "phase-scroll-orb",
-              isScrolling ? "phase-scroll-orb--active" : "phase-scroll-orb--idle"
+              </>
             )}
-            style={{ transform: `translate(-50%, ${orbOffsetPercent}%)` }}
-          />
+
+            {activeTab === "audio" && (
+              <section className="flex flex-col gap-3">
+                <div className={sectionHeading}>AUDIO REACTIVITY</div>
+                <p className="text-[11px] leading-relaxed text-[color:var(--ps-text-soft)]">
+                  Route live audio and visual features onto scene parameters. Enable a bus, choose a
+                  source and target, then set how deep it drives the motion.
+                </p>
+                <ModulationSection />
+              </section>
+            )}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
+
+      {/* Inspector — live telemetry & diagnostics, pinned at the bottom. */}
+      <InspectorPanel />
     </div>
   );
 }

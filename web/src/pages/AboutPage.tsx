@@ -88,7 +88,7 @@ export const AboutPage: React.FC = () => {
               </Link>
               <a
                 href="#systems"
-                className="inline-flex rounded-lg border border-[color:var(--ps-border-subtle)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--ps-text)] transition hover:border-[color:var(--ps-text-soft)]"
+                className="inline-flex rounded-lg border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-bg)] px-4 py-2 text-sm font-medium text-[color:var(--ps-text)] transition hover:border-[color:var(--ps-text-soft)]"
               >
                 View systems
               </a>
@@ -141,7 +141,7 @@ export const AboutPage: React.FC = () => {
               {featureNotes.map((note) => (
                 <div
                   key={note}
-                  className="rounded-lg border border-[color:var(--ps-border-subtle)] bg-white/70 p-4 text-sm leading-relaxed text-[color:var(--ps-text-soft)]"
+                  className="rounded-lg border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] p-4 text-sm leading-relaxed text-[color:var(--ps-text-soft)]"
                 >
                   {note}
                 </div>
@@ -225,16 +225,16 @@ export const AboutPage: React.FC = () => {
                 </p>
               </div>
               <div className="grid gap-2 text-sm">
-                <a className="rounded-lg border border-[color:var(--ps-border-subtle)] bg-white px-4 py-3 text-[color:var(--ps-text)] hover:border-[color:var(--ps-text-soft)]" href="https://github.com/cbassuarez" target="_blank" rel="noopener noreferrer">
+                <a className="rounded-lg border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-bg)] px-4 py-3 text-[color:var(--ps-text)] hover:border-[color:var(--ps-text-soft)]" href="https://github.com/cbassuarez" target="_blank" rel="noopener noreferrer">
                   GitHub profile
                 </a>
-                <a className="rounded-lg border border-[color:var(--ps-border-subtle)] bg-white px-4 py-3 text-[color:var(--ps-text)] hover:border-[color:var(--ps-text-soft)]" href="https://github.com/cbassuarez/phase-space" target="_blank" rel="noopener noreferrer">
+                <a className="rounded-lg border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-bg)] px-4 py-3 text-[color:var(--ps-text)] hover:border-[color:var(--ps-text-soft)]" href="https://github.com/cbassuarez/phase-space" target="_blank" rel="noopener noreferrer">
                   Phase Space repository
                 </a>
-                <a className="rounded-lg border border-[color:var(--ps-border-subtle)] bg-white px-4 py-3 text-[color:var(--ps-text)] hover:border-[color:var(--ps-text-soft)]" href="mailto:contact@cbassuarez.com">
+                <a className="rounded-lg border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-bg)] px-4 py-3 text-[color:var(--ps-text)] hover:border-[color:var(--ps-text-soft)]" href="mailto:contact@cbassuarez.com">
                   contact@cbassuarez.com
                 </a>
-                <Link className="rounded-lg border border-[color:var(--ps-border-subtle)] bg-white px-4 py-3 text-[color:var(--ps-text)] hover:border-[color:var(--ps-text-soft)]" to="/credits">
+                <Link className="rounded-lg border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-bg)] px-4 py-3 text-[color:var(--ps-text)] hover:border-[color:var(--ps-text-soft)]" to="/credits">
                   Credits
                 </Link>
               </div>

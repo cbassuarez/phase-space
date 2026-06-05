@@ -21,7 +21,7 @@ import {
   type LightingUniforms,
   type MaterialUniforms,
 } from "./materials";
-import type { RendererStrategy, RenderContext, TrajectoryData } from "./base";
+import { useAdditiveBlending, type RendererStrategy, type RenderContext, type TrajectoryData } from "./base";
 
 function lineWidthFor(data: TrajectoryData): number {
   if (data.lineThickness === "thick") return 0.075;
@@ -37,10 +37,10 @@ function reactiveLineScale(data: TrajectoryData): number {
 }
 
 function lineOpacity(data: TrajectoryData): number {
-  const base = data.background === "light" ? 0.72 : 0.82;
+  const base = data.background === "light" ? 0.88 : 0.96;
   const energy = data.renderEnergy ?? 0;
   const pulse = data.renderPulse ?? 0;
-  return Math.max(0.18, Math.min(1, base * (0.85 + energy * 0.35 + pulse * 0.3)));
+  return Math.max(0.3, Math.min(1, base * (0.92 + energy * 0.35 + pulse * 0.3)));
 }
 
 function lineGlow(data: TrajectoryData): number {
@@ -208,7 +208,7 @@ export class LineRenderer implements RendererStrategy {
     this.context = context;
     threeScene.add(this.group);
 
-    const useAdditive = data.background !== "light";
+    const useAdditive = useAdditiveBlending(data.background);
     const opacity = lineOpacity(data);
     const width = lineWidthFor(data) * reactiveLineScale(data);
     const lighting = getLighting();
@@ -297,7 +297,7 @@ export class LineRenderer implements RendererStrategy {
   applyDynamic(data: TrajectoryData) {
     if (!this.data) return;
     this.data = { ...this.data, ...data };
-    const useAdditive = this.data.background !== "light";
+    const useAdditive = useAdditiveBlending(this.data.background);
     const opacity = lineOpacity(this.data);
     const width = lineWidthFor(this.data) * reactiveLineScale(this.data);
     const lighting = getLighting();

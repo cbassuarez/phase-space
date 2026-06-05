@@ -1,6 +1,7 @@
 import { Link, NavLink } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import VersionBadge from "./VersionBadge";
+import ThemeSwitch from "./ThemeSwitch";
 import { PHASE_SPACE_VERSION } from "../version";
 import { useAudioDevicesContext } from "../state/audioDevicesState";
 import clsx from "clsx";
@@ -125,6 +126,7 @@ function TopBar() {
               Output: System default
             </span>
           )}
+          <ThemeSwitch />
           {!mobilePortrait && <VersionBadge label={versionLabel} />}
           <a
             href={githubUrl}

@@ -29,6 +29,7 @@ import {
   fitDistanceForFov,
   lobeCentersFromTrajectory,
 } from "./framing";
+import { cameraInput } from "./cameraInput";
 
 const FOV_Y = Math.PI / 4; // matches Canvas fov={45}
 
@@ -101,6 +102,41 @@ function pointAtArcLength(
     a[1] + (b[1] - a[1]) * frac,
     a[2] + (b[2] - a[2]) * frac,
   ];
+}
+
+/**
+ * Triangular-weighted average of the curve over an arc-length window of
+ * ±halfSpan around `s`. This low-passes the trajectory so a chase camera
+ * glides through the mean flow of the attractor instead of tracing every
+ * high-frequency curl — the single biggest source of chase-mode jitter
+ * and angular "G" spikes on chaotic systems.
+ */
+function smoothedPointAtArcLength(
+  traj: readonly Vec3[],
+  cache: ArcLengthCache,
+  s: number,
+  halfSpan: number,
+  mode: ChaseLoopMode,
+  samplesPerSide = 5
+): Vec3 {
+  if (halfSpan <= 1e-6) return pointAtArcLength(traj, cache, s);
+  let x = 0;
+  let y = 0;
+  let z = 0;
+  let wSum = 0;
+  for (let i = -samplesPerSide; i <= samplesPerSide; i++) {
+    const f = i / samplesPerSide; // -1..1
+    const w = 1 - Math.abs(f); // triangular kernel
+    if (w <= 0) continue;
+    const sub = wrapArcLength(s + f * halfSpan, cache.totalLength, mode);
+    const p = pointAtArcLength(traj, cache, sub);
+    x += p[0] * w;
+    y += p[1] * w;
+    z += p[2] * w;
+    wSum += w;
+  }
+  const inv = wSum > 1e-9 ? 1 / wSum : 0;
+  return [x * inv, y * inv, z * inv];
 }
 
 function wrapArcLength(s: number, total: number, mode: ChaseLoopMode): number {
@@ -190,9 +226,17 @@ function chasePose(program: CameraProgram, ctx: CameraContext, t: number): Camer
 
   // Persisted arc position. Integrates by dt so pausing the sim doesn't
   // teleport the camera and changing trajectories starts fresh.
-  const cruiseSpeed =
-    cache.totalLength * 0.05 * Math.max(0.01, cfg.time_scale);
-  const dt = Math.max(ctx.dt, 1e-4);
+  //
+  // Speed is tied to *scene scale*, not raw arc length: arc length grows
+  // with the integration resolution (more steps → longer summed length),
+  // which used to make the camera fly faster at higher resolution and
+  // tear through tightly-wound attractors. scene-relative cruise keeps
+  // the pace identical across resolutions and calm on chaotic systems.
+  const cruiseSpeed = scene * 0.35 * Math.max(0.01, cfg.time_scale);
+  // Clamp dt: a frame hitch (GC, tab refocus) otherwise advances sArc by a
+  // huge step and lurches the camera down the path. Cap at ~1/30s so the
+  // worst a stutter does is briefly slow the cruise, never pop.
+  const dt = clamp(ctx.dt, 1e-4, 1 / 30);
   motion.sArc = wrapArcLength(
     motion.sArc + cruiseSpeed * dt,
     cache.totalLength,
@@ -200,40 +244,56 @@ function chasePose(program: CameraProgram, ctx: CameraContext, t: number): Camer
   );
   const s = motion.sArc;
 
-  // Sampling: five points around s for tangent + curvature estimation.
   const lookAhead = scene * Math.max(0.05, cfg.look_ahead);
-  const avgSeg = cache.totalLength / Math.max(1, traj.length - 1);
-  const tangentWindow = Math.max(avgSeg * 3, lookAhead * 0.18);
+  // Low-pass window for the path samples. Tied to the look-ahead/scene so
+  // the smoothing scales with the framing. Larger → calmer, more
+  // corner-cutting; smaller → tighter to the true curve.
+  const smoothSpan = Math.max(lookAhead * 0.85, scene * 0.18);
 
-  const sBehind = wrapArcLength(s - tangentWindow, cache.totalLength, cfg.loop_mode);
-  const sAhead = wrapArcLength(s + tangentWindow, cache.totalLength, cfg.loop_mode);
-  const sTarget = wrapArcLength(s + lookAhead, cache.totalLength, cfg.loop_mode);
-  const sFar = wrapArcLength(
-    s + lookAhead + tangentWindow,
-    cache.totalLength,
+  // Anchor (where the camera rides) and the look-ahead point are both
+  // sampled from the *smoothed* curve, so the camera glides through the
+  // mean flow rather than tracing every micro-curl.
+  const anchor = smoothedPointAtArcLength(traj, cache, s, smoothSpan, cfg.loop_mode);
+  const ahead = smoothedPointAtArcLength(
+    traj,
+    cache,
+    s + lookAhead,
+    smoothSpan,
     cfg.loop_mode
   );
 
-  const pCurrent = pointAtArcLength(traj, cache, s);
-  const pBehind = pointAtArcLength(traj, cache, sBehind);
-  const pAhead = pointAtArcLength(traj, cache, sAhead);
-  const pTarget = pointAtArcLength(traj, cache, sTarget);
-  const pFar = pointAtArcLength(traj, cache, sFar);
-
-  // Tangent — smoothed via slerp against the previous frame's tangent.
-  // Slerp picks the short arc, eliminating frame-to-frame sign flips.
-  const rawTangent = vecNormalize(vecSub(pAhead, pBehind));
-  const tangentBlend = 1 - Math.exp(-6 * dt);
+  // Tangent from the smoothed anchor→ahead chord, slerped against the
+  // previous frame for extra steadiness. Slerp picks the short arc,
+  // eliminating frame-to-frame sign flips.
+  const rawTangent = vecNormalize(
+    vecSub(ahead, anchor),
+    motion.prevTangent ?? [0, 0, 1]
+  );
+  const tangentBlend = 1 - Math.exp(-4 * dt);
   const tangent = motion.prevTangent
     ? slerp(motion.prevTangent, rawTangent, tangentBlend)
     : rawTangent;
   motion.prevTangent = tangent;
 
-  // Curvature direction (the "binormal" — really the unit vector of
-  // d(tangent)/ds — points into the curve). Hold the previous value
-  // when curvature collapses instead of snapping to world-up.
-  const tangentBack = vecNormalize(vecSub(pCurrent, pBehind));
-  const tangentFar = vecNormalize(vecSub(pFar, pTarget));
+  // Curvature direction for banking, measured between smoothed tangents
+  // behind and ahead. Hold the previous value when curvature collapses
+  // instead of snapping to world-up.
+  const behind = smoothedPointAtArcLength(
+    traj,
+    cache,
+    s - smoothSpan,
+    smoothSpan,
+    cfg.loop_mode
+  );
+  const far = smoothedPointAtArcLength(
+    traj,
+    cache,
+    s + lookAhead + smoothSpan,
+    smoothSpan,
+    cfg.loop_mode
+  );
+  const tangentBack = vecNormalize(vecSub(anchor, behind), tangent);
+  const tangentFar = vecNormalize(vecSub(far, ahead), tangent);
   const curveDir: Vec3 = [
     tangentFar[0] - tangentBack[0],
     tangentFar[1] - tangentBack[1],
@@ -252,7 +312,8 @@ function chasePose(program: CameraProgram, ctx: CameraContext, t: number): Camer
   let up = parallelTransport(seedUp, tangent);
 
   // Banking: rotate up around tangent by an angle proportional to
-  // curvature. Smoothstep replaces the old hard saturation.
+  // curvature. Smoothstep replaces the old hard saturation, and the
+  // angle itself is eased over time so the roll never twitches.
   if (cfg.bank_strength > 1e-3) {
     const maxAngle = 0.44; // ~25 degrees
     const bankT = smoothstep(0.05, 0.3, curveMag);
@@ -261,8 +322,14 @@ function chasePose(program: CameraProgram, ctx: CameraContext, t: number): Camer
     // the turn (top tilts toward the inside).
     const right = vecCross(tangent, up);
     const sideSign = vecDot(binormal, right) >= 0 ? -1 : 1;
-    const bankAngle = cfg.bank_strength * bankT * maxAngle * sideSign;
+    const targetBank = cfg.bank_strength * bankT * maxAngle * sideSign;
+    const bankBlend = 1 - Math.exp(-4 * dt);
+    const bankAngle =
+      motion.prevBankAngle + (targetBank - motion.prevBankAngle) * bankBlend;
+    motion.prevBankAngle = bankAngle;
     up = rotateAroundAxis(up, tangent, bankAngle);
+  } else {
+    motion.prevBankAngle = 0;
   }
   motion.prevUp = up;
 
@@ -271,12 +338,12 @@ function chasePose(program: CameraProgram, ctx: CameraContext, t: number): Camer
   const chaseDist = scene * Math.max(0.02, cfg.chase_distance);
   const rideH = scene * Math.max(0, cfg.ride_height);
   const position: Vec3 = [
-    pCurrent[0] - tangent[0] * chaseDist + up[0] * rideH,
-    pCurrent[1] - tangent[1] * chaseDist + up[1] * rideH,
-    pCurrent[2] - tangent[2] * chaseDist + up[2] * rideH,
+    anchor[0] - tangent[0] * chaseDist + up[0] * rideH,
+    anchor[1] - tangent[1] * chaseDist + up[1] * rideH,
+    anchor[2] - tangent[2] * chaseDist + up[2] * rideH,
   ];
 
-  return { position, target: pTarget, up };
+  return { position, target: ahead, up };
 }
 
 // --- mode: lobe -------------------------------------------------------
@@ -326,6 +393,160 @@ function lobePose(program: CameraProgram, ctx: CameraContext, t: number): Camera
     r * sp * Math.sin(az),
   ]);
   return { position, target: center, up: [0, 1, 0] };
+}
+
+// --- mode: free -------------------------------------------------------
+
+// A fixed iso overview to start orbiting from. Free mode holds this static
+// pose as its "program"; the user grab (below) does all the motion.
+function freePose(program: CameraProgram, ctx: CameraContext): CameraPose {
+  const sphere = boundingSphereFromAABB(ctx.bboxMin, ctx.bboxMax);
+  const aspect = ctx.aspect > 0 ? ctx.aspect : 16 / 9;
+  const d = fitDistanceForFov(sphere.radius, FOV_Y, aspect, Math.max(1, program.survey.margin));
+  const yaw = Math.PI * 0.35;
+  const pitch = 0.5;
+  const cp = Math.cos(pitch);
+  const dir: Vec3 = [cp * Math.cos(yaw), Math.sin(pitch), cp * Math.sin(yaw)];
+  return { position: vecAdd(sphere.center, vecScale(dir, d)), target: sphere.center, up: [0, 1, 0] };
+}
+
+// --- user grab: free orbit + universal latch --------------------------
+
+interface GrabState {
+  active: boolean;
+  weight: number; // 0 = program owns the camera, 1 = user owns it
+  theta: number;
+  phi: number;
+  logR: number;
+  thetaVel: number;
+  phiVel: number;
+  logRVel: number;
+}
+
+const grab: GrabState = {
+  active: false,
+  weight: 0,
+  theta: 0,
+  phi: 1,
+  logR: 2,
+  thetaVel: 0,
+  phiVel: 0,
+  logRVel: 0,
+};
+
+const PHI_MIN = 0.12;
+const PHI_MAX = Math.PI - 0.12;
+
+function resetGrab() {
+  grab.active = false;
+  grab.weight = 0;
+  grab.thetaVel = 0;
+  grab.phiVel = 0;
+  grab.logRVel = 0;
+}
+
+function sphericalFromOffset(offset: Vec3): { theta: number; phi: number; r: number } {
+  const r = Math.max(1e-4, vecLen(offset));
+  return {
+    theta: Math.atan2(offset[2], offset[0]),
+    phi: Math.acos(clamp(offset[1] / r, -1, 1)),
+    r,
+  };
+}
+
+/**
+ * Applies user drag on top of the program pose. Acceleration comes from the
+ * drag rate, inertia from coasting velocity, friction from `stability`. The
+ * grab weight snaps on while grabbing/coasting and — in autonomous modes —
+ * eases back to 0 so the cinematic program smoothly resumes (free mode latches
+ * at 1, parking the camera where it's left).
+ */
+function applyGrab(programPose: CameraPose, program: CameraProgram, dt: number): CameraPose {
+  const input = cameraInput.consume();
+  const isFree = program.mode === "free";
+  const stability = clamp(program.stability, 0, 1);
+  const gain = 0.8 + clamp(program.speed_scalar, 0.1, 3) * 0.5;
+
+  const target = programPose.target;
+  const prog = sphericalFromOffset(vecSub(programPose.position, target));
+
+  // Seed the orbit from the current framing the moment a grab starts from
+  // rest, so the take-over is seamless. Wheel (zoom) counts as a grab too.
+  const interacting = isFree || input.dragging || input.pendingZoom !== 0;
+  if (!grab.active && interacting) {
+    grab.theta = prog.theta;
+    grab.phi = prog.phi;
+    grab.logR = Math.log(prog.r);
+    grab.thetaVel = grab.phiVel = grab.logRVel = 0;
+    grab.active = true;
+  }
+
+  if (grab.active) {
+    // Free mode is pure inertia: very low friction → a long, expressive glide
+    // (no program to fall back to). Autonomous modes keep a snappier coast
+    // since the program reasserts on release. Stability scales both.
+    const frictionRate = isFree ? 0.25 + stability * 1.6 : 1.8 + stability * 7;
+    const friction = Math.exp(-frictionRate * dt);
+
+    // Orbit: track the cursor while dragging, coast on release. Velocity is an
+    // EMA updated ONLY on real movement — frames without a pointermove event
+    // must not reset it to zero (that was the dead-stop bug); holding still
+    // while pressed bleeds momentum instead.
+    if (input.dragging) {
+      const dTheta = input.pendingYaw * gain;
+      const dPhi = input.pendingPitch * gain;
+      grab.theta += dTheta;
+      grab.phi = clamp(grab.phi + dPhi, PHI_MIN, PHI_MAX);
+      if (input.pendingYaw !== 0 || input.pendingPitch !== 0) {
+        const a = 0.5;
+        grab.thetaVel += (dTheta / dt - grab.thetaVel) * a;
+        grab.phiVel += (dPhi / dt - grab.phiVel) * a;
+      } else {
+        grab.thetaVel *= 0.82;
+        grab.phiVel *= 0.82;
+      }
+    } else {
+      grab.theta += grab.thetaVel * dt;
+      grab.phi = clamp(grab.phi + grab.phiVel * dt, PHI_MIN, PHI_MAX);
+      grab.thetaVel *= friction;
+      grab.phiVel *= friction;
+    }
+
+    // Zoom: wheel impulses any time (independent of dragging), then coasts.
+    if (input.pendingZoom !== 0) {
+      grab.logR += input.pendingZoom;
+      grab.logRVel = input.pendingZoom / dt;
+    } else {
+      grab.logR += grab.logRVel * dt;
+      grab.logRVel *= friction;
+    }
+  }
+
+  const velMag = Math.abs(grab.thetaVel) + Math.abs(grab.phiVel) + Math.abs(grab.logRVel);
+  const want = isFree || input.dragging || input.pendingZoom !== 0 || velMag > 0.02 ? 1 : 0;
+  const rate = want > grab.weight ? 18 : 1.1; // snap on, ease off (gradual unlatch)
+  grab.weight += (want - grab.weight) * (1 - Math.exp(-rate * dt));
+
+  if (!isFree && !input.dragging && grab.weight < 4e-3) {
+    // Fully returned to the program — drop the grab so the next one re-seeds.
+    resetGrab();
+    return programPose;
+  }
+  if (grab.weight < 1e-4) return programPose;
+
+  const r = Math.exp(grab.logR);
+  const sp = Math.sin(grab.phi);
+  const grabPos: Vec3 = [
+    target[0] + r * sp * Math.cos(grab.theta),
+    target[1] + r * Math.cos(grab.phi),
+    target[2] + r * sp * Math.sin(grab.theta),
+  ];
+  const w = grab.weight;
+  return {
+    position: vecLerp(programPose.position, grabPos, w),
+    target,
+    up: slerp(programPose.up, [0, 1, 0], w),
+  };
 }
 
 // --- central smoothing pipeline ---------------------------------------
@@ -385,6 +606,9 @@ export function computeCameraPose(
     case "lobe":
       raw = lobePose(program, ctx, t);
       break;
+    case "free":
+      raw = freePose(program, ctx);
+      break;
     default:
       raw = surveyPose(program, ctx, t);
   }
@@ -398,14 +622,19 @@ export function computeCameraPose(
     globalState.lastMode !== program.mode
   ) {
     resetGlobalState(target, program.mode);
+    resetGrab();
     return target;
   }
 
-  const dt = Math.max(ctx.dt, 1e-4);
+  const dt = clamp(ctx.dt, 1e-4, 1 / 30);
   // High stability → low omega → slower spring. Range tuned so the
   // default stability (0.25) gives a snappy-but-smooth response.
-  const omegaPos = 3 + (1 - stability) * 13;
-  const omegaTgt = 5 + (1 - stability) * 15;
+  // Chase rides an already-smoothed path, so it gets a softer, floatier
+  // follow (omega scaled down) for a cinematic glide rather than a tight
+  // lock to the curve. The stability slider still scales it relatively.
+  const omegaScale = program.mode === "chase" ? 0.6 : 1;
+  const omegaPos = (3 + (1 - stability) * 13) * omegaScale;
+  const omegaTgt = (5 + (1 - stability) * 15) * omegaScale;
 
   const posOut = springVec3(
     globalState.pose.position,
@@ -432,5 +661,7 @@ export function computeCameraPose(
     target: tgtOut.value,
     up,
   };
-  return globalState.pose;
+  // The program pose is settled — now layer the user grab (orbit + inertia)
+  // on top. Returns the program pose untouched when nothing is grabbed.
+  return applyGrab(globalState.pose, program, dt);
 }

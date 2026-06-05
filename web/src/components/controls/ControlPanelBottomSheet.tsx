@@ -58,7 +58,6 @@ function ControlPanelBottomSheet() {
     setCausticsSettings,
     palette,
     customPalette,
-    background,
     setSystem,
     setResolution,
     toggleAutoSpin,
@@ -69,7 +68,6 @@ function ControlPanelBottomSheet() {
     setRenderStyle,
     setPalette,
     setCustomPalette,
-    setBackground,
     cameraProgram,
     setCameraProgram,
   } = useViewerState();
@@ -384,7 +382,7 @@ function ControlPanelBottomSheet() {
 
         <ModulationSection compact />
 
-        <section className="mt-2 grid grid-cols-2 gap-3">
+        <section className="mt-2">
           <div className="space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] px-3 py-2">
             <p className={sectionHeadingClass}>Palette</p>
             {paletteOptions.map((opt) => {
@@ -401,30 +399,6 @@ function ControlPanelBottomSheet() {
                     value={opt.id}
                     checked={active}
                     onChange={() => setPalette(opt.id)}
-                    className={srInputClass}
-                  />
-                  <span className={radioIndicatorClass(active)} aria-hidden="true" />
-                </label>
-              );
-            })}
-          </div>
-
-          <div className="space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] px-3 py-2">
-            <p className={sectionHeadingClass}>Background</p>
-            {[
-              { id: "light", label: "Light" },
-              { id: "dim", label: "Dim" },
-            ].map((opt) => {
-              const active = background === opt.id;
-              return (
-                <label key={opt.id} className={radioRowClass(active)}>
-                  <span>{opt.label}</span>
-                  <input
-                    type="radio"
-                    name="background-mobile"
-                    value={opt.id}
-                    checked={active}
-                    onChange={() => setBackground(opt.id as "light" | "dim")}
                     className={srInputClass}
                   />
                   <span className={radioIndicatorClass(active)} aria-hidden="true" />

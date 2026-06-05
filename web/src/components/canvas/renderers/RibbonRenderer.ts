@@ -187,11 +187,40 @@ function buildFrames(points: Vector3[]): { normals: Vector3[]; tangents: Vector3
   return { normals, tangents };
 }
 
+interface RibbonRecord {
+  points: Vector3[];
+  normals: Vector3[];
+  positions: Float32Array;
+  geometry: BufferGeometry;
+  width: number;
+}
+
+// Width is the ribbon's half-extent along its normal — a geometry offset, not
+// a transform. Re-offsetting the centreline keeps the trajectory put; scaling
+// the whole mesh (the old bug) zoomed the attractor instead of widening it.
+function writeRibbonPositions(record: RibbonRecord, width: number) {
+  const { points, normals, positions } = record;
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i];
+    const n = normals[i];
+    positions[i * 6 + 0] = p.x - n.x * width;
+    positions[i * 6 + 1] = p.y - n.y * width;
+    positions[i * 6 + 2] = p.z - n.z * width;
+    positions[i * 6 + 3] = p.x + n.x * width;
+    positions[i * 6 + 4] = p.y + n.y * width;
+    positions[i * 6 + 5] = p.z + n.z * width;
+  }
+  record.width = width;
+  const attr = record.geometry.getAttribute("position") as BufferAttribute | undefined;
+  if (attr) attr.needsUpdate = true;
+}
+
 export class RibbonRenderer implements RendererStrategy {
   readonly style = "ribbon" as const;
   private group: Group | null = null;
   private meshes: Mesh[] = [];
   private materials: ShaderMaterial[] = [];
+  private strips: RibbonRecord[] = [];
   private paletteTexture: DataTexture | null = null;
   private data: TrajectoryData | null = null;
   private context: RenderContext | null = null;
@@ -201,6 +230,7 @@ export class RibbonRenderer implements RendererStrategy {
     this.group = new Group();
     this.meshes = [];
     this.materials = [];
+    this.strips = [];
     this.data = data;
     this.context = context;
     this.paletteTexture = buildPaletteTexture(data.palette, data.customPalette);
@@ -221,17 +251,9 @@ export class RibbonRenderer implements RendererStrategy {
       const fieldAttr = new Float32Array(traj.length * 8);
 
       for (let i = 0; i < traj.length; i++) {
-        const p = points[i];
         const n = normals[i];
         const t = tangents[i];
         const surface = new Vector3().crossVectors(t, n).normalize();
-
-        positions[i * 6 + 0] = p.x - n.x * widthBase;
-        positions[i * 6 + 1] = p.y - n.y * widthBase;
-        positions[i * 6 + 2] = p.z - n.z * widthBase;
-        positions[i * 6 + 3] = p.x + n.x * widthBase;
-        positions[i * 6 + 4] = p.y + n.y * widthBase;
-        positions[i * 6 + 5] = p.z + n.z * widthBase;
 
         vertNormals[i * 6 + 0] = surface.x;
         vertNormals[i * 6 + 1] = surface.y;
@@ -263,6 +285,10 @@ export class RibbonRenderer implements RendererStrategy {
       geometry.setAttribute("t", new BufferAttribute(tAttr, 1));
       geometry.setAttribute("colorT", new BufferAttribute(colorAttr, 1));
       geometry.setAttribute("aField", new BufferAttribute(fieldAttr, 4));
+
+      const record: RibbonRecord = { points, normals, positions, geometry, width: 0 };
+      writeRibbonPositions(record, widthBase);
+      this.strips.push(record);
 
       const uniforms: RibbonUniforms = {
         uPalette: { value: this.paletteTexture },
@@ -296,13 +322,19 @@ export class RibbonRenderer implements RendererStrategy {
   applyDynamic(data: TrajectoryData) {
     if (!this.data) return;
     this.data = { ...this.data, ...data };
-    const widthScale = this.data.ribbonWidth ?? 1;
     const paletteShift = this.data.paletteShift ?? 0;
     const lighting = getLighting();
     const camPos = this.context?.camera.position;
+    // Effective half-width: the style/slider width (already folded into
+    // ribbonWidthFor) times the audio-reactive pulse. Applied as a geometry
+    // re-offset so the ribbon widens in place instead of zooming.
+    const width = ribbonWidthFor(this.data) * reactiveRibbonScale(this.data);
 
-    this.meshes.forEach((mesh, idx) => {
-      mesh.scale.setScalar(Math.max(0.4, Math.min(2.8, widthScale * reactiveRibbonScale(this.data!))));
+    this.meshes.forEach((_mesh, idx) => {
+      const record = this.strips[idx];
+      if (record && Math.abs(record.width - width) > 1e-4) {
+        writeRibbonPositions(record, width);
+      }
       const mat = this.materials[idx];
       if (!mat) return;
       const u = mat.uniforms as unknown as RibbonUniforms;
@@ -333,6 +365,7 @@ export class RibbonRenderer implements RendererStrategy {
     this.group = null;
     this.meshes = [];
     this.materials = [];
+    this.strips = [];
     this.paletteTexture?.dispose();
     this.paletteTexture = null;
     this.data = null;

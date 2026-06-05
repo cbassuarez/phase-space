@@ -1,4 +1,4 @@
-export type CameraMode = "survey" | "orbit" | "chase" | "lobe";
+export type CameraMode = "survey" | "orbit" | "chase" | "lobe" | "free";
 
 export type SurveyDirPreset = "iso" | "front" | "top";
 

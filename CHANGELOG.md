@@ -1,3 +1,28 @@
+## [1.1.0](https://github.com/cbassuarez/phase-space/compare/v1.0.6...v1.1.0) (2026-06-05)
+
+
+### Features
+
+* free camera mode — drag to orbit with inertia/acceleration; dragging any autonomous mode grabs and gradually unlatches
+* global light/dim theme switch in the top bar, driving both the UI chrome and the viewer
+* HDR rendering: UnrealBloom pass (zoom-scaled to stay proportional), in-shader saturation boost, and an attractor opacity control
+* tabbed sidebar — Scene / Camera / Audio as folder tabs with sliding panels; collapsible to (semi-)fullscreen the viewer
+* live status badge (FPS) and a redesigned Inspector with telemetry, an FPS sparkline, attractor parameters, and transparent-PNG export
+* contextual per-style controls: line/cell width, cell shapes (round/cel/square), cloud density, ribbon width, plus weave & caustics tuning
+* redesigned audio routing — power-glyph channels (CH1…), consolidated input/output row, and a reactive level meter
+* browser-tab favicon mirrors the live attractor
+* value-driven slider track fill that follows the thumb
+
+
+### Bug Fixes
+
+* chase camera is smooth and cinematic instead of jittery and over-fast
+* dim background no longer blows line/cells out to a solid white glow; dim is now true black
+* ribbon width slider widens the ribbon instead of zooming the attractor
+* weave glow no longer flickers; line/ribbon render in colour on dark backgrounds
+* PNG export captures a clean transparent cutout and no longer fires phantom downloads on load/focus
+* selecting a system or render style no longer resets other selections
+
 ## [1.0.6](https://github.com/cbassuarez/phase-space/compare/v1.0.5...v1.0.6) (2025-11-21)
 
 

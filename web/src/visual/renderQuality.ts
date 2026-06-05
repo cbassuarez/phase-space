@@ -41,17 +41,15 @@ export function getRenderQuality(resolution: Resolution): RenderQuality {
   }
 }
 
-export function getViewportBackgroundColor(style: RenderStyle, background: Background): string {
+export function getViewportBackgroundColor(_style: RenderStyle, background: Background): string {
   const darkBase = "#0e1019";
   const lightBase = "#f1f3fb";
-  const dimBase = "#0f111d";
+  const dimBase = "#000000";
 
   if (background === "dark") return darkBase;
   if (background === "dim") return dimBase;
 
-  if (style === "photon-weave" || style === "caustics") {
-    return "#e6e9f4";
-  }
-
+  // All styles share the same background per theme — weave/caustics no longer
+  // get a custom light-mode tint.
   return lightBase;
 }

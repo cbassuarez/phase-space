@@ -153,6 +153,7 @@ export interface CameraMotionState {
   prevTangent: Vec3 | null;
   prevUp: Vec3 | null;
   prevBinormal: Vec3 | null;
+  prevBankAngle: number;
   posVel: Vec3;
   tgtVel: Vec3;
   sArc: number;
@@ -168,6 +169,7 @@ export function getCameraMotionState(key: object): CameraMotionState {
       prevTangent: null,
       prevUp: null,
       prevBinormal: null,
+      prevBankAngle: 0,
       posVel: [0, 0, 0],
       tgtVel: [0, 0, 0],
       sArc: 0,

@@ -373,7 +373,7 @@ function buildVolumeTexture(trajectories: number[][][], dynamics: TrajectoryData
 function backgroundColorFor(background: TrajectoryData["background"]): Color {
   if (background === "dark") return new Color(0x0e1019);
   if (background === "light") return new Color(0xf1f3fb);
-  return new Color(0x0f111d);
+  return new Color(0x000000);
 }
 
 export class RayMarchRenderer implements RendererStrategy {
@@ -484,7 +484,7 @@ export class RayMarchRenderer implements RendererStrategy {
     // density slider -> heavier extinction, denser-looking medium.
     const density = (this.data.cloudDensity ?? 1) * cloudAudioDensityScale(this.data);
     u.uExtinction.value = 1.4 + density * 2.2;
-    u.uExposure.value = 1.7 * cloudAudioExposureScale(this.data);
+    u.uExposure.value = 2.4 * cloudAudioExposureScale(this.data);
   }
 
   dispose({ threeScene }: RenderContext) {

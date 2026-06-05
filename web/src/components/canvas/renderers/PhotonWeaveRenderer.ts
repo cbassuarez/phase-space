@@ -143,8 +143,10 @@ const filamentFragment = `
       + color * uEmissive * (0.2 + fieldEnergy * 0.75)
       + color * uAmbient;
 
-    float shimmerPhase = uTime * 1.6 + vStrand * 2.1 + vT * 4.0;
-    float shimmer = mix(1.0, 0.7 + 0.5 * sin(shimmerPhase), uShimmer);
+    float shimmerPhase = uTime * 1.2 + vStrand * 2.1 + vT * 4.0;
+    // Gentle breath, not a strobe — a wide swing reads as constant flicker
+    // once bloom amplifies it.
+    float shimmer = mix(1.0, 0.9 + 0.1 * sin(shimmerPhase), uShimmer);
 
     // Hot core blends lit colour toward white near the strand axis
     // so the additive composite produces a bright fiber centre.

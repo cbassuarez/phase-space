@@ -34,6 +34,7 @@ const MODE_MAP: Record<string, CameraMode> = {
   orbit: "orbit",
   chase: "chase",
   lobe: "lobe",
+  free: "free",
   "path-rider": "chase",
   "grid-surface": "survey",
   "drone-ghost": "orbit",

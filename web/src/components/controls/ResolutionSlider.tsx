@@ -2,12 +2,21 @@ import type { ChangeEvent } from "react";
 import type { Resolution } from "../../types";
 import { commandButtonClass } from "./controlStyles";
 
-const resolutionStops: { id: Resolution; label: string; position: string }[] = [
-    { id: "fast", label: "Fast", position: "0%" },
-    { id: "default", label: "Default", position: "33.33%" },
-    { id: "high", label: "High", position: "66.66%" },
-    { id: "ultra", label: "Ultra", position: "100%" },
+const resolutionStops: { id: Resolution; label: string }[] = [
+    { id: "fast", label: "Fast" },
+    { id: "default", label: "Default" },
+    { id: "high", label: "High" },
+    { id: "ultra", label: "Ultra" },
 ];
+
+// A native range thumb's centre travels from `thumbRadius` to
+// `trackWidth - thumbRadius`, never the literal 0%/100% edges. Place the
+// detents on that same path so the thumb sits exactly on each one.
+const THUMB_SIZE = "1.08rem"; // matches --ps-res-thumb-size in index.css
+function detentLeft(index: number, count: number): string {
+    const f = count > 1 ? index / (count - 1) : 0;
+    return `calc(${THUMB_SIZE} / 2 + ${f} * (100% - ${THUMB_SIZE}))`;
+}
 
 interface ResolutionSliderProps {
     value: Resolution;
@@ -29,7 +38,7 @@ function ResolutionSlider({ value, onChange }: ResolutionSliderProps) {
     return (
         <div className="mt-3 flex flex-col gap-2">
             <div className="flex items-center justify-between">
-                <div className="text-[11px] font-medium tracking-[0.12em] text-[color:var(--ps-text-muted)]">
+                <div className="text-[12px] font-semibold lowercase tracking-tight text-[color:var(--ps-text-muted)]">
                     RESOLUTION
                 </div>
             </div>
@@ -42,7 +51,7 @@ function ResolutionSlider({ value, onChange }: ResolutionSliderProps) {
                             style={{ width: "calc(100% + 12px)", marginLeft: "-6px" }}
                         />
                         <div className="absolute inset-0">
-                            {resolutionStops.map((stop) => {
+                            {resolutionStops.map((stop, i) => {
                                 const isActive = stop.id === value;
                                 return (
                                     <div
@@ -52,7 +61,7 @@ function ResolutionSlider({ value, onChange }: ResolutionSliderProps) {
                                                 ? "h-2.5 w-2.5 bg-white/90 shadow-[0_0_6px_rgba(255,255,255,0.7)]"
                                                 : "h-[6px] w-[6px] bg-white/50"
                                         } group-hover:scale-105`}
-                                        style={{ left: stop.position }}
+                                        style={{ left: detentLeft(i, resolutionStops.length) }}
                                     />
                                 );
                             })}

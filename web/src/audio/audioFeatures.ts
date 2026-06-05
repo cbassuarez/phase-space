@@ -232,7 +232,10 @@ export class AudioIO {
 
     const db = rms > 0 ? 20 * Math.log10(rms) : -120;
     const meterLevel = clamp((db + 60) / 60, 0, 1); // -60dBFS floor
-    this.lastLevel = this.lastLevel * 0.55 + meterLevel * 0.45;
+    // Peak-style metering: snap up instantly, ease down. Reads as reactive
+    // instead of the old symmetric smoothing that felt laggy.
+    this.lastLevel =
+      meterLevel > this.lastLevel ? meterLevel : this.lastLevel * 0.8 + meterLevel * 0.2;
 
     const rawLevel = Math.max(spectralLevel, meterLevel);
     const centroidNorm = sum > 0 ? weighted / (sum * n) : 0;

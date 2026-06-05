@@ -9,7 +9,7 @@ interface CustomPaletteEditorProps {
 function CustomPaletteEditor({ state, onChange }: CustomPaletteEditorProps) {
   return (
     <div className="mt-2 rounded-[10px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-bg)] p-3 shadow-[var(--ps-shadow-subtle)]">
-      <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[color:var(--ps-text-muted)]">
+      <div className="mb-2 text-[11px] font-semibold lowercase tracking-tight text-[color:var(--ps-text-muted)]">
         Custom palette
       </div>
       <div className="grid grid-cols-3 gap-2 text-[11px] text-[color:var(--ps-text-soft)]">

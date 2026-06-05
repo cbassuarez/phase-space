@@ -21,8 +21,10 @@ export const focusWithinRing =
 export const disabledState =
   "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-45";
 
+// Section headings echo the "space" of the phase-space wordmark: lowercase,
+// semibold, tight tracking, system font — no wide-tracked uppercase.
 export const sectionHeadingClass =
-  "text-[11px] font-medium uppercase tracking-[0.12em] text-[color:var(--ps-text-muted)]";
+  "text-[12px] font-semibold lowercase tracking-tight text-[color:var(--ps-text-muted)]";
 
 export const segmentedGroupClass =
   "inline-flex w-full items-center gap-1 rounded-[10px] border border-[color:var(--ps-control-border)] bg-[color:var(--ps-control-group-bg)] p-1 text-xs [box-shadow:var(--ps-control-group-shadow)]";
@@ -99,7 +101,7 @@ export function radioIndicatorClass(active: boolean) {
     "relative h-4 w-4 shrink-0 rounded-full border transition-[background-color,border-color,box-shadow] duration-150",
     active
       ? "border-[color:var(--ps-control-active-border)] bg-[color:var(--ps-control-selected-marker)] shadow-[inset_0_0_0_4px_var(--ps-control-active-bg)]"
-      : "border-[color:var(--ps-border-strong)] bg-white group-hover:border-[color:var(--ps-control-hover-border)]"
+      : "border-[color:var(--ps-border-strong)] bg-[color:var(--ps-control-bg)] group-hover:border-[color:var(--ps-control-hover-border)]"
   );
 }
 

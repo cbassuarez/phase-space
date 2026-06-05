@@ -28,8 +28,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     }, [isViewer]);
 
     const rootClass = clsx(
-        // base shell
-        "flex min-h-screen flex-col bg-slate-50 text-slate-900",
+        // base shell — themed via tokens so the light/dim switch drives the whole site
+        "flex min-h-screen flex-col bg-[color:var(--ps-bg)] text-[color:var(--ps-text)]",
         // on viewer route: hard-clamp to viewport and hide overflow
         isViewer && "h-screen overflow-hidden"
     );

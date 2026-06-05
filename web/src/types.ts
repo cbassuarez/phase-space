@@ -6,6 +6,7 @@ export type Resolution = "fast" | "default" | "high" | "ultra";
 export type Palette = PaletteId;
 export type Background = "dark" | "light" | "dim";
 export type LineThickness = "thin" | "default" | "thick";
+export type CellShape = "circular" | "cel" | "square";
 export type MaterialStyle = "glass" | "metal" | "plasma";
 export type RenderStyle =
   | "line"

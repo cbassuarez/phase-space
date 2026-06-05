@@ -20,7 +20,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           {eyebrow}
         </div>
       )}
-      <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+      <h1 className="text-2xl font-semibold tracking-tight text-[color:var(--ps-text)] sm:text-3xl">
         {title}
       </h1>
       {subtitle && (

@@ -1,11 +1,18 @@
+import clsx from "clsx";
+import { PanelLeftOpen } from "lucide-react";
+import { useEffect, useState } from "react";
 import CanvasPanel from "./canvas/CanvasPanel";
 import ControlPanelDesktop from "./controls/ControlPanelDesktop";
 import ControlPanelBottomSheet from "./controls/ControlPanelBottomSheet";
 import { useViewerState } from "../state/viewerState";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { useRangeFill } from "../hooks/useRangeFill";
+import { setMaterialOpacity } from "./canvas/renderers/materials";
 
 function MainLayout() {
     const isMobile = useIsMobile();
+    useRangeFill();
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const {
         ready,
         trajectories,
@@ -17,6 +24,10 @@ function MainLayout() {
         animateHeadTail,
         showFullTrajectory,
         lineThickness,
+        cellShape,
+        cloudDensity,
+        ribbonWidth,
+        attractorOpacity,
         materialStyle,
         renderStyle,
         resolution,
@@ -26,6 +37,12 @@ function MainLayout() {
         loading,
         error,
     } = useViewerState();
+
+    // Bridge the React opacity setting into the renderer module (a single
+    // alpha multiplier all materials read each frame).
+    useEffect(() => {
+        setMaterialOpacity(attractorOpacity);
+    }, [attractorOpacity]);
 
     const viewCamera = sceneSpec?.view?.camera;
     const sceneSeed = sceneSpec?.random_seed ?? undefined;
@@ -50,6 +67,9 @@ function MainLayout() {
                             animateHeadTail={animateHeadTail}
                             showFullTrajectory={showFullTrajectory}
                             lineThickness={lineThickness}
+                            cellShape={cellShape}
+                            cloudDensity={cloudDensity}
+                            ribbonWidth={ribbonWidth}
                             materialStyle={materialStyle}
                             renderStyle={renderStyle}
                             resolution={resolution}
@@ -61,13 +81,31 @@ function MainLayout() {
                 </div>
             ) : (
                 <div className="flex h-full w-full flex-1 items-stretch gap-1 px-4 pb-4 pt-4 md:pb-6 md:pt-6">
-                    {/* Sidebar: fixed, comfortable width; hugs the left edge, viewer uses the rest */}
-                    <aside className="flex h-full shrink-0 basis-[clamp(340px,32vw,500px)]">
-                        <ControlPanelDesktop />
+                    {/* Sidebar: fixed, comfortable width; collapses to give the viewer (semi-)fullscreen */}
+                    <aside
+                        className={clsx(
+                            "flex h-full shrink-0 overflow-hidden transition-[flex-basis,opacity] duration-300 ease-out",
+                            sidebarCollapsed
+                                ? "basis-0 opacity-0 pointer-events-none"
+                                : "basis-[clamp(340px,32vw,500px)] opacity-100"
+                        )}
+                    >
+                        <ControlPanelDesktop onCollapse={() => setSidebarCollapsed(true)} />
                     </aside>
 
                     {/* Viewer: takes the remaining width, no horizontal scroll */}
-                    <section className="flex h-full min-w-0 flex-1">
+                    <section className="relative flex h-full min-w-0 flex-1">
+                        {sidebarCollapsed && (
+                            <button
+                                type="button"
+                                onClick={() => setSidebarCollapsed(false)}
+                                aria-label="Show controls"
+                                title="Show controls"
+                                className="absolute left-3 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-bg)] text-[color:var(--ps-text-soft)] shadow-[var(--ps-shadow-soft)] transition hover:text-[color:var(--ps-text)]"
+                            >
+                                <PanelLeftOpen size={18} />
+                            </button>
+                        )}
                         <CanvasPanel
                             ready={ready}
                             loading={loading}
@@ -83,6 +121,9 @@ function MainLayout() {
                             animateHeadTail={animateHeadTail}
                             showFullTrajectory={showFullTrajectory}
                             lineThickness={lineThickness}
+                            cellShape={cellShape}
+                            cloudDensity={cloudDensity}
+                            ribbonWidth={ribbonWidth}
                             materialStyle={materialStyle}
                             renderStyle={renderStyle}
                             resolution={resolution}

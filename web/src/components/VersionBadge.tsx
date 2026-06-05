@@ -9,7 +9,7 @@ export function VersionBadge({ label, className }: VersionBadgeProps) {
   return (
     <div
       className={clsx(
-        "inline-flex items-stretch overflow-hidden rounded-sm border border-[color:var(--ps-border-strong)] bg-white/80 text-[11px] font-medium text-[color:var(--ps-accent)] shadow-[var(--ps-shadow-inner)]",
+        "inline-flex items-stretch overflow-hidden rounded-sm border border-[color:var(--ps-border-strong)] bg-[color:var(--ps-panel-bg)] text-[11px] font-medium text-[color:var(--ps-accent)] shadow-[var(--ps-shadow-inner)]",
         className
       )}
     >

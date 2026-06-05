@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { Power } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Curve } from "../../modulation/types";
 import type { ModBus, ModBusRuntimeState, ModTarget } from "../../modulation/types";
@@ -9,7 +10,7 @@ import { useAudioDevicesContext } from "../../state/audioDevicesState";
 import type { ChannelMode } from "../../hooks/useAudioDevices";
 import type { RenderStyle } from "../../types";
 import {
-  commandButtonClass,
+  controlFocusRing,
   passiveChipClass,
   rangeClass,
   sectionHeadingClass,
@@ -355,25 +356,46 @@ function ModulationRow({ bus, renderStyle }: { bus: ModBusRuntimeState; renderSt
   };
 
   const sourceValue = `${bus.bus.source.domain}:${bus.bus.source.feature}`;
+  const enabled = bus.bus.enabled;
+  // Display "M1" as "CH1" — these are channels.
+  const channelLabel = bus.bus.id.replace(/^M(?=\d)/i, "CH");
 
   return (
-    <div className="rounded-[10px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-control-bg)] p-3 [box-shadow:var(--ps-control-shadow)]">
-      <div className="flex items-center justify-between text-[11px] font-semibold text-[color:var(--ps-text)]">
-        <span>{bus.bus.id}</span>
+    <div
+      className={clsx(
+        "rounded-[12px] border p-3 transition-[border-color,opacity,box-shadow] duration-150",
+        enabled
+          ? "border-[color:var(--ps-control-active-border)] bg-[color:var(--ps-control-bg)] [box-shadow:var(--ps-control-shadow)]"
+          : "border-[color:var(--ps-border-subtle)] bg-transparent opacity-60"
+      )}
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-[12px] font-semibold tracking-tight text-[color:var(--ps-text)]">
+          {channelLabel}
+        </span>
+        {/* Bare power toggle — no chrome; the whole card carries the on/off state. */}
         <button
           type="button"
           disabled={disabled}
           onClick={handleToggle}
-          aria-pressed={bus.bus.enabled}
-          className={commandButtonClass(bus.bus.enabled, { size: "touch" })}
+          aria-pressed={enabled}
+          aria-label={enabled ? `Turn ${channelLabel} off` : `Turn ${channelLabel} on`}
+          title={enabled ? "On" : "Off"}
+          className={clsx(
+            "inline-flex h-7 w-7 items-center justify-center rounded-full outline-none transition disabled:opacity-40",
+            controlFocusRing,
+            enabled
+              ? "text-[color:var(--ps-control-selected-marker)] [filter:drop-shadow(0_0_5px_rgba(59,130,246,0.5))]"
+              : "text-[color:var(--ps-text-muted)] hover:text-[color:var(--ps-text-soft)]"
+          )}
         >
-          {bus.bus.enabled ? "On" : "Off"}
+          <Power className="h-[18px] w-[18px]" strokeWidth={2.5} />
         </button>
       </div>
 
-      <div className="mt-2 grid grid-cols-1 gap-2 text-[11px] text-[color:var(--ps-text-soft)] md:grid-cols-2">
+      <div className="mt-3 flex flex-col gap-2 text-[11px] text-[color:var(--ps-text-soft)]">
         <label className="flex flex-col gap-1">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.14em]">Source</span>
+          <span className="text-[10px] font-semibold lowercase tracking-tight">Input</span>
           <select
             value={sourceValue}
             onChange={(e) => handleSourceChange(e.target.value)}
@@ -393,7 +415,7 @@ function ModulationRow({ bus, renderStyle }: { bus: ModBusRuntimeState; renderSt
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.14em]">Target</span>
+          <span className="text-[10px] font-semibold lowercase tracking-tight">Output</span>
           <select
             value={selectedTarget ?? ""}
             onChange={(e) => handleTargetChange(e.target.value)}
@@ -418,7 +440,7 @@ function ModulationRow({ bus, renderStyle }: { bus: ModBusRuntimeState; renderSt
 
       <div className="mt-3 flex flex-col gap-1 text-[11px] text-[color:var(--ps-text-soft)]">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.14em]">Depth</span>
+          <span className="text-[10px] font-semibold lowercase tracking-tight">Depth</span>
           <span className="tabular-nums text-[10px] text-[color:var(--ps-text-muted)]">{depth.toFixed(2)}</span>
         </div>
         <input
@@ -454,16 +476,6 @@ function ModulationSection({ compact = false }: { compact?: boolean }) {
 
   const sortedBuses = useMemo(() => buses.slice().sort((a, b) => a.bus.id.localeCompare(b.bus.id)), [buses]);
 
-  const selectedInputLabel = useMemo(() => {
-    if (audioDevices.selectedInputId === "default") return "Default (System)";
-    return audioDevices.inputs.find((d) => d.id === audioDevices.selectedInputId)?.label ?? "Audio input";
-  }, [audioDevices.inputs, audioDevices.selectedInputId]);
-
-  const selectedOutputLabel = useMemo(() => {
-    if (audioDevices.selectedOutputId === "default") return "Default (System)";
-    return audioDevices.outputs.find((d) => d.id === audioDevices.selectedOutputId)?.label ?? "Audio output";
-  }, [audioDevices.outputs, audioDevices.selectedOutputId]);
-
   const inputChannelModes = useMemo(() => {
     const pairs: { label: string; mode: ChannelMode }[] = [];
     const monos: { label: string; mode: ChannelMode }[] = [];
@@ -477,7 +489,7 @@ function ModulationSection({ compact = false }: { compact?: boolean }) {
         pairs.push({ label: `${i}/${right}`, mode: { type: "stereo", channels: [i, right] } });
       }
     }
-    return [...pairs, ...monos];
+    return { pairs, monos };
   }, [channelCount]);
 
   const outputChannels = useMemo(() => {
@@ -543,14 +555,22 @@ function ModulationSection({ compact = false }: { compact?: boolean }) {
           </div>
         )}
         <div className="flex items-center justify-between gap-3">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.14em]">Audio</div>
+          <div className="text-[11px] font-semibold lowercase tracking-tight">Audio</div>
           <button
             type="button"
             onClick={toggleMic}
             aria-pressed={micEnabled}
-            className={commandButtonClass(micEnabled, { size: "touch" })}
+            aria-label={micEnabled ? "Turn audio off" : "Turn audio on"}
+            title={micEnabled ? "Audio on" : "Audio off"}
+            className={clsx(
+              "inline-flex h-8 w-8 items-center justify-center rounded-full outline-none transition",
+              controlFocusRing,
+              micEnabled
+                ? "text-[color:var(--ps-control-selected-marker)] [filter:drop-shadow(0_0_6px_rgba(59,130,246,0.5))]"
+                : "text-[color:var(--ps-text-muted)] hover:text-[color:var(--ps-text-soft)]"
+            )}
           >
-            Audio: {micEnabled ? "On" : "Off"}
+            <Power className="h-5 w-5" strokeWidth={2.5} />
           </button>
         </div>
         {!audioDevices.hasPermission && (
@@ -559,7 +579,7 @@ function ModulationSection({ compact = false }: { compact?: boolean }) {
 
         <div className="mt-3 grid grid-cols-1 gap-3 text-[11px] sm:grid-cols-2">
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.14em]">Input Device</span>
+            <span className="text-[10px] font-semibold lowercase tracking-tight">Input Device</span>
             <select
               value={audioDevices.selectedInputId}
               onChange={(e) => audioDevices.setInputDevice(e.target.value)}
@@ -576,7 +596,7 @@ function ModulationSection({ compact = false }: { compact?: boolean }) {
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.14em]">Monitor Output</span>
+            <span className="text-[10px] font-semibold lowercase tracking-tight">Monitor Output</span>
             {audioDevices.supportsSetSinkId ? (
               <select
                 value={audioDevices.selectedOutputId}
@@ -598,37 +618,47 @@ function ModulationSection({ compact = false }: { compact?: boolean }) {
           </label>
         </div>
 
+        {/* Channels: input selector → output, consolidated into one row. */}
         <div className="mt-3 flex flex-col gap-2">
-          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--ps-text-muted)]">
-            <span>Input Channels</span>
-            <span className="text-[color:var(--ps-text-soft)]">{selectedInputLabel}</span>
+          <div className="text-[10px] font-semibold lowercase tracking-tight text-[color:var(--ps-text-muted)]">
+            Channels
           </div>
-          <div className="flex flex-wrap gap-2">
-            {inputChannelModes.map(({ label, mode }) => (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+            <span className="text-[10px] lowercase tracking-tight text-[color:var(--ps-text-muted)]">in</span>
+            {inputChannelModes.pairs.length > 0 && (
+              <span className="text-[10px] lowercase tracking-tight text-[color:var(--ps-text-soft)]">stereo</span>
+            )}
+            {inputChannelModes.pairs.map(({ label, mode }) => (
               <button
-                key={`${label}-${mode.type === "stereo" ? mode.channels.join("-") : mode.channel}`}
+                key={`s-${label}`}
                 type="button"
                 onClick={() => setChannelMode(mode)}
                 aria-pressed={isModeActive(mode)}
-                className={segmentedButtonClass(isModeActive(mode), { size: "touch", fill: false, marker: false })}
+                className={segmentedButtonClass(isModeActive(mode), { size: "sm", fill: false, marker: false })}
               >
                 {label}
               </button>
             ))}
-          </div>
-        </div>
-
-        <div className="mt-3 flex flex-col gap-2">
-          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--ps-text-muted)]">
-            <span>Output Channels</span>
-            <span className="text-[color:var(--ps-text-soft)]">{selectedOutputLabel}</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {outputChannels.map((label) => (
-              <div
-                key={label}
-                className={passiveChipClass}
+            {inputChannelModes.pairs.length > 0 && inputChannelModes.monos.length > 0 && (
+              <span aria-hidden="true" className="mx-0.5 h-4 w-px shrink-0 bg-[color:var(--ps-border-strong)]" />
+            )}
+            {inputChannelModes.monos.length > 0 && (
+              <span className="text-[10px] lowercase tracking-tight text-[color:var(--ps-text-soft)]">mono</span>
+            )}
+            {inputChannelModes.monos.map(({ label, mode }) => (
+              <button
+                key={`m-${label}`}
+                type="button"
+                onClick={() => setChannelMode(mode)}
+                aria-pressed={isModeActive(mode)}
+                className={segmentedButtonClass(isModeActive(mode), { size: "sm", fill: false, marker: false })}
               >
+                {label}
+              </button>
+            ))}
+            <span className="ml-auto text-[10px] lowercase tracking-tight text-[color:var(--ps-text-muted)]">out</span>
+            {outputChannels.map((label) => (
+              <div key={label} className={passiveChipClass}>
                 {label}
               </div>
             ))}
@@ -636,7 +666,7 @@ function ModulationSection({ compact = false }: { compact?: boolean }) {
         </div>
 
         <div className="mt-3 flex flex-col gap-2">
-          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--ps-text-muted)]">
+          <div className="flex items-center justify-between text-[10px] font-semibold lowercase tracking-tight text-[color:var(--ps-text-muted)]">
             <span>Input Level</span>
             <span className="tabular-nums text-[10px] text-[color:var(--ps-text-soft)]">
               {`${levelDb} dB`}
@@ -644,7 +674,7 @@ function ModulationSection({ compact = false }: { compact?: boolean }) {
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200/80 shadow-inner dark:bg-slate-800/80">
             <div
-              className={clsx("h-full transition-[width] duration-75 ease-out", meterColor)}
+              className={clsx("h-full", meterColor)}
               style={{ width: `${levelWidth}%` }}
             />
           </div>

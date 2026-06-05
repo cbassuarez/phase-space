@@ -21,7 +21,7 @@ import {
   type LightingUniforms,
   type MaterialUniforms,
 } from "./materials";
-import type { RendererStrategy, RenderContext, TrajectoryData } from "./base";
+import { useAdditiveBlending, type RendererStrategy, type RenderContext, type TrajectoryData } from "./base";
 
 function cellScale(data: TrajectoryData): number {
   const energy = data.renderEnergy ?? 0;
@@ -33,7 +33,7 @@ function cellScale(data: TrajectoryData): number {
 function pointOpacity(data: TrajectoryData, density: number): number {
   const energy = data.renderEnergy ?? 0;
   const pulse = data.renderPulse ?? 0;
-  return Math.max(0.16, Math.min(1, 0.75 * (0.35 + density * 0.72 + energy * 0.25 + pulse * 0.2)));
+  return Math.max(0.3, Math.min(1, 0.95 * (0.5 + density * 0.72 + energy * 0.25 + pulse * 0.2)));
 }
 
 function cellGlow(data: TrajectoryData): number {
@@ -79,14 +79,34 @@ const cellFragment = `
   uniform vec3 uFillColor;
   uniform float uFillI;
   uniform vec3 uAmbient;
+  uniform float uShape; // 0 circular (sphere), 1 cel (flat disc), 2 square
   ${materialShaderChunk}
 
   void main() {
     vec2 p = gl_PointCoord * 2.0 - 1.0;
     float r2 = dot(p, p);
-    if (r2 > 1.0) discard;
-    float z = sqrt(max(0.0, 1.0 - r2));
-    vec3 normal = normalize(p.x * uCameraRight + p.y * uCameraUp - z * uCameraForward);
+    float z;
+    float core;
+    vec3 normal;
+    if (uShape < 0.5) {
+      // Circular — shaded sphere impostor.
+      if (r2 > 1.0) discard;
+      z = sqrt(max(0.0, 1.0 - r2));
+      normal = normalize(p.x * uCameraRight + p.y * uCameraUp - z * uCameraForward);
+      core = pow(max(0.0, 1.0 - r2), 0.45);
+    } else if (uShape < 1.5) {
+      // Cel — flat camera-facing disc with a crisp rim.
+      if (r2 > 1.0) discard;
+      z = 1.0;
+      normal = -uCameraForward;
+      core = 1.0 - smoothstep(0.80, 1.0, sqrt(r2));
+    } else {
+      // Square — flat camera-facing tile.
+      z = 1.0;
+      normal = -uCameraForward;
+      float d = max(abs(p.x), abs(p.y));
+      core = 1.0 - smoothstep(0.86, 1.0, d);
+    }
     vec3 viewDir = normalize(uCamPos - vWorldPos);
     float fieldEnergy = psFieldEnergy(vField);
     float paletteT = psPaletteT(vColorT, vField, uPaletteShift);
@@ -105,7 +125,6 @@ const cellFragment = `
       fieldEnergy,
       1.0 - z
     );
-    float core = pow(max(0.0, 1.0 - r2), 0.45);
     lit += albedo * core * (0.18 + uEmissive * 0.35 + fieldEnergy * 0.35);
     vec3 color = psFilmicToneMap(lit * uExposure);
     float alpha = uOpacity * uMaterialAlpha * core;
@@ -113,10 +132,17 @@ const cellFragment = `
   }
 `;
 
+function cellShapeToNumber(shape: TrajectoryData["cellShape"]): number {
+  if (shape === "cel") return 1;
+  if (shape === "square") return 2;
+  return 0; // circular (default)
+}
+
 type CellUniforms = LightingUniforms & MaterialUniforms & {
   uPalette: { value: DataTexture | null };
   uPaletteShift: { value: number };
   uOpacity: { value: number };
+  uShape: { value: number };
   uPointSize: { value: number };
   uViewportHeight: { value: number };
   uCamPos: { value: Vector3 };
@@ -167,7 +193,7 @@ export class CellsRenderer implements RendererStrategy {
       geom.setAttribute("position", new Float32BufferAttribute(positions, 3));
       geom.setAttribute("colorT", new Float32BufferAttribute(colorAttr, 1));
       geom.setAttribute("aField", new Float32BufferAttribute(fieldAttr, 4));
-      const useAdditive = data.background !== "light";
+      const useAdditive = useAdditiveBlending(data.background);
       const density = data.cloudDensity ?? 1;
       const size =
         (data.lineThickness === "thick" ? 0.26 : data.lineThickness === "thin" ? 0.14 : 0.2) *
@@ -177,6 +203,7 @@ export class CellsRenderer implements RendererStrategy {
         uPalette: { value: this.paletteTexture },
         uPaletteShift: { value: data.paletteShift ?? 0 },
         uOpacity: { value: pointOpacity(data, density) },
+        uShape: { value: cellShapeToNumber(data.cellShape) },
         uPointSize: { value: size },
         uViewportHeight: { value: this.size.y },
         uCamPos: { value: context.camera.position.clone() },
@@ -212,7 +239,7 @@ export class CellsRenderer implements RendererStrategy {
     if (!this.data) return;
     this.data = { ...this.data, ...data };
     const density = this.data.cloudDensity ?? 1;
-    const useAdditive = this.data.background !== "light";
+    const useAdditive = useAdditiveBlending(this.data.background);
     const lighting = getLighting();
     const context = this.context;
     context?.renderer.getSize(this.size);
@@ -226,6 +253,7 @@ export class CellsRenderer implements RendererStrategy {
         (0.7 + density * 0.6) *
         cellScale(this.data);
       u.uOpacity.value = pointOpacity(this.data, density);
+      u.uShape.value = cellShapeToNumber(this.data.cellShape);
       u.uPaletteShift.value = this.data.paletteShift ?? 0;
       u.uViewportHeight.value = this.size.y;
       if (context) {

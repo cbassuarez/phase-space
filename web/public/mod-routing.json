@@ -12,14 +12,17 @@
       "targets": [
         {
           "path": "render.active.energy",
-          "range": [0, 1],
+          "range": [
+            0,
+            1
+          ],
           "curve": "log"
         }
       ]
     },
     {
       "id": "M2",
-      "enabled": true,
+      "enabled": false,
       "source": {
         "domain": "audio",
         "feature": "low_band",
@@ -29,14 +32,17 @@
       "targets": [
         {
           "path": "view.camera.pulse",
-          "range": [0, 0.28],
+          "range": [
+            0,
+            0.28
+          ],
           "curve": "log"
         }
       ]
     },
     {
       "id": "M3",
-      "enabled": true,
+      "enabled": false,
       "source": {
         "domain": "audio",
         "feature": "brightness",
@@ -46,14 +52,17 @@
       "targets": [
         {
           "path": "view.palette_shift",
-          "range": [0, 0.48],
+          "range": [
+            0,
+            0.48
+          ],
           "curve": "linear"
         }
       ]
     },
     {
       "id": "M4",
-      "enabled": true,
+      "enabled": false,
       "source": {
         "domain": "audio",
         "feature": "onset",
@@ -63,7 +72,10 @@
       "targets": [
         {
           "path": "render.active.pulse",
-          "range": [0, 1],
+          "range": [
+            0,
+            1
+          ],
           "curve": "linear"
         }
       ]

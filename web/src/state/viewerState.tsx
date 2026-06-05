@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { usePhaseWasmEngine } from "../hooks/usePhaseWasmEngine";
+import { useTheme } from "./themeState";
 import type { CameraProgram } from "../camera/types";
 import { createDefaultCameraProgram, migrateCameraProgram } from "../camera/migrate";
 import { getDefaultSceneSpec } from "../data/defaultScenes";
@@ -13,6 +14,7 @@ import type {
   SystemId,
   Trajectories,
   LineThickness,
+  CellShape,
   MaterialStyle,
   RenderStyle,
   CausticsSettings,
@@ -35,6 +37,10 @@ interface ViewerContextValue {
   animateHeadTail: boolean;
   showFullTrajectory: boolean;
   lineThickness: LineThickness;
+  cellShape: CellShape;
+  cloudDensity: number;
+  ribbonWidth: number;
+  attractorOpacity: number;
   materialStyle: MaterialStyle;
   renderStyle: RenderStyle;
   photonWeaveSettings: PhotonWeaveSettings;
@@ -53,6 +59,10 @@ interface ViewerContextValue {
   toggleAnimateHeadTail: () => void;
   toggleShowFullTrajectory: () => void;
   setLineThickness: (t: LineThickness) => void;
+  setCellShape: (s: CellShape) => void;
+  setCloudDensity: (v: number) => void;
+  setRibbonWidth: (v: number) => void;
+  setAttractorOpacity: (v: number) => void;
   setMaterialStyle: (s: MaterialStyle) => void;
   setRenderStyle: (s: RenderStyle) => void;
   setPhotonWeaveSettings: (updates: Partial<PhotonWeaveSettings>) => void;
@@ -124,8 +134,23 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const [animateHeadTail, setAnimateHeadTail] = useState(true);
   const [showFullTrajectory, setShowFullTrajectory] = useState(true);
   const [lineThickness, setLineThickness] = useState<LineThickness>("default");
+  const [cellShape, setCellShape] = useState<CellShape>("circular");
+  const [cloudDensity, setCloudDensity] = useState(1);
+  const [ribbonWidth, setRibbonWidth] = useState(1);
+  const [attractorOpacity, setAttractorOpacity] = useState(1);
   const [materialStyle, setMaterialStyleState] = useState<MaterialStyle>("glass");
   const [renderStyle, setRenderStyleState] = useState<RenderStyle>("line");
+  // Once the user picks a render/material style it is theirs to keep: a later
+  // system (or any other) selection must not silently reset it back to the
+  // scene's default. Mirror the palette-lock pattern. Track the current value
+  // alongside the lock so a locked scene reload reflects the user's choice in
+  // the exported scene spec, not the per-system default.
+  const renderStyleLockedRef = useRef(false);
+  const renderStyleRef = useRef<RenderStyle>("line");
+  useEffect(() => { renderStyleRef.current = renderStyle; }, [renderStyle]);
+  const materialStyleLockedRef = useRef(false);
+  const materialStyleRef = useRef<MaterialStyle>("glass");
+  useEffect(() => { materialStyleRef.current = materialStyle; }, [materialStyle]);
   const [photonWeaveSettings, setPhotonWeaveSettingsState] =
     useState<PhotonWeaveSettings>({
       brightness: 1,
@@ -144,7 +169,9 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const paletteLockedRef = useRef(false);
   useEffect(() => { paletteLockedRef.current = paletteLocked; }, [paletteLocked]);
   const [customPalette, setCustomPaletteState] = useState<CustomPaletteState>(loadCustomPalette());
-  const [background, setBackgroundState] = useState<Background>("light");
+  // The viewer background is the global site theme — one light/dim switch in
+  // the top bar drives both the UI chrome and the canvas.
+  const { theme: background, setTheme } = useTheme();
   const [sceneJson, setSceneJson] = useState("{}");
   const [sceneSpec, setSceneSpec] = useState<SceneSpec | null>(null);
   const [cameraProgram, setCameraProgramState] = useState<CameraProgram | null>(null);
@@ -191,6 +218,16 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
         const nextCameraProgram = systemChanged
           ? resetCameraParameterGroups(cameraProgramRef.current)
           : cloneCameraProgram(cameraProgramRef.current ?? createDefaultCameraProgram());
+        // Honor a user-locked render/material style over the scene default so
+        // the rendered view *and* the exported scene stay on the chosen style.
+        const effectiveRenderStyle = renderStyleLockedRef.current
+          ? renderStyleRef.current
+          : mapLegacyRenderStyle(normalizedView.render_style ?? "line");
+        const effectiveMaterialStyle = materialStyleLockedRef.current
+          ? materialStyleRef.current
+          : (normalizedView.material_style ?? "glass");
+        normalizedView.render_style = mapLegacyRenderStyle(effectiveRenderStyle);
+        normalizedView.material_style = effectiveMaterialStyle;
         const normalizedScene = { ...scene, view: normalizedView, camera: nextCameraProgram } as SceneSpec;
         if (
           normalizedView.palette === "custom" &&
@@ -211,9 +248,8 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
         }
         setSceneJson(JSON.stringify({ ...normalizedScene }, null, 2));
         setSceneSpec(normalizedScene);
-        const normalizedStyle = normalizedView.render_style ?? "line";
-        setRenderStyleState(normalizedStyle);
-        setMaterialStyleState(normalizedView.material_style ?? "glass");
+        setRenderStyleState(effectiveRenderStyle);
+        setMaterialStyleState(effectiveMaterialStyle);
         if (!paletteLockedRef.current && scene.view?.palette) {
           setPaletteState(mapLegacyPalette(scene.view.palette));
         }
@@ -283,6 +319,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
 
   const setRenderStyle = useCallback(
     (style: RenderStyle) => {
+      renderStyleLockedRef.current = true;
       setRenderStyleState(style);
       setSceneSpec((prev) => {
         if (!prev) return prev;
@@ -300,6 +337,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
 
   const setMaterialStyle = useCallback(
     (style: MaterialStyle) => {
+      materialStyleLockedRef.current = true;
       setMaterialStyleState(style);
       setSceneSpec((prev) => {
         if (!prev) return prev;
@@ -362,6 +400,10 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     animateHeadTail,
     showFullTrajectory,
     lineThickness,
+    cellShape,
+    cloudDensity,
+    ribbonWidth,
+    attractorOpacity,
     materialStyle,
     renderStyle,
     photonWeaveSettings,
@@ -380,13 +422,17 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     toggleAnimateHeadTail: () => setAnimateHeadTail((v) => !v),
     toggleShowFullTrajectory: () => setShowFullTrajectory((v) => !v),
     setLineThickness,
+    setCellShape,
+    setCloudDensity,
+    setRibbonWidth,
+    setAttractorOpacity,
     setMaterialStyle,
     setRenderStyle,
     setPhotonWeaveSettings,
     setCausticsSettings,
     setPalette,
     setCustomPalette,
-    setBackground: setBackgroundState,
+    setBackground: (b: Background) => setTheme(b === "light" ? "light" : "dim"),
     setCameraProgram,
     requestRenderStill,
     setRenderStillHandler,
@@ -401,6 +447,10 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     animateHeadTail,
     showFullTrajectory,
     lineThickness,
+    cellShape,
+    cloudDensity,
+    ribbonWidth,
+    attractorOpacity,
     materialStyle,
     renderStyle,
     photonWeaveSettings,
