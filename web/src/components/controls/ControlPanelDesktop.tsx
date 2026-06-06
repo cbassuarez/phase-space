@@ -116,7 +116,6 @@ function ControlPanelDesktop({ onCollapse }: { onCollapse?: () => void }) {
     system,
     activeCustom,
     customAttractors,
-    communityAttractors,
     setCustomAttractor,
     openAttractorEditor,
     resolution,
@@ -285,46 +284,6 @@ function ControlPanelDesktop({ onCollapse }: { onCollapse?: () => void }) {
               </div>
             )}
           </div>
-
-          {communityAttractors.length > 0 && (
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-semibold lowercase tracking-tight text-[color:var(--ps-text-muted)]">
-                community
-              </span>
-              <div className="flex flex-col gap-1">
-                {communityAttractors.map((d) => (
-                  <div key={d.id} className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setCustomAttractor(d)}
-                      aria-pressed={activeCustom?.id === d.id}
-                      className={clsx(
-                        segmentedButtonClass(activeCustom?.id === d.id, { fill: false }),
-                        "flex-1 justify-start truncate"
-                      )}
-                      title={d.description}
-                    >
-                      {d.name}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        openAttractorEditor({
-                          ...d,
-                          id: `local/${d.id.split("/").pop() ?? "fork"}-${Date.now().toString(36)}`,
-                          source: "local",
-                        })
-                      }
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--ps-text-muted)] hover:text-[color:var(--ps-text)]"
-                      aria-label={`Fork ${d.name}`}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           <ResolutionSlider value={resolution} onChange={setResolution} />
         </section>
@@ -663,11 +622,6 @@ function ControlPanelDesktop({ onCollapse }: { onCollapse?: () => void }) {
               step={0.01}
               onChange={setMaterialTransmission}
             />
-            <div className="grid grid-cols-3 text-[10px] text-[color:var(--ps-text-muted)]">
-              <span>Metal</span>
-              <span className="text-center">Glass</span>
-              <span className="text-right">Plasma</span>
-            </div>
           </div>
 
           <div className="flex flex-col gap-2">

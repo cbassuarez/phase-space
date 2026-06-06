@@ -1,58 +1,106 @@
-name: Submit an attractor
-description: Propose a user-defined attractor for the community pack.
-title: "Attractor: <name>"
+name: ✨ Submit an attractor
+description: Share a strange attractor with the phase-space community.
+title: "Attractor: "
 labels: ["submission"]
 body:
   - type: markdown
     attributes:
       value: |
-        Attractors are **math, not code**. Use variables `x y z t`, your parameters,
-        `+ - * / ^ ( )`, and functions like `sin cos exp sqrt abs tanh`.
-        Tip: the in-app **Define attractor → Submit ↗** button fills this in for you.
+        ## Share your attractor 🦋
+
+        An attractor here is **pure math, not code** — three equations describing how a
+        point moves through space. The easiest way to fill this in is the
+        **Define attractor → Submit ↗** button inside the app, which pre-fills everything
+        below. You can also write it by hand.
+
+        **You can use:** the variables `x` `y` `z` `t`, your own parameters, the constants
+        `pi` `e`, the operators `+ − × ÷ ^` and parentheses, and the functions
+        `sin cos tan exp ln log sqrt abs sign floor sinh cosh tanh atan atan2 min max mod pow`.
+
+        Once you submit, a bot checks the math, renders a preview, and opens a pull request
+        for a maintainer to look over. Thanks for contributing! 💫
   - type: input
     id: name
-    attributes: { label: Name, placeholder: Halvorsen }
-    validations: { required: true }
+    attributes:
+      label: Name
+      description: What's it called?
+      placeholder: Halvorsen
+    validations:
+      required: true
   - type: input
     id: author
-    attributes: { label: Author (handle), placeholder: seb }
-    validations: { required: true }
+    attributes:
+      label: Your handle
+      description: Credited on the attractor.
+      placeholder: your-github-username
+    validations:
+      required: true
   - type: input
     id: description
-    attributes: { label: Description, placeholder: Cyclically symmetric, quadratic. }
+    attributes:
+      label: One-line description
+      placeholder: Cyclically symmetric, quadratic — three twisting lobes.
+  - type: markdown
+    attributes:
+      value: "## The equations\nRates of change for each coordinate. Example: `sigma*(y - x)`"
   - type: input
     id: dx
-    attributes: { label: dx/dt, placeholder: "-a*x - 4*y - 4*z - y^2" }
-    validations: { required: true }
+    attributes:
+      label: dx/dt
+      placeholder: "-a*x - 4*y - 4*z - y^2"
+    validations:
+      required: true
   - type: input
     id: dy
-    attributes: { label: dy/dt, placeholder: "-a*y - 4*z - 4*x - z^2" }
-    validations: { required: true }
+    attributes:
+      label: dy/dt
+      placeholder: "-a*y - 4*z - 4*x - z^2"
+    validations:
+      required: true
   - type: input
     id: dz
-    attributes: { label: dz/dt, placeholder: "-a*z - 4*x - 4*y - x^2" }
-    validations: { required: true }
+    attributes:
+      label: dz/dt
+      placeholder: "-a*z - 4*x - 4*y - x^2"
+    validations:
+      required: true
   - type: textarea
     id: params
     attributes:
       label: Parameters
-      description: One per line — `name = default, min, max`
-      placeholder: "a = 1.4, 0.5, 3"
+      description: "One per line as `name = default, min, max` (min/max optional). These become sliders."
+      placeholder: |
+        a = 1.4, 0.5, 3
+      render: text
   - type: textarea
     id: seeds
     attributes:
-      label: Seeds
-      description: One per line — `x, y, z`
-      placeholder: "-1.48, -1.51, 2.04"
-  - type: textarea
-    id: manifest
-    attributes:
-      label: Full manifest JSON (optional)
-      description: If you used the in-app Submit button, the manifest is in a ```json block in this issue body already.
-      render: json
+      label: Starting points
+      description: "One per line as `x, y, z`. Add a couple of nearby points for a richer picture."
+      placeholder: |
+        -1.48, -1.51, 2.04
+      render: text
   - type: dropdown
     id: license
     attributes:
       label: License
-      options: ["CC0", "MIT", "Other (state in description)"]
+      description: How others may use it. CC0 = public domain.
+      options:
+        - CC0
+        - MIT
+        - Other (note it in the description)
       default: 0
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        <sub>The field below is filled automatically by the app and read by the importer —
+        you can leave it blank if you typed everything in by hand.</sub>
+  - type: textarea
+    id: manifest
+    attributes:
+      label: Manifest (auto-filled)
+      description: Generated JSON — leave as-is.
+      render: json

@@ -59,7 +59,7 @@ interface ViewerContextValue {
   activeCustom: AttractorDef | null;
   /** Saved custom-attractor library (localStorage). */
   customAttractors: AttractorDef[];
-  /** Community attractor packs fetched at runtime (reviewed manifests). */
+  /** Community attractor packs fetched at runtime as install candidates. */
   communityAttractors: AttractorDef[];
   /** Select / live-preview a custom attractor (pass the in-progress def). */
   setCustomAttractor: (def: AttractorDef) => void;
@@ -67,6 +67,8 @@ interface ViewerContextValue {
   clearCustomAttractor: () => void;
   /** Persist a custom attractor to the library (and make it active). */
   saveCustomAttractor: (def: AttractorDef) => void;
+  /** Install a reviewed community attractor into the local library. */
+  installCommunityAttractor: (def: AttractorDef) => void;
   /** Remove a saved custom attractor. */
   deleteCustomAttractor: (id: string) => void;
   /** Validate equations against the live engine (same parser the integrator uses). */
@@ -284,7 +286,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   }, [activeCustom]);
 
   // Load the saved custom-attractor library; honour a ?#attractor=… share link;
-  // fetch the (reviewed) community pack index in the background.
+  // fetch the reviewed community pack index as install candidates.
   useEffect(() => {
     setCustomAttractors(loadUserAttractors());
     const shared = decodeFromHash(typeof window !== "undefined" ? window.location.hash : "");
@@ -573,6 +575,11 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     saveCustomAttractor: (def: AttractorDef) => {
       setCustomAttractors(upsertUserAttractor(def));
       setActiveCustomState(def);
+    },
+    installCommunityAttractor: (def: AttractorDef) => {
+      const installed = { ...def, source: "local" as const };
+      setCustomAttractors(upsertUserAttractor(installed));
+      setActiveCustomState(installed);
     },
     deleteCustomAttractor: (id: string) => {
       setCustomAttractors(deleteUserAttractor(id));

@@ -1,0 +1,13 @@
+{
+  "name": "phase-space-attractors",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Community pack of user-defined attractors for phase-space.",
+  "scripts": {
+    "index": "node scripts/build-index.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  }
+}

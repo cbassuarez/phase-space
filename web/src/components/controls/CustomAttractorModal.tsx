@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Plus, Trash2, X } from "lucide-react";
+import { Download, Pencil, Plus, Trash2, X, type LucideIcon } from "lucide-react";
 import { useViewerState } from "../../state/viewerState";
 import {
   ATTRACTOR_TEMPLATES,
@@ -11,10 +11,20 @@ import {
   type AttractorDef,
 } from "../../data/customAttractors";
 import type { AttractorValidation } from "../../hooks/usePhaseWasmEngine";
-import { commandButtonClass, controlFocusRing, sectionHeadingClass } from "./controlStyles";
+import {
+  commandButtonClass,
+  controlFocusRing,
+  controlTransition,
+  sectionHeadingClass,
+} from "./controlStyles";
 import clsx from "clsx";
 
 const COMMUNITY_REPO = "cbassuarez/phase-space-attractors";
+type ModalPane = "editor" | "community";
+const MODAL_TABS: { id: ModalPane; label: string; Icon: LucideIcon }[] = [
+  { id: "editor", label: "Define", Icon: Plus },
+  { id: "community", label: "Community", Icon: Download },
+];
 
 const fieldClass =
   "w-full rounded-[8px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-control-bg)] px-2 py-1.5 text-[12px] text-[color:var(--ps-text)] outline-none focus-visible:border-[color:var(--ps-control-selected-marker)]";
@@ -55,17 +65,24 @@ export default function CustomAttractorModal({ initial }: { initial: AttractorDe
     setCustomAttractor,
     saveCustomAttractor,
     deleteCustomAttractor,
+    installCommunityAttractor,
     validateAttractor,
     customAttractors,
+    communityAttractors,
   } = useViewerState();
 
   const [def, setDef] = useState<AttractorDef>(initial);
+  const [activePane, setActivePane] = useState<ModalPane>("editor");
   const [validation, setValidation] = useState<AttractorValidation | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const [importText, setImportText] = useState("");
 
   const isSaved = useMemo(() => customAttractors.some((d) => d.id === def.id), [customAttractors, def.id]);
+  const installedById = useMemo(
+    () => new Map(customAttractors.map((d) => [d.id, d])),
+    [customAttractors]
+  );
 
   // Debounced validate + live preview on every edit.
   const debounceRef = useRef<number | null>(null);
@@ -108,7 +125,10 @@ export default function CustomAttractorModal({ initial }: { initial: AttractorDe
   };
 
   const onSave = () => {
-    const named = { ...def, id: def.id.startsWith("local/") ? def.id : `local/${slugify(def.name)}-${Date.now().toString(36)}` };
+    const named = {
+      ...def,
+      id: def.id.startsWith("local/") || isSaved ? def.id : `local/${slugify(def.name)}-${Date.now().toString(36)}`,
+    };
     saveCustomAttractor(named);
     setDef(named);
     flash("Saved to My attractors");
@@ -144,29 +164,83 @@ export default function CustomAttractorModal({ initial }: { initial: AttractorDe
     }
   };
 
+  const onInstallCommunity = (candidate: AttractorDef) => {
+    const installed = { ...candidate, source: "local" as const };
+    installCommunityAttractor(installed);
+    setDef(installed);
+    flash("Installed to My attractors");
+  };
+
+  const openInstalledCommunity = (candidate: AttractorDef) => {
+    const installed = installedById.get(candidate.id);
+    if (!installed) return;
+    setDef(installed);
+    setActivePane("editor");
+  };
+
   const onSubmit = () => {
-    const title = encodeURIComponent(`Attractor: ${def.name}`);
-    const body = encodeURIComponent(
-      "```json\n" + exportJSON(def) + "\n```\n\n*Submitted from the phase-space editor.*"
-    );
+    if (validation && !validation.ok) {
+      flash("Fix the equation errors before submitting");
+      return;
+    }
+    if (!def.name.trim() || def.name.trim().toLowerCase() === "untitled") {
+      flash("Give your attractor a name first");
+      return;
+    }
+    // Land the user on the prefilled GitHub Issue *Form* (friendly fields), not
+    // a raw issue. Param keys match the form field ids; the manifest field
+    // (render: json) gives CI a clean block to parse.
+    const paramsText = def.params
+      .map(
+        (p) =>
+          `${p.name} = ${p.default}` +
+          (p.min != null ? `, ${p.min}` : "") +
+          (p.max != null ? `, ${p.max}` : "")
+      )
+      .join("\n");
+    const seedsText = def.seeds.map((s) => s.x.join(", ")).join("\n");
+    const q = new URLSearchParams({
+      template: "attractor.yml",
+      title: `Attractor: ${def.name}`,
+      name: def.name,
+      author: def.author ?? "",
+      description: def.description ?? "",
+      dx: def.equations.dx,
+      dy: def.equations.dy,
+      dz: def.equations.dz,
+      params: paramsText,
+      seeds: seedsText,
+      manifest: exportJSON(def),
+      license: def.license ?? "CC0",
+    });
     window.open(
-      `https://github.com/${COMMUNITY_REPO}/issues/new?labels=submission&title=${title}&body=${body}`,
+      `https://github.com/${COMMUNITY_REPO}/issues/new?${q.toString()}`,
       "_blank",
       "noopener,noreferrer"
     );
   };
 
   return (
-    <motion.aside
-      initial={{ x: 40, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      exit={{ x: 40, opacity: 0 }}
-      transition={{ duration: 0.22, ease: [0.22, 0.61, 0.36, 1] }}
-      className="pointer-events-auto fixed right-0 top-0 z-40 flex h-full w-full max-w-[420px] flex-col gap-3 overflow-y-auto border-l border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-bg)] p-4 shadow-[var(--ps-shadow-soft)]"
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.18, ease: [0.22, 0.61, 0.36, 1] }}
+      className="pointer-events-auto fixed inset-0 z-40 flex items-center justify-center bg-black/30 p-4 backdrop-blur-[2px]"
     >
+      <motion.aside
+        role="dialog"
+        aria-modal="true"
+        aria-label="My attractors"
+        initial={{ y: 14, scale: 0.97, opacity: 0 }}
+        animate={{ y: 0, scale: 1, opacity: 1 }}
+        exit={{ y: 14, scale: 0.97, opacity: 0 }}
+        transition={{ duration: 0.22, ease: [0.22, 0.61, 0.36, 1] }}
+        className="flex h-[min(760px,calc(100vh-2rem))] w-full max-w-[520px] flex-col gap-3 overflow-hidden rounded-[16px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-bg)] p-4 shadow-[var(--ps-shadow-soft)]"
+      >
       <div className="flex items-center justify-between">
         <div className="text-sm font-semibold lowercase tracking-tight text-[color:var(--ps-text)]">
-          define attractor
+          my attractors
         </div>
         <button
           type="button"
@@ -178,6 +252,38 @@ export default function CustomAttractorModal({ initial }: { initial: AttractorDe
         </button>
       </div>
 
+      <div role="tablist" aria-label="Attractor sections" className="relative z-10 flex items-end gap-1.5 px-1">
+        {MODAL_TABS.map(({ id, label, Icon }) => {
+          const isActive = activePane === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              tabIndex={isActive ? 0 : -1}
+              onClick={() => setActivePane(id)}
+              className={clsx(
+                "relative flex flex-1 items-center justify-center gap-1.5 rounded-t-[10px] border px-3 text-xs font-medium outline-none",
+                controlTransition,
+                controlFocusRing,
+                isActive
+                  ? "z-10 -mb-px min-h-[2.3rem] border-[color:var(--ps-border-subtle)] border-b-transparent bg-[color:var(--ps-panel-bg)] text-[color:var(--ps-text)]"
+                  : "min-h-9 border-transparent bg-[color:var(--ps-control-group-bg)] text-[color:var(--ps-text-soft)] hover:bg-[color:var(--ps-control-hover-bg)] hover:text-[color:var(--ps-text)]"
+              )}
+            >
+              <Icon className="h-3.5 w-3.5" strokeWidth={2.25} />
+              <span>{label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="relative flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto rounded-b-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-bg)] p-3">
+      {notice && <div className="rounded-md bg-[color:var(--ps-control-bg)] px-2 py-1 text-[11px] text-[color:var(--ps-text-soft)]">{notice}</div>}
+
+      {activePane === "editor" ? (
+        <>
       {/* name + template */}
       <div className="flex flex-col gap-1">
         <span className={labelClass}>name</span>
@@ -317,8 +423,6 @@ export default function CustomAttractorModal({ initial }: { initial: AttractorDe
         </div>
       </div>
 
-      {notice && <div className="rounded-md bg-[color:var(--ps-control-bg)] px-2 py-1 text-[11px] text-[color:var(--ps-text-soft)]">{notice}</div>}
-
       {/* import */}
       {importing && (
         <div className="flex flex-col gap-2">
@@ -373,6 +477,50 @@ export default function CustomAttractorModal({ initial }: { initial: AttractorDe
           </button>
         </div>
       </div>
-    </motion.aside>
+        </>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <div className={sectionHeadingClass}>community packs</div>
+          {communityAttractors.length === 0 ? (
+            <p className="text-[10px] leading-relaxed text-[color:var(--ps-text-muted)]">
+              No community packs available.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {communityAttractors.map((candidate) => {
+                const installed = installedById.has(candidate.id);
+                return (
+                  <div
+                    key={candidate.id}
+                    className="flex items-start gap-2 rounded-[10px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-control-bg)] p-2 [box-shadow:var(--ps-control-shadow)]"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[12px] font-semibold text-[color:var(--ps-text)]">
+                        {candidate.name}
+                      </div>
+                      <div className="mt-0.5 text-[10px] leading-relaxed text-[color:var(--ps-text-muted)]">
+                        {candidate.description || candidate.author || candidate.id}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        installed ? openInstalledCommunity(candidate) : onInstallCommunity(candidate)
+                      }
+                      className={commandButtonClass(installed, { size: "sm" })}
+                    >
+                      {installed ? <Pencil className="h-3.5 w-3.5" /> : <Download className="h-3.5 w-3.5" />}
+                      {installed ? "Open" : "Install"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+      </div>
+      </motion.aside>
+    </motion.div>
   );
 }

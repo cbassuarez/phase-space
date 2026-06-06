@@ -27,13 +27,17 @@ jobs:
       - name: Regenerate index
         run: node scripts/build-index.mjs
 
-      # Optional thumbnail: load the live app with a share link and screenshot
-      # the canvas. Reuses the app's own renderer + capture. Enable once the
-      # site URL is set; harmless to leave commented out.
-      # - name: Thumbnail
-      #   run: |
-      #     npx playwright install --with-deps chromium
-      #     node scripts/render-thumbnail.mjs "${{ steps.build.outputs.id }}"
+      # Thumbnail: load the live app with a share hash and screenshot the canvas
+      # (reuses the app's own renderer). Best-effort — needs the deployed site to
+      # support `#attractor=…`; a failure here never blocks the PR.
+      - name: Thumbnail
+        continue-on-error: true
+        env:
+          SITE_URL: https://cbassuarez.github.io/phase-space/
+        run: |
+          npm i --no-save playwright@^1.48.0
+          npx playwright install --with-deps chromium
+          node scripts/render-thumbnail.mjs "${{ steps.build.outputs.path }}"
 
       - name: Open pull request
         uses: peter-evans/create-pull-request@v6

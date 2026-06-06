@@ -6,6 +6,7 @@ import {
   DoubleSide,
   Group,
   Mesh,
+  NormalBlending,
   ShaderMaterial,
   Vector3,
 } from "three";
@@ -86,11 +87,12 @@ const filamentFragment = `
   uniform sampler2D uPalette;
   uniform float uPaletteShift;
   uniform float uBrightness;
-	  uniform float uTrailPower;
-	  uniform float uTime;
-	  uniform float uShimmer;
-	  uniform float uDensity;
-	  uniform vec3  uKeyDir;
+  uniform float uTrailPower;
+  uniform float uTime;
+  uniform float uShimmer;
+  uniform float uDensity;
+  uniform float uLightMode;
+  uniform vec3  uKeyDir;
   uniform vec3  uKeyColor;
   uniform float uKeyI;
   uniform vec3  uFillDir;
@@ -151,19 +153,26 @@ const filamentFragment = `
     // once bloom amplifies it.
     float shimmer = mix(1.0, 0.9 + 0.1 * sin(shimmerPhase), uShimmer);
 
-	    // Hot core blends lit colour toward white near the strand axis
-	    // so the additive composite produces a bright fiber centre.
-	    float strandAmount = mix(1.0, 3.0, clamp(uDensity, 0.0, 1.0));
-	    float strandVisibility = vStrand < 0.5 ? 1.0 : smoothstep(vStrand, vStrand + 1.0, strandAmount);
-	    vec3 hot = mix(lit, vec3(1.0) * (uKeyI + uAmbient.r), 0.45 * core);
-	    vec3 col = hot * core * trail * shimmer * uBrightness * strandVisibility;
-	    col = psFilmicToneMap(col * uExposure);
+    // Hot core blends lit colour toward white near the strand axis
+    // so the additive composite produces a bright fiber centre. Light
+    // mode uses ordinary alpha compositing over an already-bright field,
+    // so keep the hot core chromatic there to avoid a white-on-white weave.
+    float strandAmount = mix(1.0, 3.0, clamp(uDensity, 0.0, 1.0));
+    float strandVisibility = vStrand < 0.5 ? 1.0 : smoothstep(vStrand, vStrand + 1.0, strandAmount);
+    float whiteCore = 0.45 * core * mix(1.0, 0.15, uLightMode);
+    vec3 hot = mix(lit, vec3(1.0) * (uKeyI + uAmbient.r), whiteCore);
+    float themeBrightness = uBrightness * mix(1.0, 6.0, uLightMode);
+    float themeExposure = uExposure * mix(1.0, 0.72, uLightMode);
+    vec3 col = hot * core * trail * shimmer * themeBrightness * strandVisibility;
+    col = psFilmicToneMap(col * themeExposure);
 
-	    float alpha = core * (0.4 + 0.6 * trail) * strandVisibility;
-	    float comet = psCometMask(vT);
+    float alpha = core * (0.4 + 0.6 * trail) * strandVisibility;
+    alpha *= mix(1.0, 0.72, uLightMode);
+    float comet = psCometMask(vT);
     col *= mix(1.0, comet, uTrace);
     alpha *= mix(1.0, clamp(comet, 0.0, 1.0), uTrace);
-    gl_FragColor = vec4(col * alpha, alpha * uMaterialAlpha);
+    vec3 outputColor = mix(col * alpha, col, uLightMode);
+    gl_FragColor = vec4(outputColor, alpha * uMaterialAlpha);
   }
 `;
 
@@ -171,11 +180,12 @@ type FilamentUniforms = LightingUniforms & MaterialUniforms & {
   uPalette: { value: DataTexture | null };
   uPaletteShift: { value: number };
   uBrightness: { value: number };
-	  uTrailPower: { value: number };
-	  uTime: { value: number };
-	  uShimmer: { value: number };
-	  uDensity: { value: number };
-	  uCamPos: { value: Vector3 };
+  uTrailPower: { value: number };
+  uTime: { value: number };
+  uShimmer: { value: number };
+  uDensity: { value: number };
+  uLightMode: { value: number };
+  uCamPos: { value: Vector3 };
   uTrace: { value: number };
   uHead: { value: number };
   uDecay: { value: number };
@@ -389,11 +399,12 @@ export class PhotonWeaveRenderer implements RendererStrategy {
           uPalette:    { value: this.paletteTexture },
           uPaletteShift: { value: data.paletteShift ?? 0 },
           uBrightness: { value: (data.photonWeave?.brightness ?? 1) * reactiveBrightness(data) },
-	          uTrailPower: { value: (data.photonWeave?.trailLength ?? 1) * reactiveTrail(data) },
-	          uTime:       { value: 0 },
-	          uShimmer:    { value: data.photonWeave?.shimmer ? 1 : 0 },
-	          uDensity:    { value: density },
-	          uCamPos:     { value: new Vector3() },
+          uTrailPower: { value: (data.photonWeave?.trailLength ?? 1) * reactiveTrail(data) },
+          uTime:       { value: 0 },
+          uShimmer:    { value: data.photonWeave?.shimmer ? 1 : 0 },
+          uDensity:    { value: density },
+          uLightMode:  { value: data.background === "light" ? 1 : 0 },
+          uCamPos:     { value: new Vector3() },
           uTrace:      { value: data.traceActive ? 1 : 0 },
           uHead:       { value: data.traceHead ?? 0 },
           uDecay:   { value: data.traceDecay ?? 0.12 },
@@ -407,7 +418,7 @@ export class PhotonWeaveRenderer implements RendererStrategy {
           fragmentShader: filamentFragment,
           side: DoubleSide,
           transparent: true,
-          blending: AdditiveBlending,
+          blending: data.background === "light" ? NormalBlending : AdditiveBlending,
           depthWrite: false,
           depthTest: true,
           toneMapped: false,
@@ -437,6 +448,7 @@ export class PhotonWeaveRenderer implements RendererStrategy {
     const trail = (data.photonWeave?.trailLength ?? 1) * reactiveTrail(data);
     const shimmer = data.photonWeave?.shimmer ? 1 : 0;
     const density = filamentDensityValue(data);
+    const lightMode = data.background === "light" ? 1 : 0;
     const now = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
     const paletteShift = data.paletteShift ?? 0;
     const lighting = getLighting();
@@ -446,16 +458,21 @@ export class PhotonWeaveRenderer implements RendererStrategy {
       const u = mat.uniforms as unknown as FilamentUniforms;
       u.uPaletteShift.value = paletteShift;
       u.uBrightness.value = brightness;
-	      u.uTrailPower.value = trail;
-	      u.uShimmer.value = shimmer;
-	      u.uDensity.value = density;
-	      u.uTime.value = now;
+      u.uTrailPower.value = trail;
+      u.uShimmer.value = shimmer;
+      u.uDensity.value = density;
+      u.uLightMode.value = lightMode;
+      u.uTime.value = now;
       u.uTrace.value = this.data!.traceActive ? 1 : 0;
       u.uHead.value = this.data!.traceHead ?? 0;
       u.uDecay.value = this.data!.traceDecay ?? 0.12;
       applyLightingUniforms(u, lighting);
       applyMaterialUniforms(u, data.materialTransmission, data.emissiveBoost ?? 0);
       u.uCamPos.value.copy(camPos);
+      const blending = lightMode ? NormalBlending : AdditiveBlending;
+      if (mat.blending !== blending) {
+        mat.blending = blending;
+      }
       mat.needsUpdate = true;
     });
   }

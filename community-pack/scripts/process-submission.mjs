@@ -15,11 +15,14 @@ function fromJsonBlock(src) {
 }
 
 function fromForm(src) {
-  // GitHub Issue Forms render as "### Label\n\nvalue" sections.
+  // GitHub Issue Forms render as "### Label\n\nvalue" sections; `render:` fields
+  // wrap their value in a ```lang fence, which we strip.
   const get = (label) => {
-    const re = new RegExp(`###\\s*${label}\\s*\\n+([\\s\\S]*?)(?:\\n###|$)`, "i");
-    const v = re.exec(src)?.[1]?.trim();
-    return v && v !== "_No response_" ? v : "";
+    const re = new RegExp(`###\\s*${label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\n+([\\s\\S]*?)(?:\\n###|$)`, "i");
+    let v = re.exec(src)?.[1]?.trim() ?? "";
+    if (v === "_No response_") v = "";
+    v = v.replace(/^```[a-z]*\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+    return v;
   };
   const params = get("Parameters")
     .split("\n")
@@ -33,7 +36,7 @@ function fromForm(src) {
       if (Number.isFinite(max)) p.max = max;
       return p;
     });
-  const seeds = get("Seeds")
+  const seeds = get("Starting points")
     .split("\n")
     .map((l) => l.split(",").map((s) => parseFloat(s.trim())))
     .filter((a) => a.length === 3 && a.every(Number.isFinite))
@@ -41,8 +44,8 @@ function fromForm(src) {
   return {
     schema: 1,
     name: get("Name") || "Untitled",
-    author: get("Author (handle)") || "anon",
-    description: get("Description"),
+    author: get("Your handle") || "anon",
+    description: get("One-line description"),
     equations: { dx: get("dx/dt"), dy: get("dy/dt"), dz: get("dz/dt") },
     params,
     seeds: seeds.length ? seeds : [{ x: [0.1, 0, 0] }],

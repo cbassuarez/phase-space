@@ -271,11 +271,6 @@ function ControlPanelBottomSheet() {
               onChange={(e) => setMaterialTransmission(parseFloat(e.target.value))}
               className={rangeClass}
             />
-            <div className="grid grid-cols-3 text-[10px] text-[color:var(--ps-text-muted)]">
-              <span>Metal</span>
-              <span className="text-center">Glass</span>
-              <span className="text-right">Plasma</span>
-            </div>
           </label>
           {renderStyle === "photon-weave" && (
             <div className="mt-3 space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] p-3">
