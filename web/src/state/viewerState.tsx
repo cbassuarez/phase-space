@@ -80,6 +80,7 @@ interface ViewerContextValue {
   closeAttractorEditor: () => void;
   resolution: Resolution;
   autoSpin: boolean;
+  clampFps60: boolean;
   returnToHome: boolean;
   drawTrace: boolean;
   traceSpeed: number;
@@ -107,6 +108,7 @@ interface ViewerContextValue {
   setSystem: (s: SystemId) => void;
   setResolution: (r: Resolution) => void;
   toggleAutoSpin: () => void;
+  toggleClampFps60: () => void;
   toggleReturnToHome: () => void;
   toggleDrawTrace: () => void;
   setTraceSpeed: (v: number) => void;
@@ -133,6 +135,18 @@ interface ViewerContextValue {
 }
 
 const ViewerContext = createContext<ViewerContextValue | undefined>(undefined);
+
+const builtinSystemIds: SystemId[] = ["lorenz", "rossler", "aizawa", "thomas", "chua"];
+
+function normalizeSystemId(value: string | null): SystemId | null {
+  return builtinSystemIds.includes(value as SystemId) ? (value as SystemId) : null;
+}
+
+function initialSystemFromLocation(): SystemId {
+  if (typeof window === "undefined") return "lorenz";
+  const params = new URLSearchParams(window.location.search);
+  return normalizeSystemId(params.get("system")) ?? "lorenz";
+}
 
 const resolutionPresets: Record<Resolution, IntegratorSpec> = {
   fast: { dt: 0.012, steps: 1400, discard_initial: 180 },
@@ -195,10 +209,12 @@ function lineWeightToThickness(value: LineWeight): LineThickness {
 
 export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const { ready: engineReady, error: engineError, api } = usePhaseWasmEngine();
-  const [system, setSystemState] = useState<SystemId>("lorenz");
-  const systemRef = useRef<SystemId>("lorenz");
+  const initialSystemRef = useRef<SystemId>(initialSystemFromLocation());
+  const [system, setSystemState] = useState<SystemId>(initialSystemRef.current);
+  const systemRef = useRef<SystemId>(initialSystemRef.current);
   const [resolution, setResolutionState] = useState<Resolution>("default");
   const [autoSpin, setAutoSpin] = useState(true);
+  const [clampFps60, setClampFps60] = useState(true);
   const [returnToHome, setReturnToHome] = useState(true);
   const [drawTrace, setDrawTrace] = useState(false);
   const [traceSpeed, setTraceSpeed] = useState(0.04);
@@ -545,6 +561,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     editingAttractor,
     resolution,
     autoSpin,
+    clampFps60,
     returnToHome,
     drawTrace,
     traceSpeed,
@@ -591,6 +608,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     closeAttractorEditor: () => setEditingAttractor(null),
     setResolution: setResolutionState,
     toggleAutoSpin: () => setAutoSpin((v) => !v),
+    toggleClampFps60: () => setClampFps60((v) => !v),
     toggleReturnToHome: () => setReturnToHome((v) => !v),
     toggleDrawTrace: () => setDrawTrace((v) => !v),
     setTraceSpeed,
@@ -626,6 +644,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     editingAttractor,
     resolution,
     autoSpin,
+    clampFps60,
     returnToHome,
     drawTrace,
     traceSpeed,

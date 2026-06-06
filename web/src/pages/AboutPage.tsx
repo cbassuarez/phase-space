@@ -2,12 +2,18 @@ import React from "react";
 import { Link } from "react-router-dom";
 
 import { ContentPageShell } from "../layouts/ContentPageShell";
-import type { SystemId } from "../types";
+import type { RenderStyle, SystemId } from "../types";
 
 type AboutSystem = {
   id: SystemId;
   name: string;
   image: string;
+  summary: string;
+};
+
+type AboutRenderMode = {
+  id: RenderStyle;
+  name: string;
   summary: string;
 };
 
@@ -54,9 +60,48 @@ const aboutSystems: AboutSystem[] = [
 
 const featureNotes = [
   "Integrates strange attractors in Rust and runs them in the browser through WebAssembly.",
-  "Turns trajectories into WebGL scenes with line, ribbon, photon-weave, caustic, and cloud render modes.",
+  "Turns trajectories into WebGL scenes with line, cells, ribbon, photon-weave, caustics, and cloud render modes.",
   "Treats the camera as part of the instrument: orbit, chase, lobe, and survey motion change how each system is understood.",
   "Lets audio input and output modulate the image without turning the panel into a wall of knobs.",
+];
+
+const renderingModes: AboutRenderMode[] = [
+  {
+    id: "line",
+    name: "Line",
+    summary:
+      "The most direct read of the trajectory: continuous paths, adjustable weight, and enough glow to reveal where the orbit folds back on itself.",
+  },
+  {
+    id: "cells",
+    name: "Cells",
+    summary:
+      "A point-field view that breaks the orbit into luminous particles. It makes density, clustering, and fast changes easier to see than a continuous strand.",
+  },
+  {
+    id: "volumetric-cloud",
+    name: "Cloud",
+    summary:
+      "The trajectory becomes a sampled volume. Instead of following a line, you read the system as a field of probability and internal pressure.",
+  },
+  {
+    id: "ribbon",
+    name: "Ribbon",
+    summary:
+      "A widened path with surface direction and light response. It emphasizes turns, twists, and the physical sweep of the attractor.",
+  },
+  {
+    id: "photon-weave",
+    name: "Photon weave",
+    summary:
+      "A filament renderer for bright, layered motion. Density, trail length, and shimmer make the orbit feel less like a curve and more like active signal.",
+  },
+  {
+    id: "caustics",
+    name: "Caustics",
+    summary:
+      "A screen-space light-density pass that turns overlapping motion into spill and focus. It is useful when the attractor should read as energy more than object.",
+  },
 ];
 
 const sectionLabel =
@@ -105,6 +150,9 @@ export const AboutPage: React.FC = () => {
             <a href="#what" className="hover:text-[color:var(--ps-text)]">
               What it does
             </a>
+            <a href="#rendering" className="hover:text-[color:var(--ps-text)]">
+              Rendering
+            </a>
             <a href="#systems" className="hover:text-[color:var(--ps-text)]">
               Systems
             </a>
@@ -145,6 +193,32 @@ export const AboutPage: React.FC = () => {
                 >
                   {note}
                 </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="rendering" className="mt-12 border-t border-[color:var(--ps-border-subtle)] pt-8 sm:mt-16 sm:pt-10">
+          <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
+            <div>
+              <p className={sectionLabel}>Rendering modes</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[color:var(--ps-text)]">
+                Different ways to read the same motion
+              </h2>
+            </div>
+            <div className="grid max-w-5xl gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {renderingModes.map((mode) => (
+                <article
+                  key={mode.id}
+                  className="rounded-lg border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] p-4"
+                >
+                  <h3 className="text-sm font-semibold tracking-tight text-[color:var(--ps-text)]">
+                    {mode.name}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-[color:var(--ps-text-soft)]">
+                    {mode.summary}
+                  </p>
+                </article>
               ))}
             </div>
           </div>

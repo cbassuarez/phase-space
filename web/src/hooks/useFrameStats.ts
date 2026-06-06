@@ -11,12 +11,18 @@ export interface FrameStats {
 
 const HISTORY_LEN = 56;
 const EMIT_INTERVAL_MS = 200; // throttle React updates to ~5 Hz
+type FrameListener = (now: number) => void;
+const frameListeners = new Set<FrameListener>();
+
+export function recordFrameRendered(now = performance.now()) {
+  frameListeners.forEach((listener) => listener(now));
+}
 
 /**
- * Measures real render cadence with a single requestAnimationFrame loop and an
- * EMA so the number is steady, not jumpy. State updates are throttled to ~5 Hz
- * so consumers don't re-render every frame; the sparkline history is sampled at
- * the same rate (~11 s window). Mount this only in small leaf components.
+ * Measures real canvas render cadence. The canvas reports rendered frames via
+ * `recordFrameRendered`, so demand-rendered FPS caps do not get confused with
+ * the display's raw requestAnimationFrame cadence. State updates are throttled
+ * to ~5 Hz so consumers don't re-render every frame.
  */
 export function useFrameStats(active = true): FrameStats {
   const [stats, setStats] = useState<FrameStats>({ fps: 0, frameMs: 0, history: [] });
@@ -28,11 +34,15 @@ export function useFrameStats(active = true): FrameStats {
 
   useEffect(() => {
     if (!active) return;
-    let raf = 0;
-    last.current = performance.now();
-    lastEmit.current = last.current;
+    last.current = 0;
+    lastEmit.current = performance.now();
+    ema.current = 60;
 
-    const loop = (now: number) => {
+    const onFrame = (now: number) => {
+      if (!last.current) {
+        last.current = now;
+        return;
+      }
       const dt = now - last.current;
       last.current = now;
       if (dt > 0 && dt < 1000) {
@@ -45,10 +55,11 @@ export function useFrameStats(active = true): FrameStats {
         hist.current = next;
         setStats({ fps: ema.current, frameMs: 1000 / Math.max(1, ema.current), history: next });
       }
-      raf = requestAnimationFrame(loop);
     };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    frameListeners.add(onFrame);
+    return () => {
+      frameListeners.delete(onFrame);
+    };
   }, [active]);
 
   return stats;

@@ -5,6 +5,7 @@ import { useCallback, useState } from "react";
 import { useViewerState } from "../../state/viewerState";
 import { useFrameStats, fpsHealthColor } from "../../hooks/useFrameStats";
 import { commandButtonClass, disclosureSummaryClass } from "./controlStyles";
+import ToggleSwitch from "./ToggleSwitch";
 
 const GREEK: Record<string, string> = {
   sigma: "σ",
@@ -106,6 +107,8 @@ export function InspectorPanel() {
     cameraProgram,
     sceneJson,
     requestRenderStill,
+    clampFps60,
+    toggleClampFps60,
   } = useViewerState();
 
   const [open, setOpen] = useState(false);
@@ -204,6 +207,12 @@ export function InspectorPanel() {
                   <Sparkline data={stats.history} color={healthColor} />
                 </div>
               </div>
+
+              <ToggleSwitch
+                label="Clamp FPS to 60"
+                checked={clampFps60}
+                onToggle={toggleClampFps60}
+              />
 
                 {/* Telemetry */}
               <dl className="grid grid-cols-2 gap-x-4">

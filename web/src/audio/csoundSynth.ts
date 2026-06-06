@@ -84,6 +84,8 @@ instr 1
   kdust portk kdustRaw, 0.08
   kbass portk kbassRaw, 0.06
   kshimmer portk kshimmerRaw, 0.16
+  kLayerSum = kdrone + kpluck + kdust + kbass + kshimmer
+  kLayerGate limit kLayerSum * 80, 0, 1
 
   kRoot = 32 + kpitch * 26
   kBase = cpsmidinn(kRoot)
@@ -125,9 +127,9 @@ instr 1
   aCore = aDrone * 0.58 + aPulse * 0.86 + aBass * 0.82 + aTexture * 0.52 + aShimmer * 0.42
   aRevL, aRevR reverbsc aCore, aCore * (0.82 + kspace * 0.24), 0.62 + kspace * 0.28, 9000
 
-  aL = aCore * (0.76 - kspace * 0.16) + aRevL * (0.16 + kspace * 0.26)
-  aR = aCore * (0.76 + kspace * 0.16) + aRevR * (0.16 + kspace * 0.26)
-  kOutGain = 0.018 + kgain * 0.105
+  aL = (aCore * (0.76 - kspace * 0.16) + aRevL * (0.16 + kspace * 0.26)) * kLayerGate
+  aR = (aCore * (0.76 + kspace * 0.16) + aRevR * (0.16 + kspace * 0.26)) * kLayerGate
+  kOutGain = kgain * 0.12
   aL limit aL * kOutGain, -0.72, 0.72
   aR limit aR * kOutGain, -0.72, 0.72
   outs aL, aR
@@ -396,7 +398,8 @@ class NativeSynthFallback {
     const base = 440 * Math.pow(2, (rootMidi - 69) / 12);
     const detune = 1.002 + timbre * 0.018;
     const cut = 520 + timbre * 6800;
-    const gainScale = 0.28 + gain * 0.72;
+    const gainScale = gain;
+    const layerGate = Math.min(1, (drone + pluck + dust + bass + shimmer) * 80);
     const rate = 0.45 + motion * 8.5;
     const lfo = Math.sin(t * rate * Math.PI * 2);
     const pulseMask = Math.pow(lfo * 0.5 + 0.5, 3);
@@ -411,7 +414,7 @@ class NativeSynthFallback {
     const seqRatio = 1.75 + motion * 2.4;
     nodes.pulseOsc.frequency.setTargetAtTime(base * seqRatio, now, 0.035);
     nodes.pulseFilter.frequency.setTargetAtTime(650 + timbre * 6200, now, 0.06);
-    nodes.pulseGain.gain.setTargetAtTime(pluck * (0.002 + pulse * 0.095 * pulseMask) * gainScale, now, 0.025);
+    nodes.pulseGain.gain.setTargetAtTime(pluck * pulse * 0.11 * pulseMask * gainScale, now, 0.025);
     nodes.pulsePan.pan.setTargetAtTime(pan, now, 0.08);
 
     nodes.noiseFilter.frequency.setTargetAtTime(700 + texture * 9000, now, 0.08);
@@ -422,7 +425,7 @@ class NativeSynthFallback {
     const bassMask = Math.pow(Math.sin(t * (0.35 + motion * 3.8 + bass * 3.5) * Math.PI * 2) * 0.5 + 0.5, 2);
     nodes.bassOsc.frequency.setTargetAtTime(base * (0.23 + bass * 0.18), now, 0.04);
     nodes.bassFilter.frequency.setTargetAtTime(160 + bass * 820, now, 0.06);
-    nodes.bassGain.gain.setTargetAtTime(bass * (0.01 + bassMask * 0.11) * gainScale, now, 0.04);
+    nodes.bassGain.gain.setTargetAtTime(bass * bassMask * 0.12 * gainScale, now, 0.04);
     nodes.bassPan.pan.setTargetAtTime(-pan * 0.25, now, 0.1);
 
     nodes.shimmerOscs[0].frequency.setTargetAtTime(base * (4.02 + shimmer * 4.8), now, 0.08);
@@ -431,10 +434,10 @@ class NativeSynthFallback {
     nodes.shimmerGain.gain.setTargetAtTime(shimmer * (0.006 + gain * 0.036) * gainScale, now, 0.12);
     nodes.shimmerPan.pan.setTargetAtTime(pan * 0.85, now, 0.12);
 
-    nodes.dry.gain.setTargetAtTime(0.72 - space * 0.18, now, 0.12);
+    nodes.dry.gain.setTargetAtTime((0.72 - space * 0.18) * layerGate, now, 0.12);
     nodes.delay.delayTime.setTargetAtTime(0.12 + space * 0.42, now, 0.12);
-    nodes.delayFeedback.gain.setTargetAtTime(0.12 + space * 0.42, now, 0.12);
-    nodes.delayWet.gain.setTargetAtTime(0.08 + space * 0.22, now, 0.12);
+    nodes.delayFeedback.gain.setTargetAtTime((0.12 + space * 0.42) * layerGate, now, 0.12);
+    nodes.delayWet.gain.setTargetAtTime((0.08 + space * 0.22) * layerGate, now, 0.12);
   }
 
   private tick = () => {
@@ -527,8 +530,18 @@ export class CsoundSynth {
   }
 
   resetRouteControls() {
-    (["drone", "pluck", "dust", "bass", "shimmer"] as CsoundSynthControl[]).forEach((name) => {
-      this.setControl(name, 0);
+    const neutral: Partial<Record<CsoundSynthControl, number>> = {
+      drone: 0,
+      pluck: 0,
+      dust: 0,
+      bass: 0,
+      shimmer: 0,
+      motion: 0,
+      texture: 0,
+      pulse: 0,
+    };
+    Object.entries(neutral).forEach(([name, value]) => {
+      this.setControl(name as CsoundSynthControl, value);
     });
   }
 

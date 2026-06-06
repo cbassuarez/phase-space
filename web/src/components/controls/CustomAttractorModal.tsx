@@ -26,6 +26,33 @@ const MODAL_TABS: { id: ModalPane; label: string; Icon: LucideIcon }[] = [
   { id: "community", label: "Community", Icon: Download },
 ];
 
+function submissionUrl(def: AttractorDef): string {
+  const paramsText = def.params
+    .map(
+      (p) =>
+        `${p.name} = ${p.default}` +
+        (p.min != null ? `, ${p.min}` : "") +
+        (p.max != null ? `, ${p.max}` : "")
+    )
+    .join("\n");
+  const seedsText = def.seeds.map((s) => s.x.join(", ")).join("\n");
+  const q = new URLSearchParams({
+    template: "attractor.yml",
+    title: `Attractor: ${def.name || "Untitled"}`,
+    name: def.name || "Untitled",
+    author: def.author ?? "",
+    description: def.description ?? "",
+    dx: def.equations.dx,
+    dy: def.equations.dy,
+    dz: def.equations.dz,
+    params: paramsText,
+    seeds: seedsText,
+    manifest: exportJSON(def),
+    license: def.license ?? "CC0",
+  });
+  return `https://github.com/${COMMUNITY_REPO}/issues/new?${q.toString()}`;
+}
+
 const fieldClass =
   "w-full rounded-[8px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-control-bg)] px-2 py-1.5 text-[12px] text-[color:var(--ps-text)] outline-none focus-visible:border-[color:var(--ps-control-selected-marker)]";
 const monoClass = clsx(fieldClass, "font-mono");
@@ -83,6 +110,7 @@ export default function CustomAttractorModal({ initial }: { initial: AttractorDe
     () => new Map(customAttractors.map((d) => [d.id, d])),
     [customAttractors]
   );
+  const submitUrl = useMemo(() => submissionUrl(def), [def]);
 
   // Debounced validate + live preview on every edit.
   const debounceRef = useRef<number | null>(null);
@@ -176,48 +204,6 @@ export default function CustomAttractorModal({ initial }: { initial: AttractorDe
     if (!installed) return;
     setDef(installed);
     setActivePane("editor");
-  };
-
-  const onSubmit = () => {
-    if (validation && !validation.ok) {
-      flash("Fix the equation errors before submitting");
-      return;
-    }
-    if (!def.name.trim() || def.name.trim().toLowerCase() === "untitled") {
-      flash("Give your attractor a name first");
-      return;
-    }
-    // Land the user on the prefilled GitHub Issue *Form* (friendly fields), not
-    // a raw issue. Param keys match the form field ids; the manifest field
-    // (render: json) gives CI a clean block to parse.
-    const paramsText = def.params
-      .map(
-        (p) =>
-          `${p.name} = ${p.default}` +
-          (p.min != null ? `, ${p.min}` : "") +
-          (p.max != null ? `, ${p.max}` : "")
-      )
-      .join("\n");
-    const seedsText = def.seeds.map((s) => s.x.join(", ")).join("\n");
-    const q = new URLSearchParams({
-      template: "attractor.yml",
-      title: `Attractor: ${def.name}`,
-      name: def.name,
-      author: def.author ?? "",
-      description: def.description ?? "",
-      dx: def.equations.dx,
-      dy: def.equations.dy,
-      dz: def.equations.dz,
-      params: paramsText,
-      seeds: seedsText,
-      manifest: exportJSON(def),
-      license: def.license ?? "CC0",
-    });
-    window.open(
-      `https://github.com/${COMMUNITY_REPO}/issues/new?${q.toString()}`,
-      "_blank",
-      "noopener,noreferrer"
-    );
   };
 
   return (
@@ -472,9 +458,9 @@ export default function CustomAttractorModal({ initial }: { initial: AttractorDe
           <button type="button" onClick={() => setImporting((v) => !v)} className={commandButtonClass(false, { size: "sm" })}>
             Import
           </button>
-          <button type="button" onClick={onSubmit} className={commandButtonClass(false, { size: "sm" })}>
+          <a href={submitUrl} target="_blank" rel="noopener noreferrer" className={commandButtonClass(false, { size: "sm" })}>
             Submit ↗
-          </button>
+          </a>
         </div>
       </div>
         </>

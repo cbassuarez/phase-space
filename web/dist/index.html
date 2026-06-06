@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <title>phase-space viewer</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Apply the saved theme before paint to avoid a light flash for dim users. -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("ps-theme");
+          var theme = t === "dim" || t === "light" ? t : "light";
+          document.documentElement.classList.toggle("dark", theme === "dim");
+          document.documentElement.setAttribute("data-theme", theme);
+        } catch (e) {}
+      })();
+    </script>
     <!-- Favicon / tab icon -->
     <link
       rel="icon"
@@ -35,21 +46,10 @@
 
     <!-- Optional but recommended for theming on mobile -->
     <meta name="theme-color" content="#050814" />
-    <script type="module" crossorigin src="/phase-space/assets/index-BhBlprUL.js"></script>
-    <link rel="stylesheet" crossorigin href="/phase-space/assets/index-BJ9vLi7a.css">
+    <script type="module" crossorigin src="/phase-space/assets/index-BLqzxwO5.js"></script>
+    <link rel="stylesheet" crossorigin href="/phase-space/assets/index-DpV7DQbR.css">
   </head>
   <body class="bg-[color:var(--ps-bg)]">
     <div id="root"></div>
-    <!-- Apply the saved theme before paint to avoid a light flash for dim users. -->
-    <script>
-      (function () {
-        try {
-          var t = localStorage.getItem("ps-theme");
-          var theme = t === "dim" || t === "light" ? t : "light";
-          document.documentElement.classList.toggle("dark", theme === "dim");
-          document.documentElement.setAttribute("data-theme", theme);
-        } catch (e) {}
-      })();
-    </script>
   </body>
 </html>

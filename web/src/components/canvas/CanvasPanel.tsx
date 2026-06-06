@@ -4,7 +4,6 @@ import * as THREE from "three";
 import { motion } from "framer-motion";
 import { computeCameraPose } from "../../camera/controller";
 import { cameraInput } from "../../camera/cameraInput";
-import { updateFaviconFromCanvas } from "../../utils/favicon";
 import CrossDissolveOverlay from "./CrossDissolveOverlay";
 import { captureCanvasDataURL } from "../../utils/canvasCapture";
 import { beginDissolveFreeze, isDissolveFrozen } from "../../visual/dissolveFreeze";
@@ -51,6 +50,7 @@ import { computeDynamicScalars } from "./renderers/utils";
 import { computeVisualFeatures, type VisualFeatureFrame } from "../../visual/visualFeatures";
 import { useModulation } from "../../state/modulationState";
 import { getRenderQuality, getViewportBackgroundColor } from "../../visual/renderQuality";
+import { recordFrameRendered } from "../../hooks/useFrameStats";
 
 interface CanvasPanelProps {
   ready: boolean;
@@ -85,6 +85,29 @@ type PhaseSceneProps = Omit<CanvasPanelProps, "ready" | "loading" | "error"> & {
   setRenderStillHandler: (handler: (() => void) | null) => void;
 };
 
+function FrameLimiter({ enabled }: { enabled: boolean }) {
+  const invalidate = useThree((state) => state.invalidate);
+
+  useEffect(() => {
+    if (!enabled) return;
+    let frame = 0;
+    let lastRender = 0;
+    const minFrameMs = 1000 / 60;
+    invalidate();
+    const tick = (now: number) => {
+      if (!lastRender || now - lastRender >= minFrameMs - 0.5) {
+        lastRender = now;
+        invalidate();
+      }
+      frame = window.requestAnimationFrame(tick);
+    };
+    frame = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(frame);
+  }, [enabled, invalidate]);
+
+  return null;
+}
+
 function PhaseScene({
   trajectories,
   palette,
@@ -117,7 +140,6 @@ function PhaseScene({
   const strategyRef = useRef<RendererStrategy | null>(null);
   const countsRef = useRef<number[]>([]);
   const visualFrameRef = useRef<VisualFeatureFrame | null>(null);
-  const lastFaviconRef = useRef(0);
   const drawClockRef = useRef(0); // head/tail clock, paused during a dissolve freeze
   // Eased continuous visual params so style/weight/density/shape changes glide.
   const easedRef = useRef({
@@ -299,13 +321,7 @@ function PhaseScene({
     } else {
       gl.render(scene, threeCamera);
     }
-
-    // Keep the browser-tab favicon in sync with the live attractor (throttled).
-    const t = performance.now();
-    if (t - lastFaviconRef.current > 2000) {
-      lastFaviconRef.current = t;
-      updateFaviconFromCanvas(gl.domElement as HTMLCanvasElement);
-    }
+    recordFrameRendered();
   }, 1);
 
   useEffect(() => {
@@ -616,7 +632,7 @@ function CanvasPanel({
   photonWeaveSettings,
   causticsSettings,
 }: CanvasPanelProps) {
-  const { setRenderStillHandler } = useViewerState();
+  const { clampFps60, setRenderStillHandler } = useViewerState();
 
   // Structural cross-dissolve: when render style / palette / system / resolution
   // changes (the latter two surface as a new `trajectories` reference), snapshot
@@ -723,8 +739,10 @@ function CanvasPanel({
         <Canvas
           camera={{ position: initialCamera.position, fov: 45 }}
           dpr={[1, 2]}
+          frameloop={clampFps60 ? "demand" : "always"}
           gl={{ preserveDrawingBuffer: true, alpha: true }}
         >
+          <FrameLimiter enabled={clampFps60} />
           <Suspense fallback={null}>
             <PhaseScene
               trajectories={trajectories}

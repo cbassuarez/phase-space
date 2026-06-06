@@ -151,25 +151,28 @@ function wrapArcLength(s: number, total: number, mode: ChaseLoopMode): number {
 
 // --- mode: survey -----------------------------------------------------
 
+const SURVEY_DEFAULT_PITCH = 0.5;
+
 function surveyDirection(t: number, cfg: SurveyCameraConfig): Vec3 {
   let yawBase: number;
   let pitch: number;
+  const pitchControl = Number.isFinite(cfg.pitch) ? cfg.pitch : SURVEY_DEFAULT_PITCH;
+  const pitchOffset = (pitchControl - SURVEY_DEFAULT_PITCH) * 0.45;
   switch (cfg.dir_preset) {
     case "front":
       yawBase = 0;
-      pitch = 0.18;
+      pitch = clamp(0.18 + pitchOffset, -0.1, 0.65);
       break;
     case "top":
       yawBase = 0;
-      pitch = 1.3;
+      pitch = clamp(1.3 + pitchOffset, 0.9, 1.45);
       break;
     case "iso":
     default:
       yawBase = Math.PI * 0.35;
-      pitch = 0.5;
+      pitch = clamp(pitchControl, 0.05, 1.45);
       break;
   }
-  if (cfg.pitch && Math.abs(cfg.pitch) > 1e-3) pitch = cfg.pitch;
   const yaw = cfg.rotate ? yawBase + t * cfg.rotate_speed : yawBase;
   const cp = Math.cos(pitch);
   return [cp * Math.cos(yaw), Math.sin(pitch), cp * Math.sin(yaw)];

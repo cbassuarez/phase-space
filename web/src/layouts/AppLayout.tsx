@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useLayoutEffect } from "react";
 import { useLocation } from "react-router-dom";
 import clsx from "clsx";
 import TopBar from "../components/TopBar";
@@ -15,7 +15,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         location.pathname === basePath ||
         location.pathname === `${basePath}/`;
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (isViewer) {
             document.body.classList.add("viewer-route");
         } else {

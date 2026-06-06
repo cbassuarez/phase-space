@@ -101,6 +101,17 @@ function CameraSlider({
 
 const sectionHeading = sectionHeadingClass;
 const pillRow = segmentedGroupClass;
+const sectionShellClass =
+  "space-y-3 rounded-[14px] border border-[color:var(--ps-border-subtle)] bg-[linear-gradient(180deg,var(--ps-panel-alt-bg),var(--ps-panel-bg))] p-3 shadow-[var(--ps-control-shadow)]";
+const sectionHeaderClass =
+  "flex items-center justify-between gap-3 border-b border-[color:var(--ps-border-subtle)] pb-2";
+const sectionKickerClass =
+  "inline-flex h-5 min-w-5 items-center justify-center rounded-[7px] border border-[color:var(--ps-control-border)] bg-[color:var(--ps-control-bg)] px-1.5 text-[10px] font-semibold tabular-nums text-[color:var(--ps-text-soft)] shadow-[var(--ps-control-shadow)]";
+const fieldGroupClass =
+  "space-y-2 rounded-[10px] border border-[color:var(--ps-control-border)] bg-[color:var(--ps-control-bg)] p-2 shadow-[var(--ps-control-shadow)]";
+const sceneControlGridClass = "grid grid-cols-2 gap-2";
+const segmentedGridClass =
+  "grid w-full grid-cols-3 gap-1 rounded-[10px] border border-[color:var(--ps-control-border)] bg-[color:var(--ps-control-group-bg)] p-1 text-xs shadow-[var(--ps-control-group-shadow)]";
 
 // Tab panels slide in the direction of travel and cross-fade. `custom` is the
 // signed travel direction (+1 moving right through the tab order, -1 left).
@@ -217,21 +228,33 @@ function ControlPanelDesktop({ onCollapse }: { onCollapse?: () => void }) {
               animate="center"
               exit="exit"
               transition={tabPanelTransition}
-              className="phase-control-scroll absolute inset-0 space-y-5 overflow-y-auto p-3 pr-2"
+              className="phase-control-scroll absolute inset-0 space-y-3 overflow-y-auto p-3 pr-2"
             >
             {activeTab === "scene" && (
               <>
         {/* SYSTEM — what to view; resolution belongs here because both re-integrate. */}
-        <section className="flex flex-col gap-3">
-          <div className={sectionHeading}>SYSTEM</div>
-          <div className={pillRow}>
+        <section className={sectionShellClass}>
+          <div className={sectionHeaderClass}>
+            <div className="flex items-center gap-2">
+              <span className={sectionKickerClass}>01</span>
+              <div className={sectionHeading}>system</div>
+            </div>
+            <div className="truncate text-[10px] font-medium text-[color:var(--ps-text-muted)]">
+              {activeCustom?.name ?? systemLabels.find((opt) => opt.id === system)?.label}
+            </div>
+          </div>
+
+          <div className={segmentedGridClass}>
             {systemLabels.map((opt) => (
               <button
                 key={opt.id}
                 type="button"
                 onClick={() => setSystem(opt.id)}
                 aria-pressed={system === opt.id && !activeCustom}
-                className={segmentedButtonClass(system === opt.id && !activeCustom)}
+                className={clsx(
+                  segmentedButtonClass(system === opt.id && !activeCustom, { fill: false, size: "sm" }),
+                  "w-full"
+                )}
               >
                 {opt.label}
               </button>
@@ -239,8 +262,8 @@ function ControlPanelDesktop({ onCollapse }: { onCollapse?: () => void }) {
           </div>
 
           {/* User-defined attractors. */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
+          <div className={fieldGroupClass}>
+            <div className="flex items-center justify-between gap-2">
               <span className="text-[10px] font-semibold lowercase tracking-tight text-[color:var(--ps-text-muted)]">
                 my attractors
               </span>
@@ -257,24 +280,30 @@ function ControlPanelDesktop({ onCollapse }: { onCollapse?: () => void }) {
                 Define your own attractor from equations.
               </p>
             ) : (
-              <div className="flex flex-col gap-1">
+              <div className="overflow-hidden rounded-[9px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-bg)]">
                 {customAttractors.map((d) => (
-                  <div key={d.id} className="flex items-center gap-1">
+                  <div
+                    key={d.id}
+                    className="group flex min-h-9 items-center gap-1 border-b border-[color:var(--ps-border-subtle)] last:border-b-0"
+                  >
                     <button
                       type="button"
                       onClick={() => setCustomAttractor(d)}
                       aria-pressed={activeCustom?.id === d.id}
                       className={clsx(
-                        segmentedButtonClass(activeCustom?.id === d.id, { fill: false }),
-                        "flex-1 justify-start truncate"
+                        "relative flex min-h-9 flex-1 items-center justify-start gap-2 rounded-none border border-transparent bg-transparent px-2.5 py-1.5 text-left text-[11px] font-medium leading-none outline-none transition hover:bg-[color:var(--ps-control-hover-bg)] focus-visible:ring-2 focus-visible:ring-[color:var(--ps-focus-ring)]",
+                        activeCustom?.id === d.id
+                          ? "text-[color:var(--ps-text)] before:absolute before:left-0 before:top-1/2 before:h-5 before:w-[3px] before:-translate-y-1/2 before:rounded-r-full before:bg-[color:var(--ps-control-selected-marker)]"
+                          : "text-[color:var(--ps-text-soft)]"
                       )}
                     >
-                      {d.name}
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--ps-control-selected-marker)] opacity-40" />
+                      <span className="min-w-0 flex-1 truncate">{d.name}</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => openAttractorEditor(d)}
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--ps-text-muted)] hover:text-[color:var(--ps-text)]"
+                      className="mr-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] text-[color:var(--ps-text-muted)] transition hover:bg-[color:var(--ps-control-hover-bg)] hover:text-[color:var(--ps-text)]"
                       aria-label={`Edit ${d.name}`}
                     >
                       <Pencil className="h-3.5 w-3.5" />
@@ -591,19 +620,30 @@ function ControlPanelDesktop({ onCollapse }: { onCollapse?: () => void }) {
             {activeTab === "scene" && (
               <>
         {/* LOOK — how it renders. Style-specific knobs are tucked behind a disclosure. */}
-        <section className="flex flex-col gap-3">
-          <div className={sectionHeading}>LOOK</div>
+        <section className={sectionShellClass}>
+          <div className={sectionHeaderClass}>
+            <div className="flex items-center gap-2">
+              <span className={sectionKickerClass}>02</span>
+              <div className={sectionHeading}>look</div>
+            </div>
+            <div className="truncate text-[10px] font-medium text-[color:var(--ps-text-muted)]">
+              {renderStyles.find((opt) => opt.id === renderStyle)?.label}
+            </div>
+          </div>
 
-          <div className="flex flex-col gap-2">
+          <div className={fieldGroupClass}>
             <span className="text-[11px] text-[color:var(--ps-text-soft)]">Style</span>
-            <div className={pillRow}>
+            <div className={segmentedGridClass}>
               {renderStyles.map((opt) => (
                 <button
                   key={opt.id}
                   type="button"
                   onClick={() => setRenderStyle(opt.id as typeof renderStyle)}
                   aria-pressed={renderStyle === opt.id}
-                  className={segmentedButtonClass(renderStyle === opt.id)}
+                  className={clsx(
+                    segmentedButtonClass(renderStyle === opt.id, { fill: false, size: "sm" }),
+                    "w-full"
+                  )}
                 >
                   {opt.label}
                 </button>
@@ -611,9 +651,12 @@ function ControlPanelDesktop({ onCollapse }: { onCollapse?: () => void }) {
             </div>
           </div>
 
-          <StyleDetail />
+          <div className={fieldGroupClass}>
+            <StyleDetail />
+          </div>
 
-          <div className="flex flex-col gap-1.5">
+          <div className={sceneControlGridClass}>
+          <div className="flex flex-col gap-1.5 rounded-[10px] border border-[color:var(--ps-control-border)] bg-[color:var(--ps-control-bg)] p-2 shadow-[var(--ps-control-shadow)]">
             <CameraSlider
               label="Transmission"
               value={materialTransmission}
@@ -624,7 +667,7 @@ function ControlPanelDesktop({ onCollapse }: { onCollapse?: () => void }) {
             />
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 rounded-[10px] border border-[color:var(--ps-control-border)] bg-[color:var(--ps-control-bg)] p-2 shadow-[var(--ps-control-shadow)]">
             <CameraSlider
               label="Opacity"
               value={attractorOpacity}
@@ -633,6 +676,7 @@ function ControlPanelDesktop({ onCollapse }: { onCollapse?: () => void }) {
               step={0.01}
               onChange={setAttractorOpacity}
             />
+          </div>
           </div>
 
           <div className="space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] px-3 py-2">

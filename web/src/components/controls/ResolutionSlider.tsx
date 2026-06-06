@@ -36,10 +36,13 @@ function ResolutionSlider({ value, onChange }: ResolutionSliderProps) {
     };
 
     return (
-        <div className="mt-3 flex flex-col gap-2">
+        <div className="flex flex-col gap-2 rounded-[10px] border border-[color:var(--ps-control-border)] bg-[color:var(--ps-control-bg)] p-2 shadow-[var(--ps-control-shadow)]">
             <div className="flex items-center justify-between">
                 <div className="text-[12px] font-semibold lowercase tracking-tight text-[color:var(--ps-text-muted)]">
                     RESOLUTION
+                </div>
+                <div className="text-[10px] font-medium text-[color:var(--ps-text-muted)]">
+                    {resolutionStops[safeIndex].label}
                 </div>
             </div>
 
@@ -82,13 +85,13 @@ function ResolutionSlider({ value, onChange }: ResolutionSliderProps) {
                 />
             </div>
 
-            <div className="flex justify-between text-[10px] text-[color:var(--ps-text-muted)]">
+            <div className="grid grid-cols-4 gap-1 text-[10px] text-[color:var(--ps-text-muted)]">
                 {resolutionStops.map((stop) => (
                     <button
                         key={stop.id}
                         type="button"
                         aria-pressed={stop.id === value}
-                        className={`${commandButtonClass(stop.id === value, { size: "touch" })} relative -top-0.5 px-2 md:min-h-7 md:py-1 md:text-[10px]`}
+                        className={`${commandButtonClass(stop.id === value, { size: "sm", full: true })} min-w-0 px-1.5 md:min-h-7 md:py-1 md:text-[10px]`}
                         onClick={() => onChange(stop.id)}
                     >
                         {stop.label}
