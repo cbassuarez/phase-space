@@ -13,6 +13,14 @@ export class WasmEngine {
    */
   integrate_scene(scene_json: string): any;
   /**
+   * Validate user-defined attractor equations. Input JSON:
+   * `{ "equations": { "dx", "dy", "dz" }, "params": { name: number } }`.
+   * Returns `{ ok: bool, errors: { dx, dy, dz } }` where each error is
+   * `null` (valid) or `{ message, pos }`. The same parser the integrator
+   * uses, so "valid here" means "runnable" — reused by the modal and CI.
+   */
+  validate_attractor(json: string): any;
+  /**
    * Return a default Aizawa scene spec JSON string.
    */
   default_aizawa_scene(): string;
@@ -48,6 +56,7 @@ export interface InitOutput {
   readonly wasmengine_integrate_scene: (a: number, b: number, c: number) => [number, number, number];
   readonly wasmengine_integrate_scene_value: (a: number, b: any) => [number, number, number];
   readonly wasmengine_new: () => number;
+  readonly wasmengine_validate_attractor: (a: number, b: number, c: number) => [number, number, number];
   readonly __wbindgen_malloc: (a: number, b: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
   readonly __wbindgen_exn_store: (a: number) => void;

@@ -1,6 +1,9 @@
 import { Color, Vector3 } from "three";
-import type { MaterialStyle } from "../../../types";
+import type { MaterialStyle, MaterialTransmission } from "../../../types";
+import { materialStyleToTransmission } from "../../../types";
 import type { LightingConfig } from "../../../visual/lighting";
+import { expApproach } from "../../../camera/smoothing";
+import { TAU_MATERIAL, TAU_SCALARS } from "../../../visual/transitionConfig";
 
 export interface MaterialUniforms {
   uRoughness: { value: number };
@@ -31,6 +34,38 @@ interface MaterialSettings {
   alpha: number;
   exposure: number;
 }
+
+type MaterialInput = MaterialStyle | MaterialTransmission | undefined;
+
+const MATERIAL_PRESETS: Record<MaterialStyle, MaterialSettings> = {
+  metal: {
+    roughness: 0.28,
+    metallic: 0.82,
+    transmission: 0.02,
+    emissive: 0.18,
+    fresnelPower: 4.4,
+    alpha: 0.97,
+    exposure: 1.35,
+  },
+  glass: {
+    roughness: 0.18,
+    metallic: 0,
+    transmission: 0.52,
+    emissive: 0.28,
+    fresnelPower: 3.1,
+    alpha: 0.9,
+    exposure: 1.5,
+  },
+  plasma: {
+    roughness: 0.56,
+    metallic: 0,
+    transmission: 0.16,
+    emissive: 1.4,
+    fresnelPower: 2.2,
+    alpha: 0.93,
+    exposure: 1.9,
+  },
+};
 
 export const materialShaderChunk = `
   uniform float uRoughness;
@@ -119,77 +154,121 @@ export const materialShaderChunk = `
   }
 `;
 
-export function materialSettings(style: MaterialStyle | undefined): MaterialSettings {
-  switch (style) {
-    case "metal":
-      return {
-        roughness: 0.28,
-        metallic: 0.82,
-        transmission: 0.02,
-        emissive: 0.18,
-        fresnelPower: 4.4,
-        alpha: 0.97,
-        exposure: 1.35,
-      };
-    case "plasma":
-      return {
-        roughness: 0.56,
-        metallic: 0,
-        transmission: 0.16,
-        emissive: 1.4,
-        fresnelPower: 2.2,
-        alpha: 0.93,
-        exposure: 1.9,
-      };
-    case "glass":
-    default:
-      return {
-        roughness: 0.18,
-        metallic: 0,
-        transmission: 0.52,
-        emissive: 0.28,
-        fresnelPower: 3.1,
-        alpha: 0.9,
-        exposure: 1.5,
-      };
+// "Draw" mode: a light racing the path, with a phosphor-style decay behind it.
+// `arc` is the per-vertex normalized arc position (0..1). Returns a brightness
+// multiplier — 1 everywhere at uDecay=0 (full path, no change), shrinking to a
+// single glowing point at uDecay=1. The head core is >1 (blooms) and scales with
+// decay so the full-path end has no spurious hotspot. Gated by uTrace.
+export const traceShaderChunk = `
+  uniform float uTrace;
+  uniform float uHead;
+  uniform float uDecay;   // 0 = full path, 1 = point source
+  float psCometMask(float arc) {
+    float behind = fract(uHead - arc);            // 0 at head, →1 going backwards
+    float p = exp2(uDecay * 15.0) - 1.0;          // 0 (full) → ~32767 (tight point)
+    float body = pow(max(0.0, 1.0 - behind), p);  // phosphor decay behind the head
+    float head = (1.0 - smoothstep(0.0, 0.004, behind)) * uDecay; // glowing tip
+    return clamp(body + head * 1.6, 0.0, 4.0);
   }
+`;
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
+function lerpValue(from: number, to: number, t: number): number {
+  return from + (to - from) * t;
+}
+
+function lerpSettings(from: MaterialSettings, to: MaterialSettings, t: number): MaterialSettings {
+  return {
+    roughness: lerpValue(from.roughness, to.roughness, t),
+    metallic: lerpValue(from.metallic, to.metallic, t),
+    transmission: lerpValue(from.transmission, to.transmission, t),
+    emissive: lerpValue(from.emissive, to.emissive, t),
+    fresnelPower: lerpValue(from.fresnelPower, to.fresnelPower, t),
+    alpha: lerpValue(from.alpha, to.alpha, t),
+    exposure: lerpValue(from.exposure, to.exposure, t),
+  };
+}
+
+export function materialSettings(input: MaterialInput): MaterialSettings {
+  const transmission =
+    typeof input === "number" ? clamp01(input) : materialStyleToTransmission(input);
+
+  if (transmission <= 0.5) {
+    return lerpSettings(MATERIAL_PRESETS.metal, MATERIAL_PRESETS.glass, transmission / 0.5);
+  }
+
+  return lerpSettings(MATERIAL_PRESETS.glass, MATERIAL_PRESETS.plasma, (transmission - 0.5) / 0.5);
 }
 
 // Global attractor opacity ("opacity layer control"). A single multiplier on
 // every material's alpha, set live from the UI — lets the user fade the
 // attractor down off the blown-out HDR ceiling without touching exposure.
+// Eased toward its target so the fade glides instead of snapping.
 let materialOpacity = 1;
+let materialOpacityTarget = 1;
 
 export function setMaterialOpacity(value: number) {
-  materialOpacity = Math.max(0.05, Math.min(1, value));
+  materialOpacityTarget = Math.max(0.05, Math.min(1, value));
 }
 
-export function createMaterialUniforms(style: MaterialStyle | undefined): MaterialUniforms {
-  const settings = materialSettings(style);
+// Eased material settings. The discrete style enum becomes continuous here:
+// `advanceMaterialTransition` lerps these toward the target style's preset once
+// per frame, and the uniform readers below read the eased values — so switching
+// material (and fading opacity) glides with zero renderer changes.
+let easedSettings: MaterialSettings = materialSettings("glass");
+let materialEasedInit = false;
+
+export function advanceMaterialTransition(
+  dt: number,
+  targetMaterial: MaterialInput,
+  reduced = false
+) {
+  const tgt = materialSettings(targetMaterial);
+  if (!materialEasedInit || reduced) {
+    easedSettings = { ...tgt };
+    materialOpacity = materialOpacityTarget;
+    materialEasedInit = true;
+    return;
+  }
+  easedSettings.roughness = expApproach(easedSettings.roughness, tgt.roughness, dt, TAU_MATERIAL);
+  easedSettings.metallic = expApproach(easedSettings.metallic, tgt.metallic, dt, TAU_MATERIAL);
+  easedSettings.transmission = expApproach(easedSettings.transmission, tgt.transmission, dt, TAU_MATERIAL);
+  easedSettings.emissive = expApproach(easedSettings.emissive, tgt.emissive, dt, TAU_MATERIAL);
+  easedSettings.fresnelPower = expApproach(easedSettings.fresnelPower, tgt.fresnelPower, dt, TAU_MATERIAL);
+  easedSettings.alpha = expApproach(easedSettings.alpha, tgt.alpha, dt, TAU_MATERIAL);
+  easedSettings.exposure = expApproach(easedSettings.exposure, tgt.exposure, dt, TAU_MATERIAL);
+  materialOpacity = expApproach(materialOpacity, materialOpacityTarget, dt, TAU_SCALARS);
+}
+
+export function createMaterialUniforms(_material: MaterialInput): MaterialUniforms {
+  const s = easedSettings;
   return {
-    uRoughness: { value: settings.roughness },
-    uMetallic: { value: settings.metallic },
-    uTransmission: { value: settings.transmission },
-    uEmissive: { value: settings.emissive },
-    uFresnelPower: { value: settings.fresnelPower },
-    uMaterialAlpha: { value: settings.alpha * materialOpacity },
-    uExposure: { value: settings.exposure },
+    uRoughness: { value: s.roughness },
+    uMetallic: { value: s.metallic },
+    uTransmission: { value: s.transmission },
+    uEmissive: { value: s.emissive },
+    uFresnelPower: { value: s.fresnelPower },
+    uMaterialAlpha: { value: s.alpha * materialOpacity },
+    uExposure: { value: s.exposure },
   };
 }
 
 export function applyMaterialUniforms(
   uniforms: Partial<MaterialUniforms>,
-  style: MaterialStyle | undefined,
+  _material: MaterialInput,
   emissiveBoost = 0
 ) {
-  const settings = materialSettings(style);
-  if (uniforms.uRoughness) uniforms.uRoughness.value = settings.roughness;
-  if (uniforms.uMetallic) uniforms.uMetallic.value = settings.metallic;
-  if (uniforms.uTransmission) uniforms.uTransmission.value = settings.transmission;
-  if (uniforms.uEmissive) uniforms.uEmissive.value = settings.emissive + emissiveBoost * 0.35;
-  if (uniforms.uFresnelPower) uniforms.uFresnelPower.value = settings.fresnelPower;
-  if (uniforms.uMaterialAlpha) uniforms.uMaterialAlpha.value = settings.alpha * materialOpacity;
-  if (uniforms.uExposure) uniforms.uExposure.value = settings.exposure;
+  const s = easedSettings; // eased per-frame by advanceMaterialTransition
+  if (uniforms.uRoughness) uniforms.uRoughness.value = s.roughness;
+  if (uniforms.uMetallic) uniforms.uMetallic.value = s.metallic;
+  if (uniforms.uTransmission) uniforms.uTransmission.value = s.transmission;
+  if (uniforms.uEmissive) uniforms.uEmissive.value = s.emissive + emissiveBoost * 0.35;
+  if (uniforms.uFresnelPower) uniforms.uFresnelPower.value = s.fresnelPower;
+  if (uniforms.uMaterialAlpha) uniforms.uMaterialAlpha.value = s.alpha * materialOpacity;
+  if (uniforms.uExposure) uniforms.uExposure.value = s.exposure;
 }
 
 export function createLightingUniforms(lighting: LightingConfig): LightingUniforms {

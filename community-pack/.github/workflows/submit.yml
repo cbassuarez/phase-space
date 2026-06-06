@@ -1,0 +1,59 @@
+name: Process attractor submission
+
+on:
+  issues:
+    types: [opened, edited, labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  process:
+    if: contains(github.event.issue.labels.*.name, 'submission')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "lts/*" }
+
+      - name: Parse + validate manifest
+        id: build
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: node scripts/process-submission.mjs
+
+      - name: Regenerate index
+        run: node scripts/build-index.mjs
+
+      # Optional thumbnail: load the live app with a share link and screenshot
+      # the canvas. Reuses the app's own renderer + capture. Enable once the
+      # site URL is set; harmless to leave commented out.
+      # - name: Thumbnail
+      #   run: |
+      #     npx playwright install --with-deps chromium
+      #     node scripts/render-thumbnail.mjs "${{ steps.build.outputs.id }}"
+
+      - name: Open pull request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: submission/${{ github.event.issue.number }}
+          title: "Add attractor: ${{ steps.build.outputs.id }}"
+          body: |
+            Adds `${{ steps.build.outputs.path }}` from #${{ github.event.issue.number }}.
+
+            Equations validated against the phase-space grammar. Review the name
+            and description, then merge to publish.
+          commit-message: "Add attractor ${{ steps.build.outputs.id }}"
+          labels: submission
+
+      - name: Comment on issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: "✅ Validated and a PR is open for review. Thanks!"
+            });

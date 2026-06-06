@@ -36,21 +36,18 @@ const cameraModes = [
   { id: "lobe", label: "Lobes" },
 ] as const;
 
-const materialStyleOptions = [
-  { id: "glass", label: "Glass" },
-  { id: "metal", label: "Metal" },
-  { id: "plasma", label: "Plasma" },
-] as const;
-
 function ControlPanelBottomSheet() {
   const {
     system,
     resolution,
     autoSpin,
-    animateHeadTail,
-    showFullTrajectory,
-    lineThickness,
-    materialStyle,
+    returnToHome,
+	    drawTrace,
+	    traceSpeed,
+	    traceDecay,
+	    lineWeight,
+	    cellSize,
+	    materialTransmission,
     renderStyle,
     photonWeaveSettings,
     causticsSettings,
@@ -61,10 +58,13 @@ function ControlPanelBottomSheet() {
     setSystem,
     setResolution,
     toggleAutoSpin,
-    toggleAnimateHeadTail,
-    toggleShowFullTrajectory,
-    setLineThickness,
-    setMaterialStyle,
+    toggleReturnToHome,
+    toggleDrawTrace,
+	    setTraceSpeed,
+	    setTraceDecay,
+	    setLineWeight,
+	    setCellSize,
+	    setMaterialTransmission,
     setRenderStyle,
     setPalette,
     setCustomPalette,
@@ -151,8 +151,42 @@ function ControlPanelBottomSheet() {
               <span className="sm:hidden">{autoSpin ? "Pause" : "Play"}</span>
             </button>
           </div>
-          <ToggleSwitch label="Animate head/tail" checked={animateHeadTail} onToggle={toggleAnimateHeadTail} />
-          <ToggleSwitch label="Show full trajectory" checked={showFullTrajectory} onToggle={toggleShowFullTrajectory} />
+          <ToggleSwitch label="Return to home" checked={returnToHome} onToggle={toggleReturnToHome} />
+          <ToggleSwitch label="Draw (racing light)" checked={drawTrace} onToggle={toggleDrawTrace} />
+          {drawTrace && (
+            <div className="space-y-2 pl-1">
+              <label className="flex flex-col gap-1 text-[11px] text-[color:var(--ps-text-soft)]">
+                <div className="flex items-center justify-between">
+                  <span>Trace speed</span>
+                  <span className="tabular-nums text-[10px] text-[color:var(--ps-text-muted)]">{traceSpeed.toFixed(3)}</span>
+                </div>
+                <input
+                  type="range"
+                  min={0.002}
+                  max={0.2}
+                  step={0.002}
+                  value={traceSpeed}
+                  onChange={(e) => setTraceSpeed(parseFloat(e.target.value))}
+                  className={rangeClass}
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-[11px] text-[color:var(--ps-text-soft)]">
+                <div className="flex items-center justify-between">
+                  <span>Decay</span>
+                  <span className="tabular-nums text-[10px] text-[color:var(--ps-text-muted)]">{traceDecay.toFixed(2)}</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={traceDecay}
+                  onChange={(e) => setTraceDecay(parseFloat(e.target.value))}
+                  className={rangeClass}
+                />
+              </label>
+            </div>
+          )}
           <div className="grid grid-cols-3 gap-2 text-xs">
             {[{ id: "line", label: "Line" }, { id: "volumetric-cloud", label: "Cloud" }, { id: "cells", label: "Cells" }].map((opt) => (
               <button
@@ -177,47 +211,85 @@ function ControlPanelBottomSheet() {
               </button>
             ))}
           </div>
-          <div className="mt-1 grid grid-cols-3 gap-2 text-xs">
-            {[{ id: "thin", label: "Thin" }, { id: "default", label: "Default" }, { id: "thick", label: "Thick" }].map(
-              (opt) => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => setLineThickness(opt.id as typeof lineThickness)}
-                  aria-pressed={lineThickness === opt.id}
-                  className={clsx(segmentedButtonClass(lineThickness === opt.id, { size: "touch", fill: false }), "w-full")}
-                >
-                  {opt.label}
-                </button>
-              )
-            )}
-          </div>
-          <div className="mt-1 grid grid-cols-3 gap-2 text-xs">
-            {materialStyleOptions.map((opt) => (
-              <button
-                key={opt.id}
-                type="button"
-                onClick={() => setMaterialStyle(opt.id)}
-                aria-pressed={materialStyle === opt.id}
-                className={clsx(segmentedButtonClass(materialStyle === opt.id, { size: "touch", fill: false }), "w-full")}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+	          {renderStyle === "line" && (
+	            <label className="mt-1 flex flex-col gap-1 text-[11px] text-[color:var(--ps-text-soft)]">
+	              <div className="flex items-center justify-between">
+	                <span>Line weight</span>
+	                <span className="tabular-nums text-[10px] text-[color:var(--ps-text-muted)]">{lineWeight.toFixed(2)}</span>
+	              </div>
+	              <input
+	                type="range"
+	                min={0}
+	                max={2}
+	                step={0.01}
+	                value={lineWeight}
+	                onChange={(e) => setLineWeight(parseFloat(e.target.value))}
+	                className={rangeClass}
+	              />
+	              <div className="grid grid-cols-3 text-[10px] text-[color:var(--ps-text-muted)]">
+	                <span>Thin</span>
+	                <span className="text-center">Medium</span>
+	                <span className="text-right">Thick</span>
+	              </div>
+	            </label>
+	          )}
+	          {renderStyle === "cells" && (
+	            <label className="mt-1 flex flex-col gap-1 text-[11px] text-[color:var(--ps-text-soft)]">
+	              <div className="flex items-center justify-between">
+	                <span>Cell size</span>
+	                <span className="tabular-nums text-[10px] text-[color:var(--ps-text-muted)]">{cellSize.toFixed(2)}×</span>
+	              </div>
+	              <input
+	                type="range"
+	                min={0.35}
+	                max={3.4}
+	                step={0.01}
+	                value={cellSize}
+	                onChange={(e) => setCellSize(parseFloat(e.target.value))}
+	                className={rangeClass}
+	              />
+	              <div className="grid grid-cols-3 text-[10px] text-[color:var(--ps-text-muted)]">
+	                <span>Small</span>
+	                <span className="text-center">Medium</span>
+	                <span className="text-right">Large</span>
+	              </div>
+	            </label>
+	          )}
+          <label className="mt-1 flex flex-col gap-1 text-[11px] text-[color:var(--ps-text-soft)]">
+            <div className="flex items-center justify-between">
+              <span>Transmission</span>
+              <span className="tabular-nums text-[10px] text-[color:var(--ps-text-muted)]">
+                {materialTransmission.toFixed(2)}
+              </span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={materialTransmission}
+              onChange={(e) => setMaterialTransmission(parseFloat(e.target.value))}
+              className={rangeClass}
+            />
+            <div className="grid grid-cols-3 text-[10px] text-[color:var(--ps-text-muted)]">
+              <span>Metal</span>
+              <span className="text-center">Glass</span>
+              <span className="text-right">Plasma</span>
+            </div>
+          </label>
           {renderStyle === "photon-weave" && (
             <div className="mt-3 space-y-2 rounded-[12px] border border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-panel-alt-bg)] p-3">
               <div className={sectionHeadingClass}>Photon Weave</div>
               <label className="flex flex-col gap-1 text-[11px] text-[color:var(--ps-text-soft)]">
                 <div className="flex items-center justify-between">
                   <span>Brightness</span>
-                  <span className="tabular-nums text-[10px] text-[color:var(--ps-text-muted)]">{photonWeaveSettings.brightness.toFixed(2)}</span>
+                  <span className="tabular-nums text-[10px] text-[color:var(--ps-text-muted)]">{photonWeaveSettings.brightness.toFixed(3)}</span>
                 </div>
                 <input
                   type="range"
                   min={0}
-                  max={2}
-                  step={0.01}
+                  max={0.14}
+                  step={0.005}
                   value={photonWeaveSettings.brightness}
                   onChange={(e) => setPhotonWeaveSettings({ brightness: parseFloat(e.target.value) })}
                   className={rangeClass}
@@ -238,22 +310,28 @@ function ControlPanelBottomSheet() {
                   className={rangeClass}
                 />
               </label>
-              <div className="flex flex-col gap-2 text-[11px] text-[color:var(--ps-text-soft)]">
-                <div className={sectionHeadingClass}>Filament density</div>
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  {[{ id: "low", label: "Low" }, { id: "medium", label: "Medium" }, { id: "high", label: "High" }].map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => setPhotonWeaveSettings({ filamentDensity: opt.id as typeof photonWeaveSettings.filamentDensity })}
-                      aria-pressed={photonWeaveSettings.filamentDensity === opt.id}
-                      className={clsx(segmentedButtonClass(photonWeaveSettings.filamentDensity === opt.id, { size: "touch", fill: false }), "w-full")}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+	              <label className="flex flex-col gap-1 text-[11px] text-[color:var(--ps-text-soft)]">
+	                <div className="flex items-center justify-between">
+	                  <span>Filament density</span>
+	                  <span className="tabular-nums text-[10px] text-[color:var(--ps-text-muted)]">
+	                    {photonWeaveSettings.filamentDensityValue.toFixed(2)}
+	                  </span>
+	                </div>
+	                <input
+	                  type="range"
+	                  min={0}
+	                  max={1}
+	                  step={0.01}
+	                  value={photonWeaveSettings.filamentDensityValue}
+	                  onChange={(e) => setPhotonWeaveSettings({ filamentDensityValue: parseFloat(e.target.value) })}
+	                  className={rangeClass}
+	                />
+	                <div className="grid grid-cols-3 text-[10px] text-[color:var(--ps-text-muted)]">
+	                  <span>Sparse</span>
+	                  <span className="text-center">Medium</span>
+	                  <span className="text-right">Dense</span>
+	                </div>
+	              </label>
               <ToggleSwitch
                 label="Shimmer"
                 checked={photonWeaveSettings.shimmer}
@@ -295,22 +373,6 @@ function ControlPanelBottomSheet() {
                   className={rangeClass}
                 />
               </label>
-              <div className="flex flex-col gap-2 text-[11px] text-[color:var(--ps-text-soft)]">
-                <div className={sectionHeadingClass}>Projection axis</div>
-                <div className="grid grid-cols-4 gap-2 text-xs">
-                  {[{ id: "auto", label: "Auto" }, { id: "xy", label: "XY" }, { id: "xz", label: "XZ" }, { id: "yz", label: "YZ" }].map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => setCausticsSettings({ projectionAxis: opt.id as typeof causticsSettings.projectionAxis })}
-                      aria-pressed={causticsSettings.projectionAxis === opt.id}
-                      className={clsx(segmentedButtonClass(causticsSettings.projectionAxis === opt.id, { size: "touch", fill: false, marker: false }), "w-full")}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
               <div className="flex flex-col gap-2 text-[11px] text-[color:var(--ps-text-soft)]">
                 <div className={sectionHeadingClass}>Color mode</div>
                 <div className="grid grid-cols-3 gap-2 text-xs">

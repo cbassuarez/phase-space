@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
-import { PanelLeftClose, Pause, Play } from "lucide-react";
+import { PanelLeftClose, Pause, Pencil, Play, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useViewerState } from "../../state/viewerState";
 import type { Palette, SystemId } from "../../types";
@@ -63,18 +63,13 @@ const renderStyles = [
   { id: "caustics", label: "Caustics" },
 ] as const;
 
-const materialStyleOptions = [
-  { id: "glass", label: "Glass" },
-  { id: "metal", label: "Metal" },
-  { id: "plasma", label: "Plasma" },
-] as const;
-
 function CameraSlider({
   label,
   value,
   min,
   max,
   step,
+  decimals = 2,
   onChange,
 }: {
   label: string;
@@ -82,13 +77,14 @@ function CameraSlider({
   min: number;
   max: number;
   step?: number;
+  decimals?: number;
   onChange: (v: number) => void;
 }) {
   return (
     <label className="flex flex-col gap-1 text-[11px] text-[color:var(--ps-text-soft)]">
       <div className="flex items-center justify-between">
         <span>{label}</span>
-        <span className="tabular-nums text-[10px] text-[color:var(--ps-text-muted)]">{value.toFixed(2)}</span>
+        <span className="tabular-nums text-[10px] text-[color:var(--ps-text-muted)]">{value.toFixed(decimals)}</span>
       </div>
       <input
         type="range"
@@ -118,11 +114,18 @@ const tabPanelTransition = { duration: 0.22, ease: [0.22, 0.61, 0.36, 1] as cons
 function ControlPanelDesktop({ onCollapse }: { onCollapse?: () => void }) {
   const {
     system,
+    activeCustom,
+    customAttractors,
+    communityAttractors,
+    setCustomAttractor,
+    openAttractorEditor,
     resolution,
     autoSpin,
-    animateHeadTail,
-    showFullTrajectory,
-    materialStyle,
+    returnToHome,
+    drawTrace,
+    traceSpeed,
+    traceDecay,
+    materialTransmission,
     renderStyle,
     palette,
     customPalette,
@@ -131,9 +134,11 @@ function ControlPanelDesktop({ onCollapse }: { onCollapse?: () => void }) {
     setSystem,
     setResolution,
     toggleAutoSpin,
-    toggleAnimateHeadTail,
-    toggleShowFullTrajectory,
-    setMaterialStyle,
+    toggleReturnToHome,
+    toggleDrawTrace,
+    setTraceSpeed,
+    setTraceDecay,
+    setMaterialTransmission,
     setRenderStyle,
     setPalette,
     setCustomPalette,
@@ -226,13 +231,101 @@ function ControlPanelDesktop({ onCollapse }: { onCollapse?: () => void }) {
                 key={opt.id}
                 type="button"
                 onClick={() => setSystem(opt.id)}
-                aria-pressed={system === opt.id}
-                className={segmentedButtonClass(system === opt.id)}
+                aria-pressed={system === opt.id && !activeCustom}
+                className={segmentedButtonClass(system === opt.id && !activeCustom)}
               >
                 {opt.label}
               </button>
             ))}
           </div>
+
+          {/* User-defined attractors. */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-semibold lowercase tracking-tight text-[color:var(--ps-text-muted)]">
+                my attractors
+              </span>
+              <button
+                type="button"
+                onClick={() => openAttractorEditor()}
+                className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium text-[color:var(--ps-text-soft)] hover:text-[color:var(--ps-text)]"
+              >
+                <Plus className="h-3 w-3" /> new
+              </button>
+            </div>
+            {customAttractors.length === 0 ? (
+              <p className="text-[10px] leading-relaxed text-[color:var(--ps-text-muted)]">
+                Define your own attractor from equations.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-1">
+                {customAttractors.map((d) => (
+                  <div key={d.id} className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setCustomAttractor(d)}
+                      aria-pressed={activeCustom?.id === d.id}
+                      className={clsx(
+                        segmentedButtonClass(activeCustom?.id === d.id, { fill: false }),
+                        "flex-1 justify-start truncate"
+                      )}
+                    >
+                      {d.name}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openAttractorEditor(d)}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--ps-text-muted)] hover:text-[color:var(--ps-text)]"
+                      aria-label={`Edit ${d.name}`}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {communityAttractors.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[10px] font-semibold lowercase tracking-tight text-[color:var(--ps-text-muted)]">
+                community
+              </span>
+              <div className="flex flex-col gap-1">
+                {communityAttractors.map((d) => (
+                  <div key={d.id} className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setCustomAttractor(d)}
+                      aria-pressed={activeCustom?.id === d.id}
+                      className={clsx(
+                        segmentedButtonClass(activeCustom?.id === d.id, { fill: false }),
+                        "flex-1 justify-start truncate"
+                      )}
+                      title={d.description}
+                    >
+                      {d.name}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        openAttractorEditor({
+                          ...d,
+                          id: `local/${d.id.split("/").pop() ?? "fork"}-${Date.now().toString(36)}`,
+                          source: "local",
+                        })
+                      }
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--ps-text-muted)] hover:text-[color:var(--ps-text)]"
+                      aria-label={`Fork ${d.name}`}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <ResolutionSlider value={resolution} onChange={setResolution} />
         </section>
               </>
@@ -509,8 +602,29 @@ function ControlPanelDesktop({ onCollapse }: { onCollapse?: () => void }) {
               <span className="sm:hidden">{autoSpin ? "Pause" : "Play"}</span>
             </button>
           </div>
-          <ToggleSwitch label="Animate head/tail" checked={animateHeadTail} onToggle={toggleAnimateHeadTail} />
-          <ToggleSwitch label="Show full trajectory" checked={showFullTrajectory} onToggle={toggleShowFullTrajectory} />
+          <ToggleSwitch label="Return to home" checked={returnToHome} onToggle={toggleReturnToHome} />
+          <ToggleSwitch label="Draw (racing light)" checked={drawTrace} onToggle={toggleDrawTrace} />
+          {drawTrace && (
+            <div className="flex flex-col gap-2 pl-1">
+              <CameraSlider
+                label="Trace speed"
+                min={0.002}
+                max={0.2}
+                step={0.002}
+                decimals={3}
+                value={traceSpeed}
+                onChange={setTraceSpeed}
+              />
+              <CameraSlider
+                label="Decay"
+                min={0}
+                max={1}
+                step={0.01}
+                value={traceDecay}
+                onChange={setTraceDecay}
+              />
+            </div>
+          )}
         </section>
               </>
             )}
@@ -540,20 +654,19 @@ function ControlPanelDesktop({ onCollapse }: { onCollapse?: () => void }) {
 
           <StyleDetail />
 
-          <div className="flex flex-col gap-2">
-            <span className="text-[11px] text-[color:var(--ps-text-soft)]">Material</span>
-            <div className={pillRow}>
-              {materialStyleOptions.map((opt) => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => setMaterialStyle(opt.id)}
-                  aria-pressed={materialStyle === opt.id}
-                  className={segmentedButtonClass(materialStyle === opt.id)}
-                >
-                  {opt.label}
-                </button>
-              ))}
+          <div className="flex flex-col gap-1.5">
+            <CameraSlider
+              label="Transmission"
+              value={materialTransmission}
+              min={0}
+              max={1}
+              step={0.01}
+              onChange={setMaterialTransmission}
+            />
+            <div className="grid grid-cols-3 text-[10px] text-[color:var(--ps-text-muted)]">
+              <span>Metal</span>
+              <span className="text-center">Glass</span>
+              <span className="text-right">Plasma</span>
             </div>
           </div>
 

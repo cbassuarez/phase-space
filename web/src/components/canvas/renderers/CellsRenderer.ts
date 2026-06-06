@@ -18,16 +18,18 @@ import {
   createLightingUniforms,
   createMaterialUniforms,
   materialShaderChunk,
+  traceShaderChunk,
   type LightingUniforms,
   type MaterialUniforms,
 } from "./materials";
-import { useAdditiveBlending, type RendererStrategy, type RenderContext, type TrajectoryData } from "./base";
+import { lerpThickness, useAdditiveBlending, type RendererStrategy, type RenderContext, type TrajectoryData } from "./base";
 
 function cellScale(data: TrajectoryData): number {
   const energy = data.renderEnergy ?? 0;
   const pulse = data.renderPulse ?? 0;
+  const base = data.cellSize ?? 1;
   const specific = data.cellSizeScale ?? 1;
-  return Math.max(0.35, Math.min(3.4, specific * (1 + energy * 1.2 + pulse * 1.45)));
+  return Math.max(0.35, Math.min(3.4, base * specific * (1 + energy * 1.2 + pulse * 1.45)));
 }
 
 function pointOpacity(data: TrajectoryData, density: number): number {
@@ -44,14 +46,17 @@ function cellGlow(data: TrajectoryData): number {
 
 const cellVertex = `
   attribute float colorT;
+  attribute float aArc;
   attribute vec4 aField;
   varying float vColorT;
+  varying float vArc;
   varying vec4 vField;
   varying vec3 vWorldPos;
   uniform float uPointSize;
   uniform float uViewportHeight;
   void main() {
     vColorT = colorT;
+    vArc = aArc;
     vField = aField;
     vec4 wp = modelMatrix * vec4(position, 1.0);
     vWorldPos = wp.xyz;
@@ -63,6 +68,7 @@ const cellVertex = `
 
 const cellFragment = `
   varying float vColorT;
+  varying float vArc;
   varying vec4 vField;
   varying vec3 vWorldPos;
   uniform sampler2D uPalette;
@@ -81,6 +87,7 @@ const cellFragment = `
   uniform vec3 uAmbient;
   uniform float uShape; // 0 circular (sphere), 1 cel (flat disc), 2 square
   ${materialShaderChunk}
+  ${traceShaderChunk}
 
   void main() {
     vec2 p = gl_PointCoord * 2.0 - 1.0;
@@ -128,14 +135,21 @@ const cellFragment = `
     lit += albedo * core * (0.18 + uEmissive * 0.35 + fieldEnergy * 0.35);
     vec3 color = psFilmicToneMap(lit * uExposure);
     float alpha = uOpacity * uMaterialAlpha * core;
+    float comet = psCometMask(vArc);
+    color *= mix(1.0, comet, uTrace);
+    alpha *= mix(1.0, clamp(comet, 0.0, 1.0), uTrace);
     gl_FragColor = vec4(color, alpha);
   }
 `;
 
-function cellShapeToNumber(shape: TrajectoryData["cellShape"]): number {
+export function cellShapeToNumber(shape: TrajectoryData["cellShape"]): number {
   if (shape === "cel") return 1;
   if (shape === "square") return 2;
   return 0; // circular (default)
+}
+
+function cellShapeValue(data: TrajectoryData): number {
+  return data.cellShapeNumber ?? cellShapeToNumber(data.cellShape);
 }
 
 type CellUniforms = LightingUniforms & MaterialUniforms & {
@@ -149,6 +163,9 @@ type CellUniforms = LightingUniforms & MaterialUniforms & {
   uCameraRight: { value: Vector3 };
   uCameraUp: { value: Vector3 };
   uCameraForward: { value: Vector3 };
+  uTrace: { value: number };
+  uHead: { value: number };
+  uDecay: { value: number };
 };
 
 /**
@@ -178,42 +195,61 @@ export class CellsRenderer implements RendererStrategy {
     context.renderer.getSize(this.size);
     const lighting = getLighting();
 
+    // Cap the total cell count so dense / high-resolution trajectories don't
+    // spawn tens of thousands of point sprites (heavy fill/overdraw that drags
+    // the framerate). Subsample each trajectory with a shared stride; arc and
+    // colour use the ORIGINAL index so aging and the Draw comet still map right.
+    const MAX_CELLS = 6000;
+    const totalPoints = data.trajectories.reduce((sum, t) => sum + t.length, 0);
+    const stride = Math.max(1, Math.ceil(totalPoints / MAX_CELLS));
+
     data.trajectories.forEach((traj, idx) => {
+      const sampled = Math.ceil(traj.length / stride);
       const positions: number[] = [];
-      const colorAttr = new Float32Array(traj.length);
-      const fieldAttr = new Float32Array(traj.length * 4);
-      for (let i = 0; i < traj.length; i++) {
+      const colorAttr = new Float32Array(sampled);
+      const arcAttr = new Float32Array(sampled);
+      const fieldAttr = new Float32Array(sampled * 4);
+      let k = 0;
+      for (let i = 0; i < traj.length; i += stride) {
         const [x, y, z] = traj[i];
         positions.push(x, y, z);
         const progress = traj.length > 1 ? i / (traj.length - 1) : 0;
-        colorAttr[i] = dynamicScalarAt(data.dynamics, idx, i, progress);
-        writeVisualFieldVector(fieldAttr, i * 4, data.dynamics, idx, i, progress);
+        arcAttr[k] = progress;
+        colorAttr[k] = dynamicScalarAt(data.dynamics, idx, i, progress);
+        writeVisualFieldVector(fieldAttr, k * 4, data.dynamics, idx, i, progress);
+        k++;
       }
       const geom = new BufferGeometry();
       geom.setAttribute("position", new Float32BufferAttribute(positions, 3));
       geom.setAttribute("colorT", new Float32BufferAttribute(colorAttr, 1));
+      geom.setAttribute("aArc", new Float32BufferAttribute(arcAttr, 1));
       geom.setAttribute("aField", new Float32BufferAttribute(fieldAttr, 4));
       const useAdditive = useAdditiveBlending(data.background);
       const density = data.cloudDensity ?? 1;
       const size =
-        (data.lineThickness === "thick" ? 0.26 : data.lineThickness === "thin" ? 0.14 : 0.2) *
+        (data.thicknessT != null
+          ? lerpThickness(data.thicknessT, 0.14, 0.2, 0.26)
+          : data.lineThickness === "thick" ? 0.26 : data.lineThickness === "thin" ? 0.14 : 0.2) *
         (0.7 + density * 0.6) *
         cellScale(data);
       const uniforms: CellUniforms = {
         uPalette: { value: this.paletteTexture },
         uPaletteShift: { value: data.paletteShift ?? 0 },
         uOpacity: { value: pointOpacity(data, density) },
-        uShape: { value: cellShapeToNumber(data.cellShape) },
+        uShape: { value: cellShapeValue(data) },
         uPointSize: { value: size },
         uViewportHeight: { value: this.size.y },
         uCamPos: { value: context.camera.position.clone() },
         uCameraRight: { value: new Vector3(1, 0, 0) },
         uCameraUp: { value: new Vector3(0, 1, 0) },
         uCameraForward: { value: new Vector3(0, 0, 1) },
+        uTrace: { value: data.traceActive ? 1 : 0 },
+        uHead: { value: data.traceHead ?? 0 },
+        uDecay: { value: data.traceDecay ?? 0.12 },
         ...createLightingUniforms(lighting),
-        ...createMaterialUniforms(data.materialStyle),
+        ...createMaterialUniforms(data.materialTransmission),
       };
-      applyMaterialUniforms(uniforms, data.materialStyle, cellGlow(data));
+      applyMaterialUniforms(uniforms, data.materialTransmission, cellGlow(data));
       const mat = new ShaderMaterial({
         uniforms: uniforms as unknown as Record<string, { value: unknown }>,
         vertexShader: cellVertex,
@@ -249,13 +285,18 @@ export class CellsRenderer implements RendererStrategy {
       if (!mat) return;
       const u = mat.uniforms as unknown as CellUniforms;
       u.uPointSize.value =
-        (this.data.lineThickness === "thick" ? 0.26 : this.data.lineThickness === "thin" ? 0.14 : 0.2) *
+        (this.data.thicknessT != null
+          ? lerpThickness(this.data.thicknessT, 0.14, 0.2, 0.26)
+          : this.data.lineThickness === "thick" ? 0.26 : this.data.lineThickness === "thin" ? 0.14 : 0.2) *
         (0.7 + density * 0.6) *
         cellScale(this.data);
       u.uOpacity.value = pointOpacity(this.data, density);
-      u.uShape.value = cellShapeToNumber(this.data.cellShape);
+      u.uShape.value = cellShapeValue(this.data);
       u.uPaletteShift.value = this.data.paletteShift ?? 0;
       u.uViewportHeight.value = this.size.y;
+      u.uTrace.value = this.data.traceActive ? 1 : 0;
+      u.uHead.value = this.data.traceHead ?? 0;
+      u.uDecay.value = this.data.traceDecay ?? 0.12;
       if (context) {
         u.uCamPos.value.copy(context.camera.position);
         const e = context.camera.matrixWorld.elements;
@@ -264,7 +305,7 @@ export class CellsRenderer implements RendererStrategy {
         u.uCameraForward.value.set(-e[8], -e[9], -e[10]).normalize();
       }
       applyLightingUniforms(u, lighting);
-      applyMaterialUniforms(u, this.data.materialStyle, cellGlow(this.data));
+      applyMaterialUniforms(u, this.data.materialTransmission, cellGlow(this.data));
       mat.blending = useAdditive ? AdditiveBlending : NormalBlending;
       mat.needsUpdate = true;
     });
@@ -273,7 +314,11 @@ export class CellsRenderer implements RendererStrategy {
   updateDrawWindow(trajectoryIndex: number, start: number, count: number) {
     const pts = this.points[trajectoryIndex];
     if (!pts) return;
-    pts.geometry.setDrawRange(start, count);
+    // The geometry is subsampled, so clamp the requested range (given in
+    // original-trajectory indices) to the actual point count.
+    const total = pts.geometry.getAttribute("position")?.count ?? count;
+    const s = Math.min(start, total);
+    pts.geometry.setDrawRange(s, Math.min(count, total - s));
   }
 
   dispose({ threeScene }: RenderContext) {

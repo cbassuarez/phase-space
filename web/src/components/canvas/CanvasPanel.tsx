@@ -1,10 +1,20 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { motion } from "framer-motion";
 import { computeCameraPose } from "../../camera/controller";
 import { cameraInput } from "../../camera/cameraInput";
 import { updateFaviconFromCanvas } from "../../utils/favicon";
+import CrossDissolveOverlay from "./CrossDissolveOverlay";
+import { captureCanvasDataURL } from "../../utils/canvasCapture";
+import { beginDissolveFreeze, isDissolveFrozen } from "../../visual/dissolveFreeze";
+import { DISSOLVE_MS } from "../../visual/transitionConfig";
+import { advanceMaterialTransition } from "./renderers/materials";
+import { advanceLightingTransition } from "../../visual/lighting";
+import { cellShapeToNumber } from "./renderers/CellsRenderer";
+import { expApproach } from "../../camera/smoothing";
+import { prefersReducedMotion } from "../../utils/reducedMotion";
+import { TAU_SCALARS, TAU_CELLSHAPE } from "../../visual/transitionConfig";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
@@ -22,8 +32,11 @@ import type {
   Palette,
   Trajectories,
   LineThickness,
+  LineWeight,
   CellShape,
+  CellSize,
   MaterialStyle,
+  MaterialTransmission,
   RenderStyle,
   Resolution,
   PhotonWeaveSettings,
@@ -51,13 +64,17 @@ interface CanvasPanelProps {
   cameraProgram?: CameraProgram | null;
   randomSeed?: number;
   autoSpin: boolean;
-  animateHeadTail: boolean;
-  showFullTrajectory: boolean;
+  drawTrace: boolean;
+  traceSpeed: number;
+  traceDecay: number;
   lineThickness: LineThickness;
+  lineWeight: LineWeight;
   cellShape: CellShape;
+  cellSize: CellSize;
   cloudDensity: number;
   ribbonWidth: number;
   materialStyle: MaterialStyle;
+  materialTransmission: MaterialTransmission;
   renderStyle: RenderStyle;
   resolution: Resolution;
   photonWeaveSettings: PhotonWeaveSettings;
@@ -74,16 +91,20 @@ function PhaseScene({
   customPalette,
   background,
   autoSpin,
-  animateHeadTail,
-  showFullTrajectory,
+  drawTrace,
+  traceSpeed,
+  traceDecay,
   cameraProgram,
   randomSeed,
   camera,
   lineThickness,
+  lineWeight,
   cellShape,
+  cellSize,
   cloudDensity,
   ribbonWidth,
   materialStyle,
+  materialTransmission,
   renderStyle,
   resolution,
   photonWeaveSettings,
@@ -97,6 +118,17 @@ function PhaseScene({
   const countsRef = useRef<number[]>([]);
   const visualFrameRef = useRef<VisualFeatureFrame | null>(null);
   const lastFaviconRef = useRef(0);
+  const drawClockRef = useRef(0); // head/tail clock, paused during a dissolve freeze
+  // Eased continuous visual params so style/weight/density/shape changes glide.
+  const easedRef = useRef({
+    ribbonWidth: 1,
+    cloudDensity: 1,
+    lineWeight: 1,
+    cellSize: 1,
+    uShape: 0,
+    thicknessT: 1,
+    init: false,
+  });
   const tempRefs = useRef({
     target: new THREE.Vector3(),
     offset: new THREE.Vector3(),
@@ -285,9 +317,10 @@ function PhaseScene({
     const modValues = modValuesRef.current;
     const photonSettings =
       photonWeaveSettings ?? {
-        brightness: 1,
+        brightness: 0.1,
         trailLength: 1,
         filamentDensity: "medium" as const,
+        filamentDensityValue: 0.5,
         shimmer: true,
       };
     const causticsSettingsSafe =
@@ -310,8 +343,11 @@ function PhaseScene({
       palette,
       customPalette,
       lineThickness,
+      thicknessT: lineWeight,
       cellShape,
+      cellSize,
       materialStyle,
+      materialTransmission,
       background,
       paletteShift: modValues.paletteShift,
       renderEnergy: modValues.renderEnergy,
@@ -350,13 +386,12 @@ function PhaseScene({
     dynamicScalars,
     palette,
     customPalette,
-    lineThickness,
-    materialStyle,
+    // lineWeight, cellSize & materialTransmission are eased per-frame via applyDynamic - a
+    // rebuild here would snap and fight the easing, so they're intentionally omitted.
     background,
     renderStyle,
     quality,
-    photonWeaveSettings?.filamentDensity,
-    causticsSettings?.projectionAxis,
+	    causticsSettings?.projectionAxis,
     setRenderStillHandler,
   ]);
 
@@ -365,10 +400,39 @@ function PhaseScene({
     const elapsedTime = state.clock.getElapsedTime();
     const { target, offset, position, spherical, bgBase, bgAlt } = tempRefs.current;
     const modValues = modValuesRef.current;
+
+    // Advance all continuous visual-param easing exactly once per frame (before
+    // the renderers read them), so material/lighting/weight/density/shape glide.
+    const reduced = prefersReducedMotion();
+    advanceMaterialTransition(frameDelta, materialTransmission, reduced);
+    advanceLightingTransition(frameDelta, reduced);
+    const e = easedRef.current;
+    const tgtThicknessT = lineWeight;
+    const tgtShape = cellShapeToNumber(cellShape);
+    if (!e.init || reduced) {
+      e.ribbonWidth = ribbonWidth;
+      e.cloudDensity = cloudDensity;
+      e.lineWeight = tgtThicknessT;
+      e.cellSize = cellSize;
+      e.uShape = tgtShape;
+      e.thicknessT = tgtThicknessT;
+      e.init = true;
+    } else {
+      e.ribbonWidth = expApproach(e.ribbonWidth, ribbonWidth, frameDelta, TAU_SCALARS);
+      e.cloudDensity = expApproach(e.cloudDensity, cloudDensity, frameDelta, TAU_SCALARS);
+      e.lineWeight = expApproach(e.lineWeight, tgtThicknessT, frameDelta, TAU_SCALARS);
+      e.cellSize = expApproach(e.cellSize, cellSize, frameDelta, TAU_SCALARS);
+      e.uShape = expApproach(e.uShape, tgtShape, frameDelta, TAU_CELLSHAPE);
+      e.thicknessT = e.lineWeight;
+    }
+    // Hold scene motion during a structural cross-dissolve so the new scene is
+    // revealed static (aligned with the frozen snapshot, no drift).
+    const frozen = isDissolveFrozen();
+    if (!frozen) drawClockRef.current += frameDelta;
     target.set(0, 0, 0);
     position.set(0, 0, 0);
     if (cameraProgram) {
-      if (autoSpin) {
+      if (autoSpin && !frozen) {
         timeRef.current += frameDelta;
       }
       const viewSize = state.size;
@@ -445,9 +509,10 @@ function PhaseScene({
     if (strategy?.applyDynamic) {
       const photonSettings =
         photonWeaveSettings ?? {
-          brightness: 1,
+          brightness: 0.1,
           trailLength: 1,
           filamentDensity: "medium" as const,
+          filamentDensityValue: 0.5,
           shimmer: true,
         };
       const causticsSettingsSafe =
@@ -469,7 +534,11 @@ function PhaseScene({
         palette,
         lineThickness,
         cellShape,
+        cellShapeNumber: e.uShape,
+        thicknessT: e.thicknessT,
+        cellSize: e.cellSize,
         materialStyle,
+        materialTransmission,
         background,
         customPalette,
         paletteShift: modValues.paletteShift,
@@ -478,10 +547,17 @@ function PhaseScene({
         lineWidthScale: modValues.lineWidthScale,
         cellSizeScale: modValues.cellSizeScale,
         emissiveBoost: modValues.emissiveBoost,
-        ribbonWidth: modValues.ribbonWidth ?? ribbonWidth,
+        ribbonWidth: modValues.ribbonWidth ?? e.ribbonWidth,
         ribbonGlow: modValues.ribbonGlow,
-        cloudDensity: modValues.cloudDensity ?? cloudDensity,
+        cloudDensity: modValues.cloudDensity ?? e.cloudDensity,
         backgroundBrightness: modValues.backgroundBrightness,
+        // Draw mode: one shared comet head (0..1 looping) across all trajectories.
+        // Per-style speed scale: the volumetric cloud's averaged-arc field only
+        // animates over part of the loop so it reads much slower than the
+        // path-based styles at the same head rate — boost cloud, ease the rest.
+        traceActive: drawTrace,
+        traceHead: (drawClockRef.current * traceSpeed * (renderStyle === "volumetric-cloud" ? 4.5 : 0.32)) % 1,
+        traceDecay,
         quality,
         photonWeave: { ...photonSettings, brightness: photonBrightness, trailLength: photonTrailLength },
         caustics: { ...causticsSettingsSafe, intensity: causticsIntensity, blurRadius: causticsBlur },
@@ -494,25 +570,11 @@ function PhaseScene({
     const bgMix = bgBase.clone().lerp(bgAlt, modValues.backgroundBrightness);
     gl.setClearColor(bgMix, 1);
 
+    // The full trajectory is always drawn; in Draw mode the comet is shader-
+    // masked (the whole path stays drawable).
     if (strategy?.updateDrawWindow) {
       countsRef.current.forEach((count, idx) => {
-        if (showFullTrajectory) {
-          strategy.updateDrawWindow?.(idx, 0, count);
-          return;
-        }
-        const windowSize = Math.max(8, Math.floor(count * 0.35));
-        if (animateHeadTail) {
-          const head = Math.floor((elapsedTime * 24) % count);
-          const start = Math.max(0, head - windowSize);
-          let drawCount = windowSize;
-          if (start + drawCount > count) {
-            drawCount = count - start;
-          }
-          strategy.updateDrawWindow?.(idx, start, drawCount);
-        } else {
-          const start = Math.max(0, count - windowSize);
-          strategy.updateDrawWindow?.(idx, start, windowSize);
-        }
+        strategy.updateDrawWindow?.(idx, 0, count);
       });
     }
   });
@@ -538,19 +600,51 @@ function CanvasPanel({
   cameraProgram,
   randomSeed,
   autoSpin,
-  animateHeadTail,
-  showFullTrajectory,
+  drawTrace,
+  traceSpeed,
+  traceDecay,
   lineThickness,
+  lineWeight,
   cellShape,
+  cellSize,
   cloudDensity,
   ribbonWidth,
   materialStyle,
+  materialTransmission,
   renderStyle,
   resolution,
   photonWeaveSettings,
   causticsSettings,
 }: CanvasPanelProps) {
   const { setRenderStillHandler } = useViewerState();
+
+  // Structural cross-dissolve: when render style / palette / system / resolution
+  // changes (the latter two surface as a new `trajectories` reference), snapshot
+  // the OLD frame and fade it out over the live new render. The layout effect
+  // runs after commit but before the next rAF, so the canvas still holds the old
+  // frame (R3F renders in the rAF loop, not during commit).
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const [dissolveSrc, setDissolveSrc] = useState<string | null>(null);
+  const structuralKey = `${renderStyle}|${palette}`;
+  const firstStructuralRef = useRef(true);
+  useLayoutEffect(() => {
+    if (firstStructuralRef.current) {
+      firstStructuralRef.current = false;
+      return;
+    }
+    if (prefersReducedMotion()) return;
+    const canvas = sectionRef.current?.querySelector("canvas");
+    if (canvas instanceof HTMLCanvasElement) {
+      const url = captureCanvasDataURL(canvas);
+      if (url) {
+        setDissolveSrc(url);
+        // Hold scene motion so the new scene is revealed static, aligned with
+        // the frozen snapshot (no spin/draw drift under the fade).
+        beginDissolveFreeze(DISSOLVE_MS);
+      }
+    }
+  }, [structuralKey, trajectories]);
+
   const gradientClass =
     background === "light"
       ? "bg-[radial-gradient(circle_at_center,#fbfcff_0%,#e5ebff_70%)]"
@@ -594,6 +688,7 @@ function CanvasPanel({
 
   return (
     <motion.section
+      ref={sectionRef}
       initial={{ opacity: 0, scale: 0.97, y: 12 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={{ duration: 0.2, ease: [0.22, 0.61, 0.36, 1] }}
@@ -639,14 +734,18 @@ function CanvasPanel({
               cameraProgram={cameraProgram}
               randomSeed={randomSeed}
               autoSpin={autoSpin}
-              animateHeadTail={animateHeadTail}
-              showFullTrajectory={showFullTrajectory}
+              drawTrace={drawTrace}
+              traceSpeed={traceSpeed}
+              traceDecay={traceDecay}
               camera={camera}
               lineThickness={lineThickness}
+              lineWeight={lineWeight}
               cellShape={cellShape}
+              cellSize={cellSize}
               cloudDensity={cloudDensity}
               ribbonWidth={ribbonWidth}
               materialStyle={materialStyle}
+              materialTransmission={materialTransmission}
               renderStyle={renderStyle}
               resolution={resolution}
               photonWeaveSettings={photonWeaveSettings}
@@ -659,6 +758,7 @@ function CanvasPanel({
         className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-white/60 to-transparent"
         animate={{ opacity: background === "light" ? 0.3 : 0.15 }}
       />
+      <CrossDissolveOverlay src={dissolveSrc} onDone={() => setDissolveSrc(null)} />
     </motion.section>
   );
 }

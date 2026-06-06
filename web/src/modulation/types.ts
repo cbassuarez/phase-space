@@ -14,7 +14,12 @@ export type VisualFeature =
   | "camera_radius_norm"
   | "avg_speed"
   | "curvature"
-  | "traj_density";
+  | "traj_density"
+  | "flow_x"
+  | "flow_y"
+  | "flow_z"
+  | "spatial_spread"
+  | "lobe_pulse";
 
 export type SourceDomain = "audio" | "visual";
 
@@ -38,6 +43,7 @@ export interface ModTarget {
 export interface ModBus {
   id: ModBusId;
   enabled: boolean;
+  trim?: number; // 0..1 contribution trim
   source: ModSource;
   targets: ModTarget[];
 }

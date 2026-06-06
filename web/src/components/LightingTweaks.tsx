@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   LIGHTING_PRESETS,
   getKeyAzimuth,
-  getLighting,
+  getLightingTarget,
   getLightingPresetId,
   setKeyAzimuth,
   setLighting,
@@ -53,7 +53,7 @@ export function LightingControlGroup() {
     });
   }, []);
 
-  const light = getLighting();
+  const light = getLightingTarget();
   const azimuth = getKeyAzimuth();
   // Treat the ambient triple as a brightness scalar by reading the
   // luminance and offering a single slider; setting writes uniformly.

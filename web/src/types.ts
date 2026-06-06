@@ -8,6 +8,9 @@ export type Background = "dark" | "light" | "dim";
 export type LineThickness = "thin" | "default" | "thick";
 export type CellShape = "circular" | "cel" | "square";
 export type MaterialStyle = "glass" | "metal" | "plasma";
+export type MaterialTransmission = number;
+export type LineWeight = number;
+export type CellSize = number;
 export type RenderStyle =
   | "line"
   | "photon-weave"
@@ -17,6 +20,7 @@ export type RenderStyle =
   | "cells";
 
 export type FilamentDensity = "low" | "medium" | "high";
+export type FilamentDensityValue = number;
 export type ProjectionAxis = "xy" | "xz" | "yz" | "auto";
 export type CausticsColorMode = "global" | "warm" | "cool";
 
@@ -24,6 +28,7 @@ export interface PhotonWeaveSettings {
   brightness: number;
   trailLength: number;
   filamentDensity: FilamentDensity;
+  filamentDensityValue: FilamentDensityValue;
   shimmer: boolean;
 }
 
@@ -73,6 +78,7 @@ export interface ViewSpec {
   point_size?: number;
   render_style?: RenderStyle;
   material_style?: MaterialStyle;
+  material_transmission?: MaterialTransmission;
 }
 
 function mapLegacyRenderStyle(style: RenderStyle | string | undefined | null): RenderStyle {
@@ -104,6 +110,66 @@ function mapLegacyMaterialStyle(style: MaterialStyle | string | undefined | null
     default:
       return "glass";
   }
+}
+
+function materialStyleToTransmission(style: MaterialStyle | string | undefined | null): MaterialTransmission {
+  switch (style) {
+    case "metal":
+      return 0;
+    case "plasma":
+      return 1;
+    case "glass":
+    default:
+      return 0.5;
+  }
+}
+
+function materialTransmissionToStyle(value: number | undefined | null): MaterialStyle {
+  const transmission = normalizeMaterialTransmission(value, "glass");
+  if (transmission < 0.25) return "metal";
+  if (transmission > 0.75) return "plasma";
+  return "glass";
+}
+
+function filamentDensityToValue(density: FilamentDensity | string | undefined | null): FilamentDensityValue {
+  switch (density) {
+    case "low":
+      return 0;
+    case "high":
+      return 1;
+    case "medium":
+    default:
+      return 0.5;
+  }
+}
+
+function filamentDensityValueToPreset(value: number | undefined | null): FilamentDensity {
+  const density = normalizeFilamentDensityValue(value, "medium");
+  if (density < 0.25) return "low";
+  if (density > 0.75) return "high";
+  return "medium";
+}
+
+function normalizeFilamentDensityValue(
+  value: unknown,
+  fallbackDensity: FilamentDensity | string | undefined | null = "medium"
+): FilamentDensityValue {
+  const numeric = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
+  if (Number.isFinite(numeric)) {
+    return Math.max(0, Math.min(1, numeric));
+  }
+  return filamentDensityToValue(fallbackDensity);
+}
+
+function normalizeMaterialTransmission(
+  value: unknown,
+  fallbackStyle: MaterialStyle | string | undefined | null = "glass"
+): MaterialTransmission {
+  const numeric = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
+  if (Number.isFinite(numeric)) {
+    return Math.max(0, Math.min(1, numeric));
+  }
+  return materialStyleToTransmission(fallbackStyle);
 }
 
 function mapLegacyPalette(palette: Palette | string | undefined | null): Palette {
@@ -155,6 +221,7 @@ export function normalizeViewSpec(view: ViewSpec | undefined): ViewSpec {
     point_size: 1,
     render_style: "volumetric-cloud",
     material_style: "glass",
+    material_transmission: materialStyleToTransmission("glass"),
   };
 
   if (!view) {
@@ -167,9 +234,19 @@ export function normalizeViewSpec(view: ViewSpec | undefined): ViewSpec {
     palette: mapLegacyPalette(view.palette ?? defaultView.palette),
     render_style: mapLegacyRenderStyle(view.render_style ?? defaultView.render_style),
     material_style: mapLegacyMaterialStyle(view.material_style ?? defaultView.material_style),
+    material_transmission: normalizeMaterialTransmission(
+      view.material_transmission,
+      view.material_style ?? defaultView.material_style
+    ),
   };
 }
 
 export { mapLegacyRenderStyle };
 export { mapLegacyMaterialStyle };
+export { materialStyleToTransmission };
+export { materialTransmissionToStyle };
+export { normalizeMaterialTransmission };
+export { filamentDensityToValue };
+export { filamentDensityValueToPreset };
+export { normalizeFilamentDensityValue };
 export { mapLegacyPalette };

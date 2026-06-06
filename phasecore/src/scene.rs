@@ -12,6 +12,22 @@ pub enum SystemId {
     Aizawa,
     Thomas,
     Chua,
+    /// User-defined attractor; derivative equations carried in `SceneSpec.custom`.
+    Custom,
+}
+
+/// The three derivative equations for a user-defined attractor (math strings).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CustomEquations {
+    pub dx: String,
+    pub dy: String,
+    pub dz: String,
+}
+
+/// User-defined attractor payload carried on a scene.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CustomSpec {
+    pub equations: CustomEquations,
 }
 
 /// High-level camera mode selector.
@@ -377,6 +393,10 @@ pub struct SceneSpec {
     /// Camera program configuration (mode + parameters).
     #[serde(default)]
     pub camera: CameraProgram,
+
+    /// User-defined attractor equations (present when `system` is `Custom`).
+    #[serde(default)]
+    pub custom: Option<CustomSpec>,
 }
 
 impl SceneSpec {
@@ -426,6 +446,7 @@ impl SceneSpec {
             },
             random_seed: Some(42),
             camera,
+            custom: None,
         }
     }
 
@@ -475,6 +496,7 @@ impl SceneSpec {
             },
             random_seed: Some(43),
             camera,
+            custom: None,
         }
     }
 
@@ -528,6 +550,7 @@ impl SceneSpec {
             },
             random_seed: Some(44),
             camera,
+            custom: None,
         }
     }
 
@@ -582,6 +605,7 @@ impl SceneSpec {
             },
             random_seed: Some(45),
             camera,
+            custom: None,
         }
     }
 }

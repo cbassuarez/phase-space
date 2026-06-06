@@ -21,6 +21,7 @@
     "vite": "^7.2.2"
   },
   "dependencies": {
+    "@csound/browser": "^7.0.0-beta31",
     "@react-three/fiber": "^8.16.1",
     "clsx": "^2.1.1",
     "framer-motion": "^11.18.1",

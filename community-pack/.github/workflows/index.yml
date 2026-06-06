@@ -1,0 +1,27 @@
+name: Rebuild index
+
+on:
+  push:
+    branches: [main]
+    paths: ["attractors/**"]
+
+permissions:
+  contents: write
+
+jobs:
+  index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "lts/*" }
+      - run: node scripts/build-index.mjs
+      - name: Commit index
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet index.json; then
+            git add index.json
+            git commit -m "chore: rebuild index"
+            git push
+          fi

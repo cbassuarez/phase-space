@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { Power } from "lucide-react";
+import { AudioWaveform } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Curve } from "../../modulation/types";
 import type { ModBus, ModBusRuntimeState, ModTarget } from "../../modulation/types";
@@ -34,6 +34,11 @@ const centeredRange = (depth: number): [number, number] => {
   const min = clamp01(0.5 - spread);
   const max = clamp01(0.5 + spread);
   return [min, max];
+};
+
+const synthCenteredRange = (center: number, depth: number, minSpread = 0.12, maxSpread = 0.42): [number, number] => {
+  const spread = minSpread + depth * (maxSpread - minSpread);
+  return [clamp01(center - spread), clamp01(center + spread)];
 };
 
 const targetOptions: TargetOption[] = [
@@ -200,30 +205,114 @@ const targetOptions: TargetOption[] = [
     depthFromRange: (target) => clamp01((target.range[1] - 0.25) / 1.25),
   },
   {
+    value: "audio.synth.drone",
+    label: "Glass drone",
+    group: "Synth",
+    makeTarget: (depth) => ({ path: "audio.synth.drone", range: [0, 0.34 + depth * 0.62], curve: "log" }),
+    depthFromRange: (target) => clamp01((target.range[1] - 0.34) / 0.62),
+  },
+  {
+    value: "audio.synth.pluck",
+    label: "Plucked sparks",
+    group: "Synth",
+    makeTarget: (depth) => ({ path: "audio.synth.pluck", range: [0, 0.28 + depth * 0.72], curve: "exp" }),
+    depthFromRange: (target) => clamp01((target.range[1] - 0.28) / 0.72),
+  },
+  {
+    value: "audio.synth.dust",
+    label: "Dust texture",
+    group: "Synth",
+    makeTarget: (depth) => ({ path: "audio.synth.dust", range: [0, 0.22 + depth * 0.76], curve: "log" }),
+    depthFromRange: (target) => clamp01((target.range[1] - 0.22) / 0.76),
+  },
+  {
+    value: "audio.synth.bass",
+    label: "Low pulse",
+    group: "Synth",
+    makeTarget: (depth) => ({ path: "audio.synth.bass", range: [0, 0.28 + depth * 0.72], curve: "linear" }),
+    depthFromRange: (target) => clamp01((target.range[1] - 0.28) / 0.72),
+  },
+  {
+    value: "audio.synth.shimmer",
+    label: "Shimmer wash",
+    group: "Synth",
+    makeTarget: (depth) => ({ path: "audio.synth.shimmer", range: [0, 0.24 + depth * 0.7], curve: "log" }),
+    depthFromRange: (target) => clamp01((target.range[1] - 0.24) / 0.7),
+  },
+  {
+    value: "audio.synth.pitch",
+    label: "Legacy pitch",
+    group: "Legacy synth",
+    makeTarget: (depth) => ({ path: "audio.synth.pitch", range: synthCenteredRange(0.48, depth), curve: "linear" }),
+    depthFromRange: (target) => clamp01((target.range[1] - target.range[0] - 0.24) / 0.6),
+  },
+  {
+    value: "audio.synth.timbre",
+    label: "Legacy timbre",
+    group: "Legacy synth",
+    makeTarget: (depth) => ({ path: "audio.synth.timbre", range: [0.18, 0.32 + depth * 0.62], curve: "log" }),
+    depthFromRange: (target) => clamp01((target.range[1] - 0.32) / 0.62),
+  },
+  {
+    value: "audio.synth.motion",
+    label: "Legacy motion",
+    group: "Legacy synth",
+    makeTarget: (depth) => ({ path: "audio.synth.motion", range: [0.08, 0.24 + depth * 0.7], curve: "log" }),
+    depthFromRange: (target) => clamp01((target.range[1] - 0.24) / 0.7),
+  },
+  {
+    value: "audio.synth.texture",
+    label: "Legacy texture",
+    group: "Legacy synth",
+    makeTarget: (depth) => ({ path: "audio.synth.texture", range: [0.04, 0.18 + depth * 0.76], curve: "exp" }),
+    depthFromRange: (target) => clamp01((target.range[1] - 0.18) / 0.76),
+  },
+  {
+    value: "audio.synth.pulse",
+    label: "Legacy pulse",
+    group: "Legacy synth",
+    makeTarget: (depth) => ({ path: "audio.synth.pulse", range: [0, 0.2 + depth * 0.78], curve: "linear" }),
+    depthFromRange: (target) => clamp01((target.range[1] - 0.2) / 0.78),
+  },
+  {
+    value: "audio.synth.space",
+    label: "Legacy space",
+    group: "Legacy synth",
+    makeTarget: (depth) => ({ path: "audio.synth.space", range: synthCenteredRange(0.58, depth, 0.08, 0.36) }),
+    depthFromRange: (target) => clamp01((target.range[1] - target.range[0] - 0.16) / 0.56),
+  },
+  {
+    value: "audio.synth.gain",
+    label: "Legacy gain",
+    group: "Legacy synth",
+    makeTarget: (depth) => ({ path: "audio.synth.gain", range: [0.2, 0.34 + depth * 0.42], curve: "log" }),
+    depthFromRange: (target) => clamp01((target.range[1] - 0.34) / 0.42),
+  },
+  {
     value: "audio.voice_0.pitch",
-    label: "Voice pitch",
-    group: "Sound output",
+    label: "Legacy voice pitch",
+    group: "Legacy sound",
     makeTarget: (depth) => ({ path: "audio.voice_0.pitch", range: centeredRange(depth), curve: "linear" }),
     depthFromRange: (target) => clamp01(target.range[1] - target.range[0]),
   },
   {
     value: "audio.voice_0.pan",
-    label: "Voice pan",
-    group: "Sound output",
+    label: "Legacy voice pan",
+    group: "Legacy sound",
     makeTarget: (depth) => ({ path: "audio.voice_0.pan", range: centeredRange(depth) }),
     depthFromRange: (target) => clamp01(target.range[1] - target.range[0]),
   },
   {
     value: "audio.voice_0.brightness",
-    label: "Voice brightness",
-    group: "Sound output",
+    label: "Legacy voice brightness",
+    group: "Legacy sound",
     makeTarget: (depth) => ({ path: "audio.voice_0.brightness", range: centeredRange(depth) }),
     depthFromRange: (target) => clamp01(target.range[1] - target.range[0]),
   },
   {
     value: "audio.master.gain",
-    label: "Master gain",
-    group: "Sound output",
+    label: "Legacy master gain",
+    group: "Legacy sound",
     makeTarget: (depth) => {
       const spread = 0.15 + depth * 0.35;
       return { path: "audio.master.gain", range: [clamp01(0.35 - spread), clamp01(0.35 + spread)] };
@@ -252,6 +341,11 @@ const sourceOptions = [
       { value: "visual:avg_speed", label: "Average speed" },
       { value: "visual:curvature", label: "Curvature" },
       { value: "visual:traj_density", label: "Trajectory density" },
+      { value: "visual:flow_x", label: "Flow X" },
+      { value: "visual:flow_y", label: "Flow Y" },
+      { value: "visual:flow_z", label: "Flow Z" },
+      { value: "visual:spatial_spread", label: "Spatial spread" },
+      { value: "visual:lobe_pulse", label: "Lobe pulse" },
     ],
   },
 ];
@@ -277,8 +371,14 @@ const colorTargets: TargetGroup = {
 };
 
 const soundTargets: TargetGroup = {
-  label: "Sound output",
-  values: ["audio.voice_0.pitch", "audio.voice_0.pan", "audio.voice_0.brightness", "audio.master.gain"],
+  label: "Synth",
+  values: [
+    "audio.synth.drone",
+    "audio.synth.pluck",
+    "audio.synth.dust",
+    "audio.synth.bass",
+    "audio.synth.shimmer",
+  ],
 };
 
 const renderTargetGroups: Record<RenderStyle, TargetGroup> = {
@@ -317,6 +417,7 @@ function ModulationRow({ bus, renderStyle }: { bus: ModBusRuntimeState; renderSt
   const disabled = !modEngine;
   const selectedTarget = bus.bus.targets[0]?.path as TargetPath | undefined;
   const depth = busDepth(bus.bus);
+  const trim = clamp01(bus.bus.trim ?? 1);
   const visibleTargetGroups = useMemo(
     () => targetGroupsFor(renderStyle, selectedTarget),
     [renderStyle, selectedTarget]
@@ -355,6 +456,12 @@ function ModulationRow({ bus, renderStyle }: { bus: ModBusRuntimeState; renderSt
     );
   };
 
+  const handleTrimChange = (nextTrim: number) => {
+    updateBuses((buses) =>
+      buses.map((b) => (b.id === bus.bus.id ? { ...b, trim: clamp01(nextTrim) } : b))
+    );
+  };
+
   const sourceValue = `${bus.bus.source.domain}:${bus.bus.source.feature}`;
   const enabled = bus.bus.enabled;
   // Display "M1" as "CH1" — these are channels.
@@ -373,23 +480,31 @@ function ModulationRow({ bus, renderStyle }: { bus: ModBusRuntimeState; renderSt
         <span className="text-[12px] font-semibold tracking-tight text-[color:var(--ps-text)]">
           {channelLabel}
         </span>
-        {/* Bare power toggle — no chrome; the whole card carries the on/off state. */}
         <button
           type="button"
           disabled={disabled}
           onClick={handleToggle}
           aria-pressed={enabled}
+          role="switch"
+          aria-checked={enabled}
           aria-label={enabled ? `Turn ${channelLabel} off` : `Turn ${channelLabel} on`}
           title={enabled ? "On" : "Off"}
           className={clsx(
-            "inline-flex h-7 w-7 items-center justify-center rounded-full outline-none transition disabled:opacity-40",
+            "relative inline-flex h-[18px] w-9 items-center rounded-full border outline-none transition disabled:opacity-40",
             controlFocusRing,
             enabled
-              ? "text-[color:var(--ps-control-selected-marker)] [filter:drop-shadow(0_0_5px_rgba(59,130,246,0.5))]"
-              : "text-[color:var(--ps-text-muted)] hover:text-[color:var(--ps-text-soft)]"
+              ? "border-[color:var(--ps-control-selected-border)] bg-[color:var(--ps-control-selected-bg)]"
+              : "border-[color:var(--ps-border-strong)] bg-[color:var(--ps-control-fill)] hover:border-[color:var(--ps-text-muted)]"
           )}
         >
-          <Power className="h-[18px] w-[18px]" strokeWidth={2.5} />
+          <span
+            className={clsx(
+              "absolute h-3.5 w-3.5 rounded-full transition-transform",
+              enabled
+                ? "translate-x-[18px] bg-[color:var(--ps-control-selected-marker)]"
+                : "translate-x-0.5 bg-[color:var(--ps-text-muted)]"
+            )}
+          />
         </button>
       </div>
 
@@ -454,6 +569,25 @@ function ModulationRow({ bus, renderStyle }: { bus: ModBusRuntimeState; renderSt
           className={rangeClass}
         />
       </div>
+
+      <div className="mt-3 flex flex-col gap-1 text-[11px] text-[color:var(--ps-text-soft)]">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-semibold lowercase tracking-tight">Trim</span>
+          <span className="tabular-nums text-[10px] text-[color:var(--ps-text-muted)]">
+            {Math.round(trim * 100)}%
+          </span>
+        </div>
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.01}
+          value={trim}
+          disabled={disabled}
+          onChange={(e) => handleTrimChange(parseFloat(e.target.value))}
+          className={rangeClass}
+        />
+      </div>
     </div>
   );
 }
@@ -462,8 +596,15 @@ function ModulationSection({ compact = false }: { compact?: boolean }) {
   const {
     buses,
     modEngine,
-    micEnabled,
-    toggleMic,
+    audioEnabled,
+    audioNeedsInput,
+    audioNeedsSynth,
+    audioTrim,
+    setAudioTrim,
+    synthStarting,
+    synthError,
+    toggleAudio,
+    clearSynthError,
     micLevel,
     channelCount,
     outputChannelCount,
@@ -504,23 +645,30 @@ function ModulationSection({ compact = false }: { compact?: boolean }) {
   }, [outputChannelCount]);
 
   useEffect(() => {
-    const next = audioDevices.inputFallbackMessage || audioDevices.outputFallbackMessage || audioDevices.errorMessage;
+    const next =
+      synthError ||
+      audioDevices.inputFallbackMessage ||
+      audioDevices.outputFallbackMessage ||
+      audioDevices.errorMessage;
     if (!next) return;
     setNotice(next);
     const timer = window.setTimeout(() => {
       setNotice(null);
+      clearSynthError();
       audioDevices.clearInputFallbackMessage();
       audioDevices.clearOutputFallbackMessage();
       audioDevices.clearErrorMessage();
     }, 5000);
     return () => window.clearTimeout(timer);
   }, [
+    clearSynthError,
     audioDevices.clearErrorMessage,
     audioDevices.clearInputFallbackMessage,
     audioDevices.clearOutputFallbackMessage,
     audioDevices.errorMessage,
     audioDevices.inputFallbackMessage,
     audioDevices.outputFallbackMessage,
+    synthError,
   ]);
 
   const isModeActive = useCallback(
@@ -536,6 +684,7 @@ function ModulationSection({ compact = false }: { compact?: boolean }) {
     [channelMode]
   );
 
+  const audioRouteLabel = audioNeedsInput && audioNeedsSynth ? "input+synth" : audioNeedsInput ? "input" : audioNeedsSynth ? "synth" : "idle";
   const levelWidth = Math.round(Math.min(1, Math.max(0, micLevel)) * 100);
   const meterColor = levelWidth > 90 ? "bg-red-500" : levelWidth > 70 ? "bg-amber-400" : "bg-emerald-500";
   const levelDb = Math.max(-60, Math.round(micLevel * 60 - 60));
@@ -554,28 +703,51 @@ function ModulationSection({ compact = false }: { compact?: boolean }) {
             {notice}
           </div>
         )}
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="text-[11px] font-semibold lowercase tracking-tight">Audio</div>
           <button
             type="button"
-            onClick={toggleMic}
-            aria-pressed={micEnabled}
-            aria-label={micEnabled ? "Turn audio off" : "Turn audio on"}
-            title={micEnabled ? "Audio on" : "Audio off"}
+            onClick={toggleAudio}
+            disabled={synthStarting}
+            aria-pressed={audioEnabled}
+            aria-label={audioEnabled ? "Turn audio off" : "Turn audio on"}
+            title={audioEnabled ? "Audio on" : synthStarting ? "Starting audio" : "Audio off"}
             className={clsx(
-              "inline-flex h-8 w-8 items-center justify-center rounded-full outline-none transition",
+              "inline-flex h-8 min-w-[118px] items-center justify-center gap-1.5 rounded-full px-2.5 text-[10px] font-semibold lowercase tracking-tight outline-none transition disabled:opacity-45",
               controlFocusRing,
-              micEnabled
-                ? "text-[color:var(--ps-control-selected-marker)] [filter:drop-shadow(0_0_6px_rgba(59,130,246,0.5))]"
-                : "text-[color:var(--ps-text-muted)] hover:text-[color:var(--ps-text-soft)]"
+              audioEnabled
+                ? "bg-[color:var(--ps-control-selected-bg)] text-[color:var(--ps-control-selected-marker)] [box-shadow:0_0_0_1px_var(--ps-control-selected-border),0_0_12px_rgba(59,130,246,0.22)]"
+                : "bg-[color:var(--ps-control-fill)] text-[color:var(--ps-text-muted)] hover:text-[color:var(--ps-text-soft)]"
             )}
           >
-            <Power className="h-5 w-5" strokeWidth={2.5} />
+            <AudioWaveform className="h-4 w-4" strokeWidth={2.4} />
+            <span>Audio</span>
+            <span className="text-[9px] text-current opacity-65">
+              {synthStarting ? "start" : audioEnabled ? audioRouteLabel : "off"}
+            </span>
           </button>
         </div>
-        {!audioDevices.hasPermission && (
-          <p className="mt-1 text-[11px] text-[color:var(--ps-text-muted)]">Allow audio to choose device.</p>
+        {audioNeedsInput && !audioDevices.hasPermission && (
+          <p className="mt-1 text-[11px] text-[color:var(--ps-text-muted)]">Allow audio input to choose device.</p>
         )}
+
+        <div className="mt-3 flex flex-col gap-1 text-[11px] text-[color:var(--ps-text-soft)]">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-semibold lowercase tracking-tight">Global Trim</span>
+            <span className="tabular-nums text-[10px] text-[color:var(--ps-text-muted)]">
+              {Math.round(audioTrim * 100)}%
+            </span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={audioTrim}
+            onChange={(e) => setAudioTrim(parseFloat(e.target.value))}
+            className={rangeClass}
+          />
+        </div>
 
         <div className="mt-3 grid grid-cols-1 gap-3 text-[11px] sm:grid-cols-2">
           <label className="flex flex-col gap-1">

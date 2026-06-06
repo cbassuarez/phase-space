@@ -1,6 +1,6 @@
 import type { ChangeEvent } from "react";
 import { useViewerState } from "../../state/viewerState";
-import type { CellShape, LineThickness } from "../../types";
+import type { CellShape } from "../../types";
 import ToggleSwitch from "./ToggleSwitch";
 import {
   rangeClass,
@@ -8,30 +8,11 @@ import {
   segmentedGroupClass,
 } from "./controlStyles";
 
-const widthOptions: { id: LineThickness; label: string }[] = [
-  { id: "thin", label: "Thin" },
-  { id: "default", label: "Medium" },
-  { id: "thick", label: "Thick" },
-];
-
 const cellShapeOptions: { id: CellShape; label: string }[] = [
   { id: "circular", label: "Round" },
   { id: "cel", label: "Cel" },
   { id: "square", label: "Square" },
 ];
-
-const filamentOptions = [
-  { id: "low", label: "Sparse" },
-  { id: "medium", label: "Medium" },
-  { id: "high", label: "Dense" },
-] as const;
-
-const projectionOptions = [
-  { id: "auto", label: "Auto" },
-  { id: "xy", label: "XY" },
-  { id: "xz", label: "XZ" },
-  { id: "yz", label: "YZ" },
-] as const;
 
 const colorModeOptions = [
   { id: "global", label: "Palette" },
@@ -89,13 +70,15 @@ function Slider({
  * the photon-weave filament controls, and caustic interaction.
  */
 export function StyleDetail() {
-  const {
-    renderStyle,
-    lineThickness,
-    setLineThickness,
-    cellShape,
-    setCellShape,
-    cloudDensity,
+	  const {
+	    renderStyle,
+	    lineWeight,
+	    setLineWeight,
+	    cellShape,
+	    setCellShape,
+	    cellSize,
+	    setCellSize,
+	    cloudDensity,
     setCloudDensity,
     ribbonWidth,
     setRibbonWidth,
@@ -105,46 +88,44 @@ export function StyleDetail() {
     setCausticsSettings,
   } = useViewerState();
 
-  if (renderStyle === "line") {
-    return (
-      <div className="flex flex-col gap-2">
-        <FieldLabel>Line weight</FieldLabel>
-        <div className={segmentedGroupClass}>
-          {widthOptions.map((opt) => (
-            <button
-              key={opt.id}
-              type="button"
-              onClick={() => setLineThickness(opt.id)}
-              aria-pressed={lineThickness === opt.id}
-              className={segmentedButtonClass(lineThickness === opt.id)}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
+	  if (renderStyle === "line") {
+	    return (
+	      <div className="flex flex-col gap-1.5">
+	        <Slider
+	          label="Line weight"
+	          value={lineWeight}
+	          min={0}
+	          max={2}
+	          onChange={setLineWeight}
+	          format={(v) => v.toFixed(2)}
+	        />
+	        <div className="grid grid-cols-3 text-[10px] text-[color:var(--ps-text-muted)]">
+	          <span>Thin</span>
+	          <span className="text-center">Medium</span>
+	          <span className="text-right">Thick</span>
+	        </div>
+	      </div>
+	    );
+	  }
 
   if (renderStyle === "cells") {
     return (
       <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-2">
-          <FieldLabel>Cell size</FieldLabel>
-          <div className={segmentedGroupClass}>
-            {widthOptions.map((opt) => (
-              <button
-                key={opt.id}
-                type="button"
-                onClick={() => setLineThickness(opt.id)}
-                aria-pressed={lineThickness === opt.id}
-                className={segmentedButtonClass(lineThickness === opt.id)}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
+	        <div className="flex flex-col gap-1.5">
+	          <Slider
+	            label="Cell size"
+	            value={cellSize}
+	            min={0.35}
+	            max={3.4}
+	            onChange={setCellSize}
+	            format={(v) => `${v.toFixed(2)}×`}
+	          />
+	          <div className="grid grid-cols-3 text-[10px] text-[color:var(--ps-text-muted)]">
+	            <span>Small</span>
+	            <span className="text-center">Medium</span>
+	            <span className="text-right">Large</span>
+	          </div>
+	        </div>
         <div className="flex flex-col gap-2">
           <FieldLabel>Cell shape</FieldLabel>
           <div className={segmentedGroupClass}>
@@ -198,29 +179,31 @@ export function StyleDetail() {
   }
 
   if (renderStyle === "photon-weave") {
-    return (
-      <div className="flex flex-col gap-3">
-        <FieldLabel>Filament density</FieldLabel>
-        <div className={segmentedGroupClass}>
-          {filamentOptions.map((opt) => (
-            <button
-              key={opt.id}
-              type="button"
-              onClick={() => setPhotonWeaveSettings({ filamentDensity: opt.id })}
-              aria-pressed={photonWeaveSettings.filamentDensity === opt.id}
-              className={segmentedButtonClass(photonWeaveSettings.filamentDensity === opt.id)}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
+	    return (
+	      <div className="flex flex-col gap-3">
+	        <div className="flex flex-col gap-1.5">
+	          <Slider
+	            label="Filament density"
+	            value={photonWeaveSettings.filamentDensityValue}
+	            min={0}
+	            max={1}
+	            onChange={(v) => setPhotonWeaveSettings({ filamentDensityValue: v })}
+	            format={(v) => v.toFixed(2)}
+	          />
+	          <div className="grid grid-cols-3 text-[10px] text-[color:var(--ps-text-muted)]">
+	            <span>Sparse</span>
+	            <span className="text-center">Medium</span>
+	            <span className="text-right">Dense</span>
+	          </div>
+	        </div>
         <Slider
           label="Brightness"
           value={photonWeaveSettings.brightness}
           min={0}
-          max={2}
+          max={0.14}
+          step={0.005}
           onChange={(v) => setPhotonWeaveSettings({ brightness: v })}
-          format={(v) => `${v.toFixed(2)}×`}
+          format={(v) => v.toFixed(3)}
         />
         <Slider
           label="Trail length"
@@ -259,25 +242,6 @@ export function StyleDetail() {
           onChange={(v) => setCausticsSettings({ blurRadius: v })}
           format={(v) => v.toFixed(2)}
         />
-        <div className="flex flex-col gap-1">
-          <FieldLabel>Projection</FieldLabel>
-          <div className="grid grid-cols-4 gap-1">
-            {projectionOptions.map((opt) => (
-              <button
-                key={opt.id}
-                type="button"
-                onClick={() => setCausticsSettings({ projectionAxis: opt.id })}
-                aria-pressed={causticsSettings.projectionAxis === opt.id}
-                className={segmentedButtonClass(causticsSettings.projectionAxis === opt.id, {
-                  size: "sm",
-                  marker: false,
-                })}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
         <div className="flex flex-col gap-1">
           <FieldLabel>Color mode</FieldLabel>
           <div className="grid grid-cols-3 gap-1">

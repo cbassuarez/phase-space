@@ -1,4 +1,6 @@
 import { Vector3 } from "three";
+import { expApproach, slerp } from "../camera/smoothing";
+import { TAU_LIGHTING } from "./transitionConfig";
 
 /**
  * Shared lighting state for every renderer.
@@ -126,11 +128,67 @@ export const LIGHTING_PRESETS: { id: string; label: string; config: LightingConf
 let _state: LightingConfig = { ...DEFAULT_LIGHTING };
 let _presetId = "studio";
 
+// Eased copy of the lighting the renderers actually use, so preset/slider
+// changes glide instead of snapping. `_state` stays the immediate target (read
+// by the UI); `_eased` is advanced toward it once per frame.
+let _eased: LightingConfig = cloneLighting(DEFAULT_LIGHTING);
+let _lightingEasedInit = false;
+
+function cloneLighting(c: LightingConfig): LightingConfig {
+  return {
+    keyDir: [c.keyDir[0], c.keyDir[1], c.keyDir[2]],
+    keyColor: [c.keyColor[0], c.keyColor[1], c.keyColor[2]],
+    keyIntensity: c.keyIntensity,
+    fillDir: [c.fillDir[0], c.fillDir[1], c.fillDir[2]],
+    fillColor: [c.fillColor[0], c.fillColor[1], c.fillColor[2]],
+    fillIntensity: c.fillIntensity,
+    ambient: [c.ambient[0], c.ambient[1], c.ambient[2]],
+    shadowDensity: c.shadowDensity,
+  };
+}
+
+function easeTriple(
+  out: [number, number, number],
+  tgt: readonly [number, number, number],
+  dt: number
+) {
+  out[0] = expApproach(out[0], tgt[0], dt, TAU_LIGHTING);
+  out[1] = expApproach(out[1], tgt[1], dt, TAU_LIGHTING);
+  out[2] = expApproach(out[2], tgt[2], dt, TAU_LIGHTING);
+}
+
 type Subscriber = (state: LightingConfig, presetId: string) => void;
 const subscribers: Subscriber[] = [];
 
+/** The eased lighting the renderers consume each frame (glides on changes). */
 export function getLighting(): LightingConfig {
+  return _eased;
+}
+
+/** The immediate target lighting — for UI sliders that must reflect the set value. */
+export function getLightingTarget(): LightingConfig {
   return _state;
+}
+
+/** Advance the eased lighting toward the target. Call once per frame. */
+export function advanceLightingTransition(dt: number, reduced = false): void {
+  if (!_lightingEasedInit || reduced) {
+    _eased = cloneLighting(_state);
+    _lightingEasedInit = true;
+    return;
+  }
+  _eased.keyIntensity = expApproach(_eased.keyIntensity, _state.keyIntensity, dt, TAU_LIGHTING);
+  _eased.fillIntensity = expApproach(_eased.fillIntensity, _state.fillIntensity, dt, TAU_LIGHTING);
+  _eased.shadowDensity = expApproach(_eased.shadowDensity, _state.shadowDensity, dt, TAU_LIGHTING);
+  easeTriple(_eased.keyColor, _state.keyColor, dt);
+  easeTriple(_eased.fillColor, _state.fillColor, dt);
+  easeTriple(_eased.ambient, _state.ambient, dt);
+  // Directions are unit vectors — slerp for a clean rotation, then store back.
+  const t = 1 - Math.exp(-Math.min(Math.max(dt, 1e-4), 1 / 30) / TAU_LIGHTING);
+  const kd = slerp(_eased.keyDir, _state.keyDir, t);
+  _eased.keyDir = [kd[0], kd[1], kd[2]];
+  const fd = slerp(_eased.fillDir, _state.fillDir, t);
+  _eased.fillDir = [fd[0], fd[1], fd[2]];
 }
 
 export function getLightingPresetId(): string {
@@ -182,12 +240,12 @@ export function subscribeLighting(fn: Subscriber): () => void {
   };
 }
 
-/** Helper for renderers: copy keyDir into a reusable Vector3. */
+/** Helper for renderers: copy the eased keyDir into a reusable Vector3. */
 export function copyKeyDir(out: Vector3): Vector3 {
-  return out.set(_state.keyDir[0], _state.keyDir[1], _state.keyDir[2]);
+  return out.set(_eased.keyDir[0], _eased.keyDir[1], _eased.keyDir[2]);
 }
 
-/** Helper for renderers: copy fillDir into a reusable Vector3. */
+/** Helper for renderers: copy the eased fillDir into a reusable Vector3. */
 export function copyFillDir(out: Vector3): Vector3 {
-  return out.set(_state.fillDir[0], _state.fillDir[1], _state.fillDir[2]);
+  return out.set(_eased.fillDir[0], _eased.fillDir[1], _eased.fillDir[2]);
 }

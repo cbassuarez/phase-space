@@ -23,7 +23,19 @@ export type TargetPath =
   | "audio.voice_0.pitch"
   | "audio.voice_0.pan"
   | "audio.voice_0.brightness"
-  | "audio.master.gain";
+  | "audio.master.gain"
+  | "audio.synth.drone"
+  | "audio.synth.pluck"
+  | "audio.synth.dust"
+  | "audio.synth.bass"
+  | "audio.synth.shimmer"
+  | "audio.synth.pitch"
+  | "audio.synth.timbre"
+  | "audio.synth.motion"
+  | "audio.synth.texture"
+  | "audio.synth.pulse"
+  | "audio.synth.space"
+  | "audio.synth.gain";
 
 export type TargetSetter = (value: number) => void;
 
@@ -69,6 +81,16 @@ export class ModulationEngine {
     return this.buses;
   }
 
+  applyCurrentValues(): void {
+    for (const busState of this.buses) {
+      if (!busState.bus.enabled) continue;
+      const trim = Math.max(0, Math.min(1, busState.bus.trim ?? 1));
+      for (const target of busState.bus.targets) {
+        this.applyTarget(busState.value * trim, target);
+      }
+    }
+  }
+
   updateBusConfig(update: (buses: ModBus[]) => ModBus[]): void {
     this.buses = update(this.buses.map((b) => b.bus)).map((bus, idx) => ({
       bus,
@@ -93,9 +115,10 @@ export class ModulationEngine {
 
       busState.rawValue = scaled;
       busState.value = Math.max(0, Math.min(1, newValue));
+      const trim = Math.max(0, Math.min(1, bus.trim ?? 1));
 
       for (const t of bus.targets) {
-        this.applyTarget(busState.value, t);
+        this.applyTarget(busState.value * trim, t);
       }
     }
   }

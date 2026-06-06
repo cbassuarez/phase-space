@@ -23,6 +23,7 @@ import {
   createLightingUniforms,
   createMaterialUniforms,
   materialShaderChunk,
+  traceShaderChunk,
   type LightingUniforms,
   type MaterialUniforms,
 } from "./materials";
@@ -128,6 +129,7 @@ const rayMarchFragment = `
   uniform vec3  uBackground;
   uniform float uVoxelStep;
   ${materialShaderChunk}
+  ${traceShaderChunk}
 
   const int MARCH_STEPS  = 72;
   const int SHADOW_STEPS = 6;
@@ -212,7 +214,12 @@ const rayMarchFragment = `
       }
 
       vec4 voxel = texture(uVolume, uvw);
-      float density = voxel.r;
+      // Draw mode: voxel.a holds the (avg) arc position of the samples that
+      // built this voxel; mask density to the racing comet window. The comet is
+      // a thin arc band, so the volume integral renders it faint — boost the
+      // band density hard so it stays dense and reads as a bright comet.
+      float comet = psCometMask(voxel.a);
+      float density = voxel.r * mix(1.0, comet * 6.0, uTrace);
       if (density > 0.01) {
         // Shadow march toward the key light. Each shadow step
         // accumulates inverse-transmittance — denser regions cast
@@ -226,7 +233,9 @@ const rayMarchFragment = `
           shadow += texture(uVolume, sUvw).r;
           sPos += keyL * shadowStepLen;
         }
-        float keyTransmit = exp(-shadow * uShadowDensity);
+        // Soften self-shadowing in Draw mode so the thin comet isn't dimmed
+        // by the rest of the (now-invisible) cloud above it.
+        float keyTransmit = exp(-shadow * uShadowDensity * mix(1.0, 0.25, uTrace));
 
         // Palette colour by density (head/tail of the palette read
         // as low-density haze vs. high-density cores). Apply
@@ -253,6 +262,9 @@ const rayMarchFragment = `
         );
         float forwardScatter = pow(max(dot(rayDir, keyL), 0.0), 3.0);
         lit += paletteColor * uKeyColor * forwardScatter * uTransmission * (0.4 + fieldEnergy * 0.8);
+        // Self-luminous comet core: bright, shadow-independent emission so the
+        // racing light glows (and blooms) instead of looking like faint haze.
+        lit += paletteColor * (comet * uTrace) * 1.8;
 
         // Front-to-back compositing. Opacity per step scales with
         // density and step length; we keep marchLen ~ box diagonal
@@ -286,6 +298,9 @@ type RayMarchUniforms = LightingUniforms & MaterialUniforms & {
   uPaletteShift: { value: number };
   uBackground: { value: Color };
   uVoxelStep: { value: number };
+  uTrace: { value: number };
+  uHead: { value: number };
+  uDecay: { value: number };
 };
 
 /**
@@ -300,6 +315,7 @@ function buildVolumeTexture(trajectories: number[][][], dynamics: TrajectoryData
   const accum = new Float32Array(N * N * N);
   const colorAccum = new Float32Array(N * N * N);
   const fieldAccum = new Float32Array(N * N * N);
+  const arcAccum = new Float32Array(N * N * N); // weighted arc position (for Draw mode)
   const data = new Uint8Array(N * N * N * 4);
 
   const minX = -BOX_EXTENT;
@@ -308,7 +324,8 @@ function buildVolumeTexture(trajectories: number[][][], dynamics: TrajectoryData
   trajectories.forEach((traj, trajIdx) => {
     for (let i = 0; i < traj.length; i++) {
       const p = traj[i];
-      const colorT = dynamicScalarAt(dynamics, trajIdx, i, traj.length > 1 ? i / (traj.length - 1) : 0);
+      const arcT = traj.length > 1 ? i / (traj.length - 1) : 0;
+      const colorT = dynamicScalarAt(dynamics, trajIdx, i, arcT);
       const fieldT = visualFieldAt(dynamics, "density", trajIdx, i, 0);
       const fx = ((p[0] - minX) / sizeX) * N - 0.5;
       const fy = ((p[1] - minX) / sizeX) * N - 0.5;
@@ -334,6 +351,7 @@ function buildVolumeTexture(trajectories: number[][][], dynamics: TrajectoryData
             accum[idx] += weight;
             colorAccum[idx] += weight * colorT;
             fieldAccum[idx] += weight * fieldT;
+            arcAccum[idx] += weight * arcT;
           }
         }
       }
@@ -352,7 +370,8 @@ function buildVolumeTexture(trajectories: number[][][], dynamics: TrajectoryData
     data[out] = v >= 255 ? 255 : v <= 0 ? 0 : Math.floor(v);
     data[out + 1] = accum[i] > 0 ? Math.max(0, Math.min(255, Math.round((colorAccum[i] / accum[i]) * 255))) : 0;
     data[out + 2] = accum[i] > 0 ? Math.max(0, Math.min(255, Math.round((fieldAccum[i] / accum[i]) * 255))) : 0;
-    data[out + 3] = 255;
+    // Alpha channel carries the weighted-average arc position for Draw mode.
+    data[out + 3] = accum[i] > 0 ? Math.max(0, Math.min(255, Math.round((arcAccum[i] / accum[i]) * 255))) : 0;
   }
 
   const tex = new Data3DTexture(data, N, N, N);
@@ -434,10 +453,13 @@ export class RayMarchRenderer implements RendererStrategy {
       uPaletteShift:  { value: data.paletteShift ?? 0 },
       uBackground:    { value: bgColor },
       uVoxelStep:     { value: 1 / VOLUME_N },
+      uTrace:         { value: data.traceActive ? 1 : 0 },
+      uHead:          { value: data.traceHead ?? 0 },
+      uDecay:      { value: data.traceDecay ?? 0.12 },
       ...createLightingUniforms(lighting),
-      ...createMaterialUniforms(data.materialStyle),
+      ...createMaterialUniforms(data.materialTransmission),
     };
-    applyMaterialUniforms(uniforms, data.materialStyle, data.emissiveBoost ?? 0);
+    applyMaterialUniforms(uniforms, data.materialTransmission, data.emissiveBoost ?? 0);
 
     this.material = new ShaderMaterial({
       uniforms: uniforms as unknown as Record<string, { value: unknown }>,
@@ -474,10 +496,13 @@ export class RayMarchRenderer implements RendererStrategy {
     const u = this.material.uniforms as unknown as RayMarchUniforms;
     u.uCamPos.value.copy(camera.position);
     applyLightingUniforms(u, lighting);
-    applyMaterialUniforms(u, data.materialStyle, data.emissiveBoost ?? 0);
+    applyMaterialUniforms(u, data.materialTransmission, data.emissiveBoost ?? 0);
     u.uShadowDensity.value = lighting.shadowDensity * 4.0;
     u.uPaletteShift.value = data.paletteShift ?? 0;
     u.uBackground.value.copy(backgroundColorFor(this.data.background));
+    u.uTrace.value = this.data.traceActive ? 1 : 0;
+    u.uHead.value = this.data.traceHead ?? 0;
+    u.uDecay.value = this.data.traceDecay ?? 0.12;
 
     // Re-tonemap aggressiveness with the cloudDensity slider, since
     // ray-march doesn't have its own dedicated control. Higher

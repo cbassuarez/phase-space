@@ -16,10 +16,11 @@ import {
   createLightingUniforms,
   createMaterialUniforms,
   materialShaderChunk,
+  traceShaderChunk,
   type LightingUniforms,
   type MaterialUniforms,
 } from "./materials";
-import type { RendererStrategy, RenderContext, TrajectoryData } from "./base";
+import { lerpThickness, type RendererStrategy, type RenderContext, type TrajectoryData } from "./base";
 
 /**
  * Ribbon renderer — lit version.
@@ -76,6 +77,7 @@ const ribbonFragment = `
   uniform vec3  uAmbient;
   uniform vec3  uCamPos;
   ${materialShaderChunk}
+  ${traceShaderChunk}
 
   vec3 paletteSample(float t) {
     return texture2D(uPalette, vec2(fract(t), 0.5)).rgb;
@@ -107,6 +109,9 @@ const ribbonFragment = `
     vec3 col = psFilmicToneMap(lit * age * uExposure);
 
     float alpha = uMaterialAlpha * mix(0.6, 1.0, vT * vT);
+    float comet = psCometMask(vT);
+    col *= mix(1.0, comet, uTrace);
+    alpha *= mix(1.0, clamp(comet, 0.0, 1.0), uTrace);
     gl_FragColor = vec4(col, alpha);
   }
 `;
@@ -115,13 +120,18 @@ type RibbonUniforms = LightingUniforms & MaterialUniforms & {
   uPalette: { value: DataTexture | null };
   uPaletteShift: { value: number };
   uCamPos: { value: Vector3 };
+  uTrace: { value: number };
+  uHead: { value: number };
+  uDecay: { value: number };
 };
 
 function ribbonWidthFor(data: TrajectoryData): number {
   const base =
-    data.lineThickness === "thick" ? 0.28
-    : data.lineThickness === "thin" ? 0.12
-    : 0.18;
+    data.thicknessT != null
+      ? lerpThickness(data.thicknessT, 0.12, 0.18, 0.28)
+      : data.lineThickness === "thick" ? 0.28
+      : data.lineThickness === "thin" ? 0.12
+      : 0.18;
   return base * (data.ribbonWidth ?? 1);
 }
 
@@ -294,10 +304,13 @@ export class RibbonRenderer implements RendererStrategy {
         uPalette: { value: this.paletteTexture },
         uPaletteShift: { value: data.paletteShift ?? 0 },
         uCamPos: { value: context.camera.position.clone() },
+        uTrace: { value: data.traceActive ? 1 : 0 },
+        uHead: { value: data.traceHead ?? 0 },
+        uDecay: { value: data.traceDecay ?? 0.12 },
         ...createLightingUniforms(lighting),
-        ...createMaterialUniforms(data.materialStyle),
+        ...createMaterialUniforms(data.materialTransmission),
       };
-      applyMaterialUniforms(uniforms, data.materialStyle, reactiveRibbonGlow(data));
+      applyMaterialUniforms(uniforms, data.materialTransmission, reactiveRibbonGlow(data));
       const material = new ShaderMaterial({
         uniforms: uniforms as unknown as Record<string, { value: unknown }>,
         vertexShader: ribbonVertex,
@@ -340,8 +353,11 @@ export class RibbonRenderer implements RendererStrategy {
       const u = mat.uniforms as unknown as RibbonUniforms;
       u.uPaletteShift.value = paletteShift;
       if (camPos) u.uCamPos.value.copy(camPos);
+      u.uTrace.value = this.data!.traceActive ? 1 : 0;
+      u.uHead.value = this.data!.traceHead ?? 0;
+      u.uDecay.value = this.data!.traceDecay ?? 0.12;
       applyLightingUniforms(u, lighting);
-      applyMaterialUniforms(u, this.data.materialStyle, reactiveRibbonGlow(this.data));
+      applyMaterialUniforms(u, this.data.materialTransmission, reactiveRibbonGlow(this.data));
       mat.needsUpdate = true;
     });
   }

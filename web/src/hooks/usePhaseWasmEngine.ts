@@ -2,9 +2,23 @@ import { useEffect, useMemo, useState } from "react";
 import { getDefaultSceneJSON } from "../data/defaultScenes";
 import type { SceneSpec, SystemId, Trajectories } from "../types";
 
+export interface AttractorExprError {
+  message: string;
+  pos: number;
+}
+export interface AttractorValidation {
+  ok: boolean;
+  errors: {
+    dx: AttractorExprError | null;
+    dy: AttractorExprError | null;
+    dz: AttractorExprError | null;
+  };
+}
+
 type WasmEngineClass = new () => {
   integrate_scene: (sceneJson: string) => Trajectories;
   integrate_scene_value: (scene: unknown) => Trajectories;
+  validate_attractor: (input: string) => unknown;
 };
 
 interface PhaseWasmApi {
@@ -39,6 +53,7 @@ function sceneForWasm(scene: SceneSpec): Record<string, unknown> {
 
 type EngineInstance = {
   integrate_scene_value: (scene: unknown) => Trajectories;
+  validate_attractor: (input: string) => unknown;
 };
 
 export function usePhaseWasmEngine() {
@@ -56,6 +71,7 @@ export function usePhaseWasmEngine() {
         if (!mounted) return;
         setEngine({
           integrate_scene_value: wasmEngine.integrate_scene_value.bind(wasmEngine),
+          validate_attractor: wasmEngine.validate_attractor.bind(wasmEngine),
         });
         setReady(true);
       } catch (err) {
@@ -80,6 +96,11 @@ export function usePhaseWasmEngine() {
         const scene = JSON.parse(sceneJson) as SceneSpec;
         const trajectories = engine.integrate_scene_value(sceneForWasm(scene)) as Trajectories;
         return { trajectories, scene };
+      },
+      // Validate user-defined attractor equations. Input is
+      // `{ equations: { dx, dy, dz }, params: { name: value } }`.
+      validateAttractor: (input: string): AttractorValidation => {
+        return engine.validate_attractor(input) as AttractorValidation;
       },
     };
   }, [engine]);

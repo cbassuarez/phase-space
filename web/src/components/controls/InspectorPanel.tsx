@@ -99,7 +99,7 @@ export function InspectorPanel() {
     system,
     sceneSpec,
     renderStyle,
-    materialStyle,
+    materialTransmission,
     palette,
     resolution,
     background,
@@ -205,10 +205,10 @@ export function InspectorPanel() {
                 </div>
               </div>
 
-              {/* Telemetry */}
+                {/* Telemetry */}
               <dl className="grid grid-cols-2 gap-x-4">
                 <Row label="Render" value={renderStyle} />
-                <Row label="Material" value={materialStyle} />
+                <Row label="Transmission" value={materialTransmission.toFixed(2)} />
                 <Row label="Palette" value={palette} />
                 <Row label="Theme" value={background} />
                 <Row label="Resolution" value={resolution} />

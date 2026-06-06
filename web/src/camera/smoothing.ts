@@ -85,6 +85,32 @@ export function springVec3(
 }
 
 /**
+ * Frame-rate-independent exponential approach toward `target`. No velocity term,
+ * so it never overshoots — preferred for visual params (alpha, density, etc.).
+ * `tau` is the time constant in seconds. `dt` is clamped so a stall can't jump.
+ */
+export function expApproach(current: number, target: number, dt: number, tau: number): number {
+  if (tau <= 0) return target;
+  const k = 1 - Math.exp(-clamp(dt, 1e-4, 1 / 30) / tau);
+  return current + (target - current) * k;
+}
+
+/** `expApproach` per component, mutating `out`. */
+export function expApproachVec3(out: Vec3, target: Vec3, dt: number, tau: number): void {
+  out[0] = expApproach(out[0], target[0], dt, tau);
+  out[1] = expApproach(out[1], target[1], dt, tau);
+  out[2] = expApproach(out[2], target[2], dt, tau);
+}
+
+/** Wrap-aware exponential approach for a 0..1 cyclic value (e.g. palette shift). */
+export function expApproachAngle(current: number, target: number, dt: number, tau: number): number {
+  let delta = ((target - current) % 1 + 1.5) % 1 - 0.5; // shortest signed path on the ring
+  if (tau <= 0) delta = ((target - current) % 1 + 1) % 1;
+  const k = tau <= 0 ? 1 : 1 - Math.exp(-clamp(dt, 1e-4, 1 / 30) / tau);
+  return ((current + delta * k) % 1 + 1) % 1;
+}
+
+/**
  * Unit-vector slerp. Picks the short arc; falls back to lerp+normalize
  * for nearly-parallel inputs and to the first input for nearly-antiparallel.
  */

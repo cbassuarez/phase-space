@@ -8,6 +8,9 @@ import { useViewerState } from "../state/viewerState";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { useRangeFill } from "../hooks/useRangeFill";
 import { setMaterialOpacity } from "./canvas/renderers/materials";
+import { setCameraReturnToHome } from "../camera/controller";
+import { AnimatePresence } from "framer-motion";
+import CustomAttractorModal from "./controls/CustomAttractorModal";
 
 function MainLayout() {
     const isMobile = useIsMobile();
@@ -21,14 +24,19 @@ function MainLayout() {
         customPalette,
         background,
         autoSpin,
-        animateHeadTail,
-        showFullTrajectory,
+        returnToHome,
+        drawTrace,
+        traceSpeed,
+        traceDecay,
         lineThickness,
+        lineWeight,
         cellShape,
+        cellSize,
         cloudDensity,
         ribbonWidth,
         attractorOpacity,
         materialStyle,
+        materialTransmission,
         renderStyle,
         resolution,
         photonWeaveSettings,
@@ -36,6 +44,7 @@ function MainLayout() {
         cameraProgram,
         loading,
         error,
+        editingAttractor,
     } = useViewerState();
 
     // Bridge the React opacity setting into the renderer module (a single
@@ -43,6 +52,11 @@ function MainLayout() {
     useEffect(() => {
         setMaterialOpacity(attractorOpacity);
     }, [attractorOpacity]);
+
+    // Bridge the "return to home" camera setting into the controller module.
+    useEffect(() => {
+        setCameraReturnToHome(returnToHome);
+    }, [returnToHome]);
 
     const viewCamera = sceneSpec?.view?.camera;
     const sceneSeed = sceneSpec?.random_seed ?? undefined;
@@ -64,13 +78,17 @@ function MainLayout() {
                             cameraProgram={cameraProgram}
                             randomSeed={sceneSeed}
                             autoSpin={autoSpin}
-                            animateHeadTail={animateHeadTail}
-                            showFullTrajectory={showFullTrajectory}
+                            drawTrace={drawTrace}
+                            traceSpeed={traceSpeed}
+                            traceDecay={traceDecay}
                             lineThickness={lineThickness}
+                            lineWeight={lineWeight}
                             cellShape={cellShape}
+                            cellSize={cellSize}
                             cloudDensity={cloudDensity}
                             ribbonWidth={ribbonWidth}
                             materialStyle={materialStyle}
+                            materialTransmission={materialTransmission}
                             renderStyle={renderStyle}
                             resolution={resolution}
                             photonWeaveSettings={photonWeaveSettings}
@@ -118,13 +136,17 @@ function MainLayout() {
                             cameraProgram={cameraProgram}
                             randomSeed={sceneSeed}
                             autoSpin={autoSpin}
-                            animateHeadTail={animateHeadTail}
-                            showFullTrajectory={showFullTrajectory}
+                            drawTrace={drawTrace}
+                            traceSpeed={traceSpeed}
+                            traceDecay={traceDecay}
                             lineThickness={lineThickness}
+                            lineWeight={lineWeight}
                             cellShape={cellShape}
+                            cellSize={cellSize}
                             cloudDensity={cloudDensity}
                             ribbonWidth={ribbonWidth}
                             materialStyle={materialStyle}
+                            materialTransmission={materialTransmission}
                             renderStyle={renderStyle}
                             resolution={resolution}
                             photonWeaveSettings={photonWeaveSettings}
@@ -133,6 +155,11 @@ function MainLayout() {
                     </section>
                 </div>
             )}
+            <AnimatePresence>
+                {editingAttractor && (
+                    <CustomAttractorModal key={editingAttractor.id} initial={editingAttractor} />
+                )}
+            </AnimatePresence>
         </div>
     );
 }

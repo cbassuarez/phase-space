@@ -18,12 +18,14 @@ import {
   createLightingUniforms,
   createMaterialUniforms,
   materialShaderChunk,
+  traceShaderChunk,
   type LightingUniforms,
   type MaterialUniforms,
 } from "./materials";
-import { useAdditiveBlending, type RendererStrategy, type RenderContext, type TrajectoryData } from "./base";
+import { lerpThickness, useAdditiveBlending, type RendererStrategy, type RenderContext, type TrajectoryData } from "./base";
 
 function lineWidthFor(data: TrajectoryData): number {
+  if (data.thicknessT != null) return lerpThickness(data.thicknessT, 0.016, 0.036, 0.075);
   if (data.lineThickness === "thick") return 0.075;
   if (data.lineThickness === "thin") return 0.016;
   return 0.036;
@@ -127,6 +129,7 @@ const lineFragment = `
   uniform float uFillI;
   uniform vec3 uAmbient;
   ${materialShaderChunk}
+  ${traceShaderChunk}
 
   void main() {
     vec3 normal = normalize(vNormal);
@@ -154,6 +157,9 @@ const lineFragment = `
     lit *= mix(0.72, 1.08, vT);
     vec3 color = psFilmicToneMap(lit * uExposure);
     float alpha = uOpacity * uMaterialAlpha * mix(0.72, 1.0, edgeGlow);
+    float comet = psCometMask(vT);
+    color *= mix(1.0, comet, uTrace);
+    alpha *= mix(1.0, clamp(comet, 0.0, 1.0), uTrace);
     gl_FragColor = vec4(color, alpha);
   }
 `;
@@ -163,6 +169,9 @@ type LineUniforms = LightingUniforms & MaterialUniforms & {
   uPaletteShift: { value: number };
   uOpacity: { value: number };
   uCamPos: { value: Vector3 };
+  uTrace: { value: number };
+  uHead: { value: number };
+  uDecay: { value: number };
 };
 
 function writeStripPositions(record: StripRecord, width: number) {
@@ -267,10 +276,13 @@ export class LineRenderer implements RendererStrategy {
         uPaletteShift: { value: data.paletteShift ?? 0 },
         uOpacity: { value: opacity },
         uCamPos: { value: context.camera.position.clone() },
+        uTrace: { value: data.traceActive ? 1 : 0 },
+        uHead: { value: data.traceHead ?? 0 },
+        uDecay: { value: data.traceDecay ?? 0.12 },
         ...createLightingUniforms(lighting),
-        ...createMaterialUniforms(data.materialStyle),
+        ...createMaterialUniforms(data.materialTransmission),
       };
-      applyMaterialUniforms(uniforms, data.materialStyle, lineGlow(data));
+      applyMaterialUniforms(uniforms, data.materialTransmission, lineGlow(data));
       const mat = new ShaderMaterial({
         uniforms: uniforms as unknown as Record<string, { value: unknown }>,
         vertexShader: lineVertex,
@@ -315,8 +327,11 @@ export class LineRenderer implements RendererStrategy {
         u.uPaletteShift.value = this.data!.paletteShift ?? 0;
         u.uOpacity.value = opacity;
         if (camPos) u.uCamPos.value.copy(camPos);
+        u.uTrace.value = this.data!.traceActive ? 1 : 0;
+        u.uHead.value = this.data!.traceHead ?? 0;
+        u.uDecay.value = this.data!.traceDecay ?? 0.12;
         applyLightingUniforms(u, lighting);
-        applyMaterialUniforms(u, this.data.materialStyle, lineGlow(this.data));
+        applyMaterialUniforms(u, this.data.materialTransmission, lineGlow(this.data));
       }
       mat.blending = useAdditive ? AdditiveBlending : NormalBlending;
       mat.needsUpdate = true;

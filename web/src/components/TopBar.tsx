@@ -74,7 +74,7 @@ function TopBar() {
 
   return (
     <header className="w-full border-b border-[color:var(--ps-border-subtle)] bg-[color:var(--ps-bg)]">
-      <div className="mx-auto flex h-14 w-full max-w-[1440px] items-center justify-between px-[clamp(12px,3vw,24px)] md:h-16">
+      <div className="flex h-14 w-full items-center justify-between px-4 md:h-16">
         <Link
           to="/"
           className={clsx(

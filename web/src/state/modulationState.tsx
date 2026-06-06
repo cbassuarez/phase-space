@@ -8,6 +8,7 @@ import React, {
   useState,
 } from "react";
 import { AudioIO, type AudioFeatureFrame } from "../audio/audioFeatures";
+import { CsoundSynth, type CsoundSynthControl } from "../audio/csoundSynth";
 import { InternalSynth } from "../audio/internalSynth";
 import { ModulationEngine, type TargetPath, type TargetRegistry } from "../modulation/modEngine";
 import type { ModBus, ModBusRuntimeState } from "../modulation/types";
@@ -40,6 +41,16 @@ interface ModulationContextValue {
   audioFrameRef: React.MutableRefObject<AudioFeatureFrame | null>;
   modValuesRef: React.MutableRefObject<ModValues>;
   synth: InternalSynth;
+  audioEnabled: boolean;
+  audioNeedsInput: boolean;
+  audioNeedsSynth: boolean;
+  audioTrim: number;
+  setAudioTrim: (trim: number) => void;
+  synthEnabled: boolean;
+  synthStarting: boolean;
+  synthError: string | null;
+  toggleAudio: () => Promise<void>;
+  clearSynthError: () => void;
   micEnabled: boolean;
   toggleMic: () => Promise<void>;
   micLevel: number;
@@ -52,10 +63,29 @@ interface ModulationContextValue {
 const ModulationContext = createContext<ModulationContextValue | null>(null);
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+const isSynthTargetPath = (path: string) => path.startsWith("audio.synth.");
+const isLegacyAudioTargetPath = (path: string) =>
+  path.startsWith("audio.voice_0.") || path === "audio.master.gain";
+
+function getAudioRouteNeeds(buses: ModBusRuntimeState[]) {
+  let input = false;
+  let synth = false;
+  let legacy = false;
+  buses.forEach(({ bus }) => {
+    if (!bus.enabled) return;
+    input = input || bus.source.domain === "audio";
+    bus.targets.forEach((target) => {
+      synth = synth || isSynthTargetPath(target.path);
+      legacy = legacy || isLegacyAudioTargetPath(target.path);
+    });
+  });
+  return { input, synth, legacy };
+}
 
 const createTargetRegistry = (
   valuesRef: React.MutableRefObject<ModValues>,
-  synth: InternalSynth
+  synth: InternalSynth,
+  csoundSynth: CsoundSynth
 ): TargetRegistry => {
   const setCameraR = (v: number) => {
     valuesRef.current.camera.r = Math.max(4, Math.min(120, v));
@@ -117,6 +147,50 @@ const createTargetRegistry = (
   const setVoicePan = (v: number) => synth.setVoicePan(0, clamp01(v));
   const setVoiceBrightness = (v: number) => synth.setVoiceBrightness(0, clamp01(v));
   const setMasterGain = (v: number) => synth.setMasterGain(clamp01(v));
+  const setSynthControl = (name: CsoundSynthControl) => (v: number) => {
+    csoundSynth.setControl(name, clamp01(v));
+  };
+  const setLegacySynthControl =
+    (name: CsoundSynthControl, layer: "drone" | "pluck" | "dust" | "bass" | "shimmer") => (v: number) => {
+      const value = clamp01(v);
+      csoundSynth.setControl(name, value);
+      csoundSynth.setControl(layer, value);
+    };
+  const setSynthPreset = (preset: "drone" | "pluck" | "dust" | "bass" | "shimmer") => (v: number) => {
+    const value = clamp01(v);
+    switch (preset) {
+      case "drone":
+        csoundSynth.setControl("drone", value);
+        csoundSynth.setControl("pitch", 0.28 + value * 0.52);
+        csoundSynth.setControl("timbre", 0.22 + value * 0.58);
+        csoundSynth.setControl("space", 0.58 + value * 0.36);
+        break;
+      case "pluck":
+        csoundSynth.setControl("pluck", value);
+        csoundSynth.setControl("motion", value * (0.18 + value * 0.78));
+        csoundSynth.setControl("pulse", value * (0.38 + value * 0.62));
+        csoundSynth.setControl("timbre", 0.48 + value * 0.42);
+        break;
+      case "dust":
+        csoundSynth.setControl("dust", value);
+        csoundSynth.setControl("texture", 0.25 + value * 0.75);
+        csoundSynth.setControl("timbre", 0.18 + value * 0.62);
+        csoundSynth.setControl("space", 0.24 + value * 0.6);
+        break;
+      case "bass":
+        csoundSynth.setControl("bass", value);
+        csoundSynth.setControl("pitch", 0.04 + value * 0.28);
+        csoundSynth.setControl("motion", value * (0.12 + value * 0.72));
+        csoundSynth.setControl("pulse", value * (0.35 + value * 0.5));
+        break;
+      case "shimmer":
+        csoundSynth.setControl("shimmer", value);
+        csoundSynth.setControl("pitch", 0.52 + value * 0.3);
+        csoundSynth.setControl("timbre", 0.42 + value * 0.5);
+        csoundSynth.setControl("space", 0.66 + value * 0.3);
+        break;
+    }
+  };
 
   const map: Partial<Record<TargetPath, (val: number) => void>> = {
     "view.camera.r": setCameraR,
@@ -140,6 +214,18 @@ const createTargetRegistry = (
     "audio.voice_0.pan": setVoicePan,
     "audio.voice_0.brightness": setVoiceBrightness,
     "audio.master.gain": setMasterGain,
+    "audio.synth.drone": setSynthPreset("drone"),
+    "audio.synth.pluck": setSynthPreset("pluck"),
+    "audio.synth.dust": setSynthPreset("dust"),
+    "audio.synth.bass": setSynthPreset("bass"),
+    "audio.synth.shimmer": setSynthPreset("shimmer"),
+    "audio.synth.pitch": setLegacySynthControl("pitch", "drone"),
+    "audio.synth.timbre": setLegacySynthControl("timbre", "drone"),
+    "audio.synth.motion": setLegacySynthControl("motion", "pluck"),
+    "audio.synth.texture": setLegacySynthControl("texture", "dust"),
+    "audio.synth.pulse": setLegacySynthControl("pulse", "bass"),
+    "audio.synth.space": setLegacySynthControl("space", "shimmer"),
+    "audio.synth.gain": setSynthControl("gain"),
   };
 
   return {
@@ -166,12 +252,19 @@ export function ModulationProvider({ children }: { children: React.ReactNode }) 
   } = audioDevices;
   const [modEngine, setModEngine] = useState<ModulationEngine | null>(null);
   const [buses, setBuses] = useState<ModBusRuntimeState[]>([]);
+  const [audioEnabled, setAudioEnabled] = useState(false);
+  const [audioTrim, setAudioTrimState] = useState(0.68);
   const [micEnabled, setMicEnabled] = useState(false);
+  const [synthEnabled, setSynthEnabled] = useState(false);
+  const [synthStarting, setSynthStarting] = useState(false);
+  const [synthError, setSynthError] = useState<string | null>(null);
   const [micLevel, setMicLevel] = useState(0);
   const [channelCount, setChannelCount] = useState(2);
   const [outputChannelCount, setOutputChannelCount] = useState(2);
   const audioIO = useMemo(() => new AudioIO(), []);
   const synth = useMemo(() => new InternalSynth(audioIO.getContext() ?? undefined), [audioIO]);
+  const csoundSynth = useMemo(() => new CsoundSynth(synth.getContext()), [synth]);
+  const audioRouteNeeds = useMemo(() => getAudioRouteNeeds(buses), [buses]);
   const [monitorDestination, setMonitorDestination] = useState<MediaStreamAudioDestinationNode | null>(null);
   const monitorAudioRef = useRef<HTMLAudioElement | null>(null);
   const activeInputRef = useRef<string | null>(null);
@@ -212,18 +305,31 @@ export function ModulationProvider({ children }: { children: React.ReactNode }) 
   }, [audioIO]);
 
   useEffect(() => {
-    synth.setMasterGain(0.15);
+    synth.setMasterGain(0);
   }, [synth]);
+
+  const setAudioTrim = useCallback(
+    (trim: number) => {
+      const clamped = clamp01(trim);
+      setAudioTrimState(clamped);
+      csoundSynth.setControl("gain", clamped);
+      if (audioRouteNeeds.legacy && audioEnabled) {
+        synth.setMasterGain(clamped * 0.25);
+      }
+    },
+    [audioEnabled, audioRouteNeeds.legacy, csoundSynth, synth]
+  );
 
   useEffect(() => {
     const ctx = synth.getContext();
     const destination = ctx.createMediaStreamDestination();
     synth.connectMonitorDestination(destination);
+    csoundSynth.connectMonitorDestination(destination);
     setMonitorDestination(destination);
     const dest = synth.getContext().destination;
     const reportedCount = dest.maxChannelCount || dest.channelCount || dest.numberOfOutputs || 2;
     setOutputChannelCount(Math.max(1, Math.min(8, reportedCount)));
-  }, [synth]);
+  }, [csoundSynth, synth]);
 
   useEffect(() => {
     const audioEl = monitorAudioRef.current;
@@ -232,7 +338,16 @@ export function ModulationProvider({ children }: { children: React.ReactNode }) 
     audioEl.play().catch(() => undefined);
   }, [monitorDestination]);
 
-  const registry = useMemo(() => createTargetRegistry(modValuesRef, synth), [modValuesRef, synth]);
+  const ensureMonitorPlayback = useCallback(() => {
+    const audioEl = monitorAudioRef.current;
+    if (!audioEl) return;
+    audioEl.play().catch(() => undefined);
+  }, []);
+
+  const registry = useMemo(
+    () => createTargetRegistry(modValuesRef, synth, csoundSynth),
+    [modValuesRef, synth, csoundSynth]
+  );
 
   useEffect(() => {
     ModulationEngine.load(registry).then((engine) => {
@@ -243,13 +358,35 @@ export function ModulationProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => () => {
     audioIO.stop();
-  }, [audioIO]);
+    void csoundSynth.stop();
+  }, [audioIO, csoundSynth]);
 
   const updateBuses = (updater: (buses: ModBus[]) => ModBus[]) => {
     if (!modEngine) return;
     modEngine.updateBusConfig(updater);
-    setBuses(modEngine.getBuses());
+    const nextBuses = modEngine.getBuses();
+    csoundSynth.resetRouteControls();
+    modEngine.applyCurrentValues();
+    const nextNeeds = getAudioRouteNeeds(nextBuses);
+    const needsAudio = nextNeeds.input || nextNeeds.synth || nextNeeds.legacy;
+    setBuses(nextBuses);
+    setAudioEnabled(needsAudio);
+    if (!needsAudio) {
+      void Promise.allSettled([csoundSynth.stop(), audioIO.stop()]);
+      synth.setMasterGain(0);
+      setSynthEnabled(false);
+      setMicEnabled(false);
+      setMicLevel(0);
+      activeInputRef.current = null;
+    }
   };
+
+  const stopMicInput = useCallback(async () => {
+    await audioIO.stop();
+    setMicEnabled(false);
+    setMicLevel(0);
+    activeInputRef.current = null;
+  }, [audioIO]);
 
   const startMicWithDevice = useCallback(
     async (deviceId: string) => {
@@ -260,6 +397,7 @@ export function ModulationProvider({ children }: { children: React.ReactNode }) 
         if (synth.getContext().state === "suspended") {
           await synth.getContext().resume();
         }
+        ensureMonitorPlayback();
         setMicEnabled(true);
       } catch (err) {
         console.warn("Failed to start mic", err);
@@ -271,15 +409,12 @@ export function ModulationProvider({ children }: { children: React.ReactNode }) 
         }
       }
     },
-    [audioIO, channelMode, setInputDevice, setInputFallbackMessage, synth]
+    [audioIO, channelMode, ensureMonitorPlayback, setInputDevice, setInputFallbackMessage, synth]
   );
 
   const toggleMic = async () => {
     if (micEnabled) {
-      await audioIO.stop();
-      setMicEnabled(false);
-      setMicLevel(0);
-      activeInputRef.current = null;
+      await stopMicInput();
       return;
     }
     if (!hasPermission) {
@@ -291,6 +426,89 @@ export function ModulationProvider({ children }: { children: React.ReactNode }) 
     }
     await startMicWithDevice(selectedInputId);
   };
+
+  const stopAllAudio = useCallback(async () => {
+    await Promise.allSettled([csoundSynth.stop(), stopMicInput()]);
+    synth.setMasterGain(0);
+    setAudioEnabled(false);
+    setSynthEnabled(false);
+    setSynthError(null);
+  }, [csoundSynth, stopMicInput, synth]);
+
+  const startSynthOutput = useCallback(async () => {
+    if (synthStarting || synthEnabled || csoundSynth.isRunning()) return;
+    setSynthStarting(true);
+    setSynthError(null);
+    try {
+      await csoundSynth.start();
+      ensureMonitorPlayback();
+      setSynthEnabled(true);
+    } catch (err) {
+      console.warn("Failed to start Synth", err);
+      setSynthEnabled(false);
+      setSynthError("Audio output failed to start.");
+    } finally {
+      setSynthStarting(false);
+    }
+  }, [csoundSynth, ensureMonitorPlayback, synthEnabled, synthStarting]);
+
+  const applyAudioRouteState = useCallback(async () => {
+    csoundSynth.setControl("gain", audioTrim);
+    synth.setMasterGain(audioRouteNeeds.legacy ? audioTrim * 0.25 : 0);
+
+    if (audioRouteNeeds.synth) {
+      await startSynthOutput();
+    } else if (synthEnabled || csoundSynth.isRunning()) {
+      await csoundSynth.stop();
+      setSynthEnabled(false);
+      setSynthError(null);
+    }
+
+    if (audioRouteNeeds.input) {
+      if (!micEnabled || activeInputRef.current !== selectedInputId) {
+        if (!hasPermission) {
+          await requestPermission();
+        }
+        await startMicWithDevice(selectedInputId);
+      }
+    } else if (micEnabled) {
+      await stopMicInput();
+    }
+  }, [
+    audioRouteNeeds.input,
+    audioRouteNeeds.legacy,
+    audioRouteNeeds.synth,
+    audioTrim,
+    csoundSynth,
+    hasPermission,
+    micEnabled,
+    requestPermission,
+    selectedInputId,
+    startMicWithDevice,
+    startSynthOutput,
+    stopMicInput,
+    synth,
+    synthEnabled,
+  ]);
+
+  const toggleAudio = useCallback(async () => {
+    if (synthStarting) return;
+    if (audioEnabled) {
+      await stopAllAudio();
+      return;
+    }
+    setAudioEnabled(true);
+    await applyAudioRouteState();
+  }, [applyAudioRouteState, audioEnabled, stopAllAudio, synthStarting]);
+
+  useEffect(() => {
+    if (!audioEnabled) return;
+    void applyAudioRouteState();
+  }, [applyAudioRouteState, audioEnabled]);
+
+  const clearSynthError = useCallback(() => {
+    setSynthError(null);
+  }, []);
 
   useEffect(() => {
     if (!micEnabled) return;
@@ -328,6 +546,16 @@ export function ModulationProvider({ children }: { children: React.ReactNode }) 
     audioFrameRef,
     modValuesRef,
     synth,
+    audioEnabled,
+    audioNeedsInput: audioRouteNeeds.input,
+    audioNeedsSynth: audioRouteNeeds.synth,
+    audioTrim,
+    setAudioTrim,
+    synthEnabled,
+    synthStarting,
+    synthError,
+    toggleAudio,
+    clearSynthError,
     micEnabled,
     toggleMic,
     micLevel,

@@ -2,39 +2,41 @@
   "buses": [
     {
       "id": "M1",
-      "enabled": true,
+      "enabled": false,
+      "trim": 1,
       "source": {
-        "domain": "audio",
-        "feature": "level",
-        "smoothing": 0.85,
+        "domain": "visual",
+        "feature": "avg_speed",
+        "smoothing": 0.82,
         "gain": 1.0
       },
       "targets": [
         {
-          "path": "render.active.energy",
+          "path": "audio.synth.pluck",
           "range": [
             0,
-            1
+            0.92
           ],
-          "curve": "log"
+          "curve": "exp"
         }
       ]
     },
     {
       "id": "M2",
       "enabled": false,
+      "trim": 1,
       "source": {
-        "domain": "audio",
-        "feature": "low_band",
-        "smoothing": 0.82,
+        "domain": "visual",
+        "feature": "curvature",
+        "smoothing": 0.86,
         "gain": 1.0
       },
       "targets": [
         {
-          "path": "view.camera.pulse",
+          "path": "audio.synth.drone",
           "range": [
             0,
-            0.28
+            0.88
           ],
           "curve": "log"
         }
@@ -43,38 +45,40 @@
     {
       "id": "M3",
       "enabled": false,
+      "trim": 1,
       "source": {
-        "domain": "audio",
-        "feature": "brightness",
+        "domain": "visual",
+        "feature": "traj_density",
         "smoothing": 0.88,
-        "gain": 1.05
+        "gain": 1.0
       },
       "targets": [
         {
-          "path": "view.palette_shift",
+          "path": "audio.synth.dust",
           "range": [
             0,
-            0.48
+            0.94
           ],
-          "curve": "linear"
+          "curve": "log"
         }
       ]
     },
     {
       "id": "M4",
       "enabled": false,
+      "trim": 1,
       "source": {
-        "domain": "audio",
-        "feature": "onset",
-        "smoothing": 0.35,
+        "domain": "visual",
+        "feature": "lobe_pulse",
+        "smoothing": 0.42,
         "gain": 1.0
       },
       "targets": [
         {
-          "path": "render.active.pulse",
+          "path": "audio.synth.bass",
           "range": [
             0,
-            1
+            0.98
           ],
           "curve": "linear"
         }

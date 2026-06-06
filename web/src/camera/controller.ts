@@ -30,6 +30,7 @@ import {
   lobeCentersFromTrajectory,
 } from "./framing";
 import { cameraInput } from "./cameraInput";
+import { CAMERA_MODE_GLIDE_TAU } from "../visual/transitionConfig";
 
 const FOV_Y = Math.PI / 4; // matches Canvas fov={45}
 
@@ -174,6 +175,15 @@ function surveyDirection(t: number, cfg: SurveyCameraConfig): Vec3 {
   return [cp * Math.cos(yaw), Math.sin(pitch), cp * Math.sin(yaw)];
 }
 
+// Survey speed spectrum. The linear 0.25→2.0 Speed range left the gentle low
+// end nice but the top too slow, so apply a super-linear curve anchored at the
+// low end: f(0.25) ≈ 0.25 (unchanged) while f(2.0) ≈ 16 (~8× the linear top).
+function surveySpeedFactor(speedScalar: number): number {
+  const s = Math.max(0.05, speedScalar);
+  const p = 2.0;
+  return Math.pow(s, p) * Math.pow(0.25, 1 - p);
+}
+
 function surveyPose(program: CameraProgram, ctx: CameraContext, t: number): CameraPose {
   const cfg = program.survey;
   const sphere = boundingSphereFromAABB(ctx.bboxMin, ctx.bboxMax);
@@ -232,7 +242,10 @@ function chasePose(program: CameraProgram, ctx: CameraContext, t: number): Camer
   // which used to make the camera fly faster at higher resolution and
   // tear through tightly-wound attractors. scene-relative cruise keeps
   // the pace identical across resolutions and calm on chaotic systems.
-  const cruiseSpeed = scene * 0.35 * Math.max(0.01, cfg.time_scale);
+  // The global Speed control scales the cruise too (chase used to ignore it).
+  // The 0.6 trims the overall pace down (top and bottom) for a calmer ride.
+  const cruiseSpeed =
+    scene * 0.6 * Math.max(0.05, program.speed_scalar) * Math.max(0.01, cfg.time_scale);
   // Clamp dt: a frame hitch (GC, tab refocus) otherwise advances sArc by a
   // huge step and lurches the camera down the path. Cap at ~1/30s so the
   // worst a stutter does is briefly slow the cruise, never pop.
@@ -437,6 +450,19 @@ const grab: GrabState = {
 const PHI_MIN = 0.12;
 const PHI_MAX = Math.PI - 0.12;
 
+// "Return to home": when true (default), a grab in an autonomous mode eases
+// back to the program pose after you let go. When false, the grab stays
+// latched (like free mode) so the camera holds the position you moved it to.
+let returnToHomeEnabled = true;
+export function setCameraReturnToHome(value: boolean) {
+  returnToHomeEnabled = value;
+}
+
+// Program spherical from the previous frame. Lets a non-returning grab carry the
+// program's ongoing motion (auto-spin/orbit) so the camera keeps moving at the
+// new offset instead of freezing where you let go.
+let lastProg: { theta: number; phi: number; logR: number } | null = null;
+
 function resetGrab() {
   grab.active = false;
   grab.weight = 0;
@@ -469,6 +495,9 @@ function applyGrab(programPose: CameraPose, program: CameraProgram, dt: number):
 
   const target = programPose.target;
   const prog = sphericalFromOffset(vecSub(programPose.position, target));
+  const progLogR = Math.log(prog.r);
+  const prevProg = lastProg;
+  lastProg = { theta: prog.theta, phi: prog.phi, logR: progLogR };
 
   // Seed the orbit from the current framing the moment a grab starts from
   // rest, so the take-over is seamless. Wheel (zoom) counts as a grab too.
@@ -510,6 +539,17 @@ function applyGrab(programPose: CameraPose, program: CameraProgram, dt: number):
       grab.phi = clamp(grab.phi + grab.phiVel * dt, PHI_MIN, PHI_MAX);
       grab.thetaVel *= friction;
       grab.phiVel *= friction;
+      // "Return to home" off: carry the program's autonomous motion into the
+      // grab so the camera keeps orbiting/spinning from the offset vantage
+      // instead of freezing at the spot you released.
+      if (!returnToHomeEnabled && !isFree && prevProg) {
+        grab.theta += Math.atan2(
+          Math.sin(prog.theta - prevProg.theta),
+          Math.cos(prog.theta - prevProg.theta)
+        );
+        grab.phi = clamp(grab.phi + (prog.phi - prevProg.phi), PHI_MIN, PHI_MAX);
+        grab.logR += progLogR - prevProg.logR;
+      }
     }
 
     // Zoom: wheel impulses any time (independent of dragging), then coasts.
@@ -523,11 +563,14 @@ function applyGrab(programPose: CameraPose, program: CameraProgram, dt: number):
   }
 
   const velMag = Math.abs(grab.thetaVel) + Math.abs(grab.phiVel) + Math.abs(grab.logRVel);
-  const want = isFree || input.dragging || input.pendingZoom !== 0 || velMag > 0.02 ? 1 : 0;
+  // With "return to home" off, a grab that's already engaged stays latched
+  // (like free mode) instead of easing back to the program pose.
+  const latched = !returnToHomeEnabled && grab.active;
+  const want = isFree || latched || input.dragging || input.pendingZoom !== 0 || velMag > 0.02 ? 1 : 0;
   const rate = want > grab.weight ? 18 : 1.1; // snap on, ease off (gradual unlatch)
   grab.weight += (want - grab.weight) * (1 - Math.exp(-rate * dt));
 
-  if (!isFree && !input.dragging && grab.weight < 4e-3) {
+  if (!isFree && !latched && !input.dragging && grab.weight < 4e-3) {
     // Fully returned to the program — drop the grab so the next one re-seeds.
     resetGrab();
     return programPose;
@@ -556,6 +599,8 @@ interface GlobalCameraState {
   posVel: Vec3;
   tgtVel: Vec3;
   lastMode: CameraMode | null;
+  // Drives the soft→tight spring ramp after a mode change. Infinity = at rest.
+  modeGlideT: number;
 }
 
 const globalState: GlobalCameraState = {
@@ -563,6 +608,7 @@ const globalState: GlobalCameraState = {
   posVel: [0, 0, 0],
   tgtVel: [0, 0, 0],
   lastMode: null,
+  modeGlideT: Infinity,
 };
 
 function resetGlobalState(pose: CameraPose, mode: CameraMode) {
@@ -570,6 +616,7 @@ function resetGlobalState(pose: CameraPose, mode: CameraMode) {
   globalState.posVel = [0, 0, 0];
   globalState.tgtVel = [0, 0, 0];
   globalState.lastMode = mode;
+  globalState.modeGlideT = Infinity;
 }
 
 function applyZoom(pose: CameraPose, zoom: number): CameraPose {
@@ -595,7 +642,8 @@ export function computeCameraPose(
   let raw: CameraPose;
   switch (program.mode as CameraMode) {
     case "survey":
-      raw = surveyPose(program, ctx, t);
+      // Survey rides its own super-linear speed curve (faster high end).
+      raw = surveyPose(program, ctx, ctx.t * surveySpeedFactor(program.speed_scalar));
       break;
     case "orbit":
       raw = orbitPose(program, ctx, t);
@@ -614,25 +662,38 @@ export function computeCameraPose(
   }
   const target = applyZoom(raw, zoom);
 
-  // Reset internal state when the host drops the previous pose (system
-  // reload) or when the mode changes — both cases want a fresh snap.
-  if (
-    !prevPose ||
-    !globalState.pose ||
-    globalState.lastMode !== program.mode
-  ) {
+  // A true reset (host dropped the pose on system reload, or first frame)
+  // snaps to fresh data. A mode change does NOT snap — we keep the settled
+  // pose/velocity and let the spring below ease from the old mode's framing
+  // to the new mode's target, for a cinematic cut between modes.
+  if (!prevPose || !globalState.pose) {
     resetGlobalState(target, program.mode);
     resetGrab();
     return target;
   }
+  if (globalState.lastMode !== program.mode) {
+    globalState.lastMode = program.mode;
+    globalState.modeGlideT = 0; // start the soft→tight glide ramp
+  }
 
   const dt = clamp(ctx.dt, 1e-4, 1 / 30);
+
+  // After a mode change the spring starts soft (slow, floaty) and tightens
+  // back to normal over CAMERA_MODE_GLIDE_TAU, so the transition glides in
+  // rather than snapping or whipping.
+  let glide = 1;
+  if (Number.isFinite(globalState.modeGlideT)) {
+    globalState.modeGlideT = Math.min(1, globalState.modeGlideT + dt / CAMERA_MODE_GLIDE_TAU);
+    glide = 0.35 + 0.65 * smoothstep(0, 1, globalState.modeGlideT);
+    if (globalState.modeGlideT >= 1) globalState.modeGlideT = Infinity;
+  }
+
   // High stability → low omega → slower spring. Range tuned so the
   // default stability (0.25) gives a snappy-but-smooth response.
   // Chase rides an already-smoothed path, so it gets a softer, floatier
   // follow (omega scaled down) for a cinematic glide rather than a tight
   // lock to the curve. The stability slider still scales it relatively.
-  const omegaScale = program.mode === "chase" ? 0.6 : 1;
+  const omegaScale = (program.mode === "chase" ? 0.6 : 1) * glide;
   const omegaPos = (3 + (1 - stability) * 13) * omegaScale;
   const omegaTgt = (5 + (1 - stability) * 15) * omegaScale;
 

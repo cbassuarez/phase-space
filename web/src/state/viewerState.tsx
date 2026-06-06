@@ -1,9 +1,20 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { usePhaseWasmEngine } from "../hooks/usePhaseWasmEngine";
+import { usePhaseWasmEngine, type AttractorValidation } from "../hooks/usePhaseWasmEngine";
 import { useTheme } from "./themeState";
 import type { CameraProgram } from "../camera/types";
 import { createDefaultCameraProgram, migrateCameraProgram } from "../camera/migrate";
 import { getDefaultSceneSpec } from "../data/defaultScenes";
+import {
+  blankAttractor,
+  buildCustomScene,
+  validationInput,
+  loadUserAttractors,
+  upsertUserAttractor,
+  deleteUserAttractor,
+  decodeFromHash,
+  type AttractorDef,
+} from "../data/customAttractors";
+import { fetchCommunityAttractors } from "../data/communityPacks";
 import type {
   Background,
   Palette,
@@ -14,12 +25,24 @@ import type {
   SystemId,
   Trajectories,
   LineThickness,
+  LineWeight,
   CellShape,
+  CellSize,
   MaterialStyle,
+  MaterialTransmission,
   RenderStyle,
   CausticsSettings,
 } from "../types";
-import { mapLegacyPalette, mapLegacyRenderStyle, normalizeViewSpec } from "../types";
+import {
+  mapLegacyPalette,
+  mapLegacyRenderStyle,
+  materialStyleToTransmission,
+  materialTransmissionToStyle,
+  filamentDensityToValue,
+  filamentDensityValueToPreset,
+  normalizeFilamentDensityValue,
+  normalizeViewSpec,
+} from "../types";
 import { CustomPaletteState, loadCustomPalette, saveCustomPalette } from "../palettes";
 
 interface TrajectoryMeta {
@@ -32,16 +55,42 @@ interface ViewerContextValue {
   loading: boolean;
   error: string | null;
   system: SystemId;
+  /** Active user-defined attractor (overrides `system` when non-null). */
+  activeCustom: AttractorDef | null;
+  /** Saved custom-attractor library (localStorage). */
+  customAttractors: AttractorDef[];
+  /** Community attractor packs fetched at runtime (reviewed manifests). */
+  communityAttractors: AttractorDef[];
+  /** Select / live-preview a custom attractor (pass the in-progress def). */
+  setCustomAttractor: (def: AttractorDef) => void;
+  /** Return to the built-in `system`. */
+  clearCustomAttractor: () => void;
+  /** Persist a custom attractor to the library (and make it active). */
+  saveCustomAttractor: (def: AttractorDef) => void;
+  /** Remove a saved custom attractor. */
+  deleteCustomAttractor: (id: string) => void;
+  /** Validate equations against the live engine (same parser the integrator uses). */
+  validateAttractor: (def: AttractorDef, paramValues?: Record<string, number>) => AttractorValidation | null;
+  /** The attractor currently open in the editor modal (null = closed). */
+  editingAttractor: AttractorDef | null;
+  /** Open the editor (with a def to edit, or blank for a new one). */
+  openAttractorEditor: (def?: AttractorDef) => void;
+  closeAttractorEditor: () => void;
   resolution: Resolution;
   autoSpin: boolean;
-  animateHeadTail: boolean;
-  showFullTrajectory: boolean;
+  returnToHome: boolean;
+  drawTrace: boolean;
+  traceSpeed: number;
+  traceDecay: number;
   lineThickness: LineThickness;
+  lineWeight: LineWeight;
   cellShape: CellShape;
+  cellSize: CellSize;
   cloudDensity: number;
   ribbonWidth: number;
   attractorOpacity: number;
   materialStyle: MaterialStyle;
+  materialTransmission: MaterialTransmission;
   renderStyle: RenderStyle;
   photonWeaveSettings: PhotonWeaveSettings;
   causticsSettings: CausticsSettings;
@@ -56,13 +105,18 @@ interface ViewerContextValue {
   setSystem: (s: SystemId) => void;
   setResolution: (r: Resolution) => void;
   toggleAutoSpin: () => void;
-  toggleAnimateHeadTail: () => void;
-  toggleShowFullTrajectory: () => void;
+  toggleReturnToHome: () => void;
+  toggleDrawTrace: () => void;
+  setTraceSpeed: (v: number) => void;
+  setTraceDecay: (v: number) => void;
+  setLineWeight: (v: LineWeight) => void;
   setLineThickness: (t: LineThickness) => void;
   setCellShape: (s: CellShape) => void;
+  setCellSize: (v: CellSize) => void;
   setCloudDensity: (v: number) => void;
   setRibbonWidth: (v: number) => void;
   setAttractorOpacity: (v: number) => void;
+  setMaterialTransmission: (v: MaterialTransmission) => void;
   setMaterialStyle: (s: MaterialStyle) => void;
   setRenderStyle: (s: RenderStyle) => void;
   setPhotonWeaveSettings: (updates: Partial<PhotonWeaveSettings>) => void;
@@ -125,22 +179,39 @@ function resetCameraParameterGroups(program: CameraProgram | null): CameraProgra
   };
 }
 
+function lineThicknessToWeight(thickness: LineThickness): LineWeight {
+  if (thickness === "thin") return 0;
+  if (thickness === "thick") return 2;
+  return 1;
+}
+
+function lineWeightToThickness(value: LineWeight): LineThickness {
+  if (value < 0.5) return "thin";
+  if (value > 1.5) return "thick";
+  return "default";
+}
+
 export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const { ready: engineReady, error: engineError, api } = usePhaseWasmEngine();
   const [system, setSystemState] = useState<SystemId>("lorenz");
   const systemRef = useRef<SystemId>("lorenz");
   const [resolution, setResolutionState] = useState<Resolution>("default");
   const [autoSpin, setAutoSpin] = useState(true);
-  const [animateHeadTail, setAnimateHeadTail] = useState(true);
-  const [showFullTrajectory, setShowFullTrajectory] = useState(true);
-  const [lineThickness, setLineThickness] = useState<LineThickness>("default");
-  const [cellShape, setCellShape] = useState<CellShape>("circular");
+  const [returnToHome, setReturnToHome] = useState(true);
+  const [drawTrace, setDrawTrace] = useState(false);
+  const [traceSpeed, setTraceSpeed] = useState(0.04);
+  const [traceDecay, setTraceDecay] = useState(0.5);
+  const [lineThickness, setLineThicknessState] = useState<LineThickness>("default");
+  const [lineWeight, setLineWeightState] = useState<LineWeight>(1);
+  const [cellShape, setCellShape] = useState<CellShape>("square");
+  const [cellSize, setCellSizeState] = useState<CellSize>(1);
   const [cloudDensity, setCloudDensity] = useState(1);
   const [ribbonWidth, setRibbonWidth] = useState(1);
   const [attractorOpacity, setAttractorOpacity] = useState(1);
   const [materialStyle, setMaterialStyleState] = useState<MaterialStyle>("glass");
+  const [materialTransmission, setMaterialTransmissionState] = useState<MaterialTransmission>(0.5);
   const [renderStyle, setRenderStyleState] = useState<RenderStyle>("line");
-  // Once the user picks a render/material style it is theirs to keep: a later
+  // Once the user picks a render style or material transmission it is theirs to keep: a later
   // system (or any other) selection must not silently reset it back to the
   // scene's default. Mirror the palette-lock pattern. Track the current value
   // alongside the lock so a locked scene reload reflects the user's choice in
@@ -148,14 +219,15 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const renderStyleLockedRef = useRef(false);
   const renderStyleRef = useRef<RenderStyle>("line");
   useEffect(() => { renderStyleRef.current = renderStyle; }, [renderStyle]);
-  const materialStyleLockedRef = useRef(false);
-  const materialStyleRef = useRef<MaterialStyle>("glass");
-  useEffect(() => { materialStyleRef.current = materialStyle; }, [materialStyle]);
+  const materialTransmissionLockedRef = useRef(false);
+  const materialTransmissionRef = useRef<MaterialTransmission>(0.5);
+  useEffect(() => { materialTransmissionRef.current = materialTransmission; }, [materialTransmission]);
   const [photonWeaveSettings, setPhotonWeaveSettingsState] =
     useState<PhotonWeaveSettings>({
-      brightness: 1,
+      brightness: 0.1,
       trailLength: 1.1,
       filamentDensity: "medium",
+      filamentDensityValue: filamentDensityToValue("medium"),
       shimmer: true,
     });
   const [causticsSettings, setCausticsSettingsState] = useState<CausticsSettings>({
@@ -176,7 +248,14 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const [sceneSpec, setSceneSpec] = useState<SceneSpec | null>(null);
   const [cameraProgram, setCameraProgramState] = useState<CameraProgram | null>(null);
   const cameraProgramRef = useRef<CameraProgram | null>(null);
-  const lastLoadedSystemRef = useRef<SystemId | null>(null);
+  const lastLoadedSystemRef = useRef<string | null>(null);
+  // User-defined attractors: the active one (overrides `system` when set) and
+  // the saved localStorage library.
+  const [activeCustom, setActiveCustomState] = useState<AttractorDef | null>(null);
+  const activeCustomRef = useRef<AttractorDef | null>(null);
+  const [customAttractors, setCustomAttractors] = useState<AttractorDef[]>([]);
+  const [communityAttractors, setCommunityAttractors] = useState<AttractorDef[]>([]);
+  const [editingAttractor, setEditingAttractor] = useState<AttractorDef | null>(null);
   const [trajectories, setTrajectories] = useState<Trajectories>([]);
   const [trajectoryMeta, setTrajectoryMeta] = useState<TrajectoryMeta>({ count: 0, points: 0 });
   const [loading, setLoading] = useState(false);
@@ -187,7 +266,6 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return;
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (prefersReduced.matches) {
-      setAnimateHeadTail(false);
       setAutoSpin(false);
     }
   }, []);
@@ -202,6 +280,19 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   }, [cameraProgram]);
 
   useEffect(() => {
+    activeCustomRef.current = activeCustom;
+  }, [activeCustom]);
+
+  // Load the saved custom-attractor library; honour a ?#attractor=… share link;
+  // fetch the (reviewed) community pack index in the background.
+  useEffect(() => {
+    setCustomAttractors(loadUserAttractors());
+    const shared = decodeFromHash(typeof window !== "undefined" ? window.location.hash : "");
+    if (shared) setActiveCustomState(shared);
+    fetchCommunityAttractors().then(setCommunityAttractors).catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
     systemRef.current = system;
   }, [system]);
 
@@ -210,24 +301,33 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
       if (!api) return;
       setLoading(true);
       try {
-        const baseScene = api.getDefaultScene(nextSystem);
-        const tunedScene = applyResolution(baseScene, res);
+        // A user-defined attractor (when active) overrides the built-in system.
+        // It carries its own integrator settings, so it skips the resolution
+        // remap; editing the same custom keeps the camera (key includes its id).
+        const activeC = activeCustomRef.current;
+        const loadKey = activeC ? `custom:${activeC.id}` : nextSystem;
+        const baseScene = activeC
+          ? JSON.stringify(buildCustomScene(activeC))
+          : api.getDefaultScene(nextSystem);
+        const tunedScene = activeC ? baseScene : applyResolution(baseScene, res);
         const { trajectories: traj, scene } = api.integrateScene(tunedScene);
         const normalizedView = normalizeViewSpec(scene.view);
-        const systemChanged = lastLoadedSystemRef.current !== nextSystem;
+        const systemChanged = lastLoadedSystemRef.current !== loadKey;
         const nextCameraProgram = systemChanged
           ? resetCameraParameterGroups(cameraProgramRef.current)
           : cloneCameraProgram(cameraProgramRef.current ?? createDefaultCameraProgram());
-        // Honor a user-locked render/material style over the scene default so
-        // the rendered view *and* the exported scene stay on the chosen style.
+        // Honor user-locked render/material controls over the scene default so
+        // the rendered view *and* the exported scene stay on the chosen values.
         const effectiveRenderStyle = renderStyleLockedRef.current
           ? renderStyleRef.current
           : mapLegacyRenderStyle(normalizedView.render_style ?? "line");
-        const effectiveMaterialStyle = materialStyleLockedRef.current
-          ? materialStyleRef.current
-          : (normalizedView.material_style ?? "glass");
+        const effectiveMaterialTransmission = materialTransmissionLockedRef.current
+          ? materialTransmissionRef.current
+          : normalizedView.material_transmission ?? 0.5;
+        const effectiveMaterialStyle = materialTransmissionToStyle(effectiveMaterialTransmission);
         normalizedView.render_style = mapLegacyRenderStyle(effectiveRenderStyle);
         normalizedView.material_style = effectiveMaterialStyle;
+        normalizedView.material_transmission = effectiveMaterialTransmission;
         const normalizedScene = { ...scene, view: normalizedView, camera: nextCameraProgram } as SceneSpec;
         if (
           normalizedView.palette === "custom" &&
@@ -250,6 +350,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
         setSceneSpec(normalizedScene);
         setRenderStyleState(effectiveRenderStyle);
         setMaterialStyleState(effectiveMaterialStyle);
+        setMaterialTransmissionState(effectiveMaterialTransmission);
         if (!paletteLockedRef.current && scene.view?.palette) {
           setPaletteState(mapLegacyPalette(scene.view.palette));
         }
@@ -264,7 +365,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
           { count: 0, points: 0 }
         );
         setTrajectoryMeta(meta);
-        lastLoadedSystemRef.current = nextSystem;
+        lastLoadedSystemRef.current = loadKey;
         setError(null);
       } catch (err) {
         console.error(err);
@@ -279,7 +380,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!engineReady || !api) return;
     loadScene(system, resolution);
-  }, [engineReady, api, system, resolution, loadScene]);
+  }, [engineReady, api, system, resolution, activeCustom, loadScene]);
 
   const setCameraProgram = useCallback(
     (updater: (c: CameraProgram) => CameraProgram) => {
@@ -311,7 +412,9 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const refreshScene = useCallback(() => loadScene(system, resolution), [loadScene, system, resolution]);
 
   const setSystem = useCallback((nextSystem: SystemId) => {
-    if (systemRef.current !== nextSystem) {
+    // Choosing a built-in system leaves any active custom attractor.
+    setActiveCustomState(null);
+    if (systemRef.current !== nextSystem || activeCustomRef.current) {
       setCameraProgramState((prev) => resetCameraParameterGroups(prev));
     }
     setSystemState(nextSystem);
@@ -335,22 +438,51 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     [setSceneJson]
   );
 
-  const setMaterialStyle = useCallback(
-    (style: MaterialStyle) => {
-      materialStyleLockedRef.current = true;
-      setMaterialStyleState(style);
+  const setLineWeight = useCallback((value: LineWeight) => {
+    const nextWeight = Math.max(0, Math.min(2, value));
+    setLineWeightState(nextWeight);
+    setLineThicknessState(lineWeightToThickness(nextWeight));
+  }, []);
+
+  const setLineThickness = useCallback((thickness: LineThickness) => {
+    setLineWeight(lineThicknessToWeight(thickness));
+  }, [setLineWeight]);
+
+  const setCellSize = useCallback((value: CellSize) => {
+    setCellSizeState(Math.max(0.35, Math.min(3.4, value)));
+  }, []);
+
+  const setMaterialTransmission = useCallback(
+    (value: MaterialTransmission) => {
+      const nextTransmission = Math.max(0, Math.min(1, value));
+      const nextStyle = materialTransmissionToStyle(nextTransmission);
+      materialTransmissionLockedRef.current = true;
+      materialTransmissionRef.current = nextTransmission;
+      setMaterialTransmissionState(nextTransmission);
+      setMaterialStyleState(nextStyle);
       setSceneSpec((prev) => {
         if (!prev) return prev;
         const updatedView = normalizeViewSpec(prev.view);
         const nextScene = {
           ...prev,
-          view: { ...updatedView, material_style: style },
+          view: {
+            ...updatedView,
+            material_style: nextStyle,
+            material_transmission: nextTransmission,
+          },
         } as SceneSpec;
         setSceneJson(JSON.stringify(nextScene, null, 2));
         return nextScene;
       });
     },
     [setSceneJson]
+  );
+
+  const setMaterialStyle = useCallback(
+    (style: MaterialStyle) => {
+      setMaterialTransmission(materialStyleToTransmission(style));
+    },
+    [setMaterialTransmission]
   );
 
   const setPalette = useCallback(
@@ -369,7 +501,17 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   );
 
   const setPhotonWeaveSettings = useCallback((updates: Partial<PhotonWeaveSettings>) => {
-    setPhotonWeaveSettingsState((prev) => ({ ...prev, ...updates }));
+    setPhotonWeaveSettingsState((prev) => {
+      const next = { ...prev, ...updates } as PhotonWeaveSettings;
+      if (updates.filamentDensityValue != null) {
+        next.filamentDensityValue = normalizeFilamentDensityValue(updates.filamentDensityValue, prev.filamentDensity);
+        next.filamentDensity = filamentDensityValueToPreset(next.filamentDensityValue);
+      } else if (updates.filamentDensity != null) {
+        next.filamentDensity = updates.filamentDensity;
+        next.filamentDensityValue = filamentDensityToValue(updates.filamentDensity);
+      }
+      return next;
+    });
   }, []);
 
   const setCausticsSettings = useCallback((updates: Partial<CausticsSettings>) => {
@@ -395,16 +537,25 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     loading,
     error,
     system,
+    activeCustom,
+    customAttractors,
+    communityAttractors,
+    editingAttractor,
     resolution,
     autoSpin,
-    animateHeadTail,
-    showFullTrajectory,
+    returnToHome,
+    drawTrace,
+    traceSpeed,
+    traceDecay,
     lineThickness,
+    lineWeight,
     cellShape,
+    cellSize,
     cloudDensity,
     ribbonWidth,
     attractorOpacity,
     materialStyle,
+    materialTransmission,
     renderStyle,
     photonWeaveSettings,
     causticsSettings,
@@ -417,15 +568,34 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     trajectories,
     trajectoryMeta,
     setSystem,
+    setCustomAttractor: (def: AttractorDef) => setActiveCustomState(def),
+    clearCustomAttractor: () => setActiveCustomState(null),
+    saveCustomAttractor: (def: AttractorDef) => {
+      setCustomAttractors(upsertUserAttractor(def));
+      setActiveCustomState(def);
+    },
+    deleteCustomAttractor: (id: string) => {
+      setCustomAttractors(deleteUserAttractor(id));
+      setActiveCustomState((cur) => (cur && cur.id === id ? null : cur));
+    },
+    validateAttractor: (def: AttractorDef, paramValues?: Record<string, number>) =>
+      api ? api.validateAttractor(validationInput(def, paramValues)) : null,
+    openAttractorEditor: (def?: AttractorDef) => setEditingAttractor(def ?? blankAttractor()),
+    closeAttractorEditor: () => setEditingAttractor(null),
     setResolution: setResolutionState,
     toggleAutoSpin: () => setAutoSpin((v) => !v),
-    toggleAnimateHeadTail: () => setAnimateHeadTail((v) => !v),
-    toggleShowFullTrajectory: () => setShowFullTrajectory((v) => !v),
+    toggleReturnToHome: () => setReturnToHome((v) => !v),
+    toggleDrawTrace: () => setDrawTrace((v) => !v),
+    setTraceSpeed,
+    setTraceDecay,
+    setLineWeight,
     setLineThickness,
     setCellShape,
+    setCellSize,
     setCloudDensity,
     setRibbonWidth,
     setAttractorOpacity,
+    setMaterialTransmission,
     setMaterialStyle,
     setRenderStyle,
     setPhotonWeaveSettings,
@@ -438,20 +608,30 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     setRenderStillHandler,
     refreshScene,
   }), [
+    api,
     engineReady,
     loading,
     error,
     system,
+    activeCustom,
+    customAttractors,
+    communityAttractors,
+    editingAttractor,
     resolution,
     autoSpin,
-    animateHeadTail,
-    showFullTrajectory,
+    returnToHome,
+    drawTrace,
+    traceSpeed,
+    traceDecay,
     lineThickness,
+    lineWeight,
     cellShape,
+    cellSize,
     cloudDensity,
     ribbonWidth,
     attractorOpacity,
     materialStyle,
+    materialTransmission,
     renderStyle,
     photonWeaveSettings,
     causticsSettings,
@@ -466,6 +646,10 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     setSystem,
     setCameraProgram,
     setRenderStyle,
+    setLineWeight,
+    setLineThickness,
+    setCellSize,
+    setMaterialTransmission,
     setMaterialStyle,
     setPhotonWeaveSettings,
     setCausticsSettings,

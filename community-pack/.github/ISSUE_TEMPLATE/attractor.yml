@@ -1,0 +1,58 @@
+name: Submit an attractor
+description: Propose a user-defined attractor for the community pack.
+title: "Attractor: <name>"
+labels: ["submission"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Attractors are **math, not code**. Use variables `x y z t`, your parameters,
+        `+ - * / ^ ( )`, and functions like `sin cos exp sqrt abs tanh`.
+        Tip: the in-app **Define attractor → Submit ↗** button fills this in for you.
+  - type: input
+    id: name
+    attributes: { label: Name, placeholder: Halvorsen }
+    validations: { required: true }
+  - type: input
+    id: author
+    attributes: { label: Author (handle), placeholder: seb }
+    validations: { required: true }
+  - type: input
+    id: description
+    attributes: { label: Description, placeholder: Cyclically symmetric, quadratic. }
+  - type: input
+    id: dx
+    attributes: { label: dx/dt, placeholder: "-a*x - 4*y - 4*z - y^2" }
+    validations: { required: true }
+  - type: input
+    id: dy
+    attributes: { label: dy/dt, placeholder: "-a*y - 4*z - 4*x - z^2" }
+    validations: { required: true }
+  - type: input
+    id: dz
+    attributes: { label: dz/dt, placeholder: "-a*z - 4*x - 4*y - x^2" }
+    validations: { required: true }
+  - type: textarea
+    id: params
+    attributes:
+      label: Parameters
+      description: One per line — `name = default, min, max`
+      placeholder: "a = 1.4, 0.5, 3"
+  - type: textarea
+    id: seeds
+    attributes:
+      label: Seeds
+      description: One per line — `x, y, z`
+      placeholder: "-1.48, -1.51, 2.04"
+  - type: textarea
+    id: manifest
+    attributes:
+      label: Full manifest JSON (optional)
+      description: If you used the in-app Submit button, the manifest is in a ```json block in this issue body already.
+      render: json
+  - type: dropdown
+    id: license
+    attributes:
+      label: License
+      options: ["CC0", "MIT", "Other (state in description)"]
+      default: 0

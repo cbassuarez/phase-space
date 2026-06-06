@@ -18,7 +18,7 @@ import {
   WebGLRenderTarget,
 } from "three";
 import type { Palette, ProjectionAxis } from "../../../types";
-import type { RendererStrategy, RenderContext, TrajectoryData } from "./base";
+import { lerpThickness, type RendererStrategy, type RenderContext, type TrajectoryData } from "./base";
 import { buildPaletteTexture, dynamicScalarAt, visualFieldAt } from "./utils";
 import { getLighting } from "../../../visual/lighting";
 import {
@@ -27,6 +27,7 @@ import {
   createLightingUniforms,
   createMaterialUniforms,
   materialShaderChunk,
+  traceShaderChunk,
 } from "./materials";
 
 /**
@@ -206,6 +207,7 @@ function blurSigma(value: number): number {
 }
 
 function thicknessScale(data: TrajectoryData): number {
+  if (data.thicknessT != null) return lerpThickness(data.thicknessT, 0.68, 1, 1.65);
   if (data.lineThickness === "thick") return 1.65;
   if (data.lineThickness === "thin") return 0.68;
   return 1;
@@ -246,7 +248,7 @@ function buildVelocityWeights(
   trajectories: number[][][],
   dynamics: TrajectoryData["dynamics"],
   step: number
-): { positions: Float32Array; energies: Float32Array; colorScalars: Float32Array; fieldScalars: Float32Array; pointCount: number } {
+): { positions: Float32Array; energies: Float32Array; colorScalars: Float32Array; fieldScalars: Float32Array; arcs: Float32Array; pointCount: number } {
   let total = 0;
   trajectories.forEach((t) => {
     total += Math.ceil(t.length / step);
@@ -255,6 +257,7 @@ function buildVelocityWeights(
   const energies = new Float32Array(total);
   const colorScalars = new Float32Array(total);
   const fieldScalars = new Float32Array(total);
+  const arcs = new Float32Array(total);
 
   let offset = 0;
   let energyOffset = 0;
@@ -304,10 +307,11 @@ function buildVelocityWeights(
         i,
         0
       );
+      arcs[energyOffset - 1] = traj.length > 1 ? i / (traj.length - 1) : 0;
     }
   });
 
-  return { positions, energies, colorScalars, fieldScalars, pointCount: total };
+  return { positions, energies, colorScalars, fieldScalars, arcs, pointCount: total };
 }
 
 function projectionAxisCamera(axis: ProjectionAxis, halfExtent: number): OrthographicCamera | null {
@@ -396,7 +400,7 @@ export class CausticsRenderer implements RendererStrategy {
 
     // --- Splat geometry ----------------------------------------
     const pointStep = Math.max(1, Math.round(data.quality?.causticsPointStep ?? 2));
-    const { positions, energies, colorScalars, fieldScalars, pointCount } = buildVelocityWeights(
+    const { positions, energies, colorScalars, fieldScalars, arcs, pointCount } = buildVelocityWeights(
       data.trajectories,
       data.dynamics,
       pointStep
@@ -409,6 +413,7 @@ export class CausticsRenderer implements RendererStrategy {
     splatGeom.setAttribute("aEnergy", new BufferAttribute(energies, 1));
     splatGeom.setAttribute("aColorT", new BufferAttribute(colorScalars, 1));
     splatGeom.setAttribute("aFieldT", new BufferAttribute(fieldScalars, 1));
+    splatGeom.setAttribute("aArc", new BufferAttribute(arcs, 1));
 
     // Soft point sprite with per-vertex energy. We rely on the main
     // camera's projection in "auto" mode, or the axis-locked ortho
@@ -418,14 +423,17 @@ export class CausticsRenderer implements RendererStrategy {
       attribute float aEnergy;
       attribute float aColorT;
       attribute float aFieldT;
+      attribute float aArc;
       varying float vEnergy;
       varying float vColorT;
       varying float vFieldT;
+      varying float vArc;
       uniform float uPointSize;
       void main() {
         vEnergy = aEnergy;
         vColorT = aColorT;
         vFieldT = aFieldT;
+        vArc = aArc;
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
         gl_Position = projectionMatrix * mv;
         // Keep splat size constant in framebuffer pixels — exposure
@@ -438,12 +446,16 @@ export class CausticsRenderer implements RendererStrategy {
       varying float vEnergy;
       varying float vColorT;
       varying float vFieldT;
+      varying float vArc;
       uniform float uEnergyGain;
+      ${traceShaderChunk}
       void main() {
         vec2 c = gl_PointCoord - vec2(0.5);
         float d = dot(c, c);
         float falloff = exp(-d * 18.0);
         float energy = falloff * vEnergy * uEnergyGain;
+        // Draw mode: only the comet window of the path projects.
+        energy *= mix(1.0, psCometMask(vArc), uTrace);
         gl_FragColor = vec4(energy, energy * vColorT, energy * vFieldT, energy);
       }
     `;
@@ -454,6 +466,9 @@ export class CausticsRenderer implements RendererStrategy {
         // tex/32 at 512 -> 16px sprites, which is what we want at this
         // accumulation resolution.
         uPointSize:  { value: Math.max(6, Math.round((this.texSize / 32) * thicknessScale(data) * causticsPointScale(data))) },
+        uTrace:      { value: data.traceActive ? 1 : 0 },
+        uHead:       { value: data.traceHead ?? 0 },
+        uDecay:   { value: data.traceDecay ?? 0.12 },
       },
       vertexShader: splatVert,
       fragmentShader: splatFrag,
@@ -525,7 +540,7 @@ export class CausticsRenderer implements RendererStrategy {
         uDebugScale:    { value: 1.7 },
         uTexel:         { value: new Vector2(1 / this.texSize, 1 / this.texSize) },
         ...createLightingUniforms(lighting),
-        ...createMaterialUniforms(data.materialStyle),
+        ...createMaterialUniforms(data.materialTransmission),
       },
       vertexShader: outputVertex,
       fragmentShader: CAUSTICS_DEBUG_MODE === "accum" ? accumDebugFragment : outputFragment,
@@ -534,7 +549,7 @@ export class CausticsRenderer implements RendererStrategy {
       transparent: false,
       toneMapped: false,
     });
-    applyMaterialUniforms(this.outputMaterial.uniforms as any, data.materialStyle, data.emissiveBoost ?? 0);
+    applyMaterialUniforms(this.outputMaterial.uniforms as any, data.materialTransmission, data.emissiveBoost ?? 0);
 
     const outputQuad = new Mesh(new PlaneGeometry(2, 2), this.outputMaterial);
     outputQuad.frustumCulled = false;
@@ -637,6 +652,9 @@ export class CausticsRenderer implements RendererStrategy {
         6,
         Math.round((this.texSize / 32) * thicknessScale(this.data) * causticsPointScale(this.data))
       );
+      this.splatMaterial.uniforms.uTrace.value = this.data.traceActive ? 1 : 0;
+      this.splatMaterial.uniforms.uHead.value = this.data.traceHead ?? 0;
+      this.splatMaterial.uniforms.uDecay.value = this.data.traceDecay ?? 0.12;
       this.splatMaterial.needsUpdate = true;
     }
     if (this.outputMaterial) {
@@ -646,7 +664,7 @@ export class CausticsRenderer implements RendererStrategy {
         mode === "warm" ? 1 : mode === "cool" ? 2 : 0;
       this.outputMaterial.uniforms.uPaletteShift.value = data.paletteShift ?? 0;
       applyLightingUniforms(this.outputMaterial.uniforms as any, getLighting());
-      applyMaterialUniforms(this.outputMaterial.uniforms as any, this.data.materialStyle, this.data.emissiveBoost ?? 0);
+      applyMaterialUniforms(this.outputMaterial.uniforms as any, this.data.materialTransmission, this.data.emissiveBoost ?? 0);
       this.outputMaterial.needsUpdate = true;
     }
     if (this.blurMaterialH && this.blurMaterialV) {
