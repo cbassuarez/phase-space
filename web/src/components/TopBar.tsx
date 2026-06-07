@@ -4,6 +4,7 @@ import VersionBadge from "./VersionBadge";
 import ThemeSwitch from "./ThemeSwitch";
 import { PHASE_SPACE_VERSION } from "../version";
 import { useAudioDevicesContext } from "../state/audioDevicesState";
+import { useAboutModal } from "../state/aboutModalState";
 import clsx from "clsx";
 import {
   controlFocusRing,
@@ -41,6 +42,7 @@ function TopBar() {
   const mobilePortrait = useMediaQuery("(max-width: 768px) and (orientation: portrait)");
   const versionLabel = `phase-space v${PHASE_SPACE_VERSION} • beta`;
   const audioDevices = useAudioDevicesContext();
+  const about = useAboutModal();
 
   useEffect(() => {
     if (!mobilePortrait) {
@@ -127,7 +129,16 @@ function TopBar() {
             </span>
           )}
           <ThemeSwitch />
-          {!mobilePortrait && <VersionBadge label={versionLabel} />}
+          {!mobilePortrait && (
+            <button
+              type="button"
+              onClick={about.open}
+              aria-label="About phase-space"
+              className={clsx("appearance-none", controlFocusRing)}
+            >
+              <VersionBadge label={versionLabel} className="cursor-pointer transition hover:[box-shadow:var(--ps-control-hover-shadow)]" />
+            </button>
+          )}
           <a
             href={githubUrl}
             target="_blank"

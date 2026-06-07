@@ -1,3 +1,15 @@
+## [1.1.1](https://github.com/cbassuarez/phase-space/compare/v1.1.0...v1.1.1) (2026-06-06)
+
+
+### Features
+
+* desktop app — native cross-platform builds (macOS, Windows, Linux) via Tauri, wrapping the WebGL/WASM viewer in a native window
+* native menu bar with standard keyboard shortcuts (Reload, Toggle Fullscreen, Edit/Window items)
+* in-app About modal with links to the repository, releases, and GitHub Sponsors
+* styled DMG installer with a drag-to-Applications layout matching the viewer aesthetic
+
+
+
 ## [1.1.0](https://github.com/cbassuarez/phase-space/compare/v1.0.6...v1.1.0) (2026-06-05)
 
 

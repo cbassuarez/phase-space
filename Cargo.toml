@@ -3,6 +3,7 @@ members = [
   "phasecore",
   "phasewasm",
   "phasecli",
+  "src-tauri",
 ]
 resolver = "2"
 

@@ -6,3 +6,7 @@ web/src/wasm/*
 !web/src/wasm/.gitignore
 !web/src/wasm/phasewasm.d.ts
 phasewasm/src/wasm
+
+# tauri desktop
+src-tauri/target
+src-tauri/gen
