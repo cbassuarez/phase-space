@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "lint": "tsc --noEmit --skipLibCheck --noImplicitAny false --strictNullChecks false",
-    "build:wasm": "WASM_PACK=$(command -v wasm-pack || true); if [ -z \"$WASM_PACK\" ] && [ -x ../target/wasm-pack/bin/wasm-pack ]; then WASM_PACK=../target/wasm-pack/bin/wasm-pack; fi; if [ -z \"$WASM_PACK\" ]; then echo 'wasm-pack not found; installing locally with cargo'; cargo install wasm-pack --locked --version 0.13.1 --root ../target/wasm-pack; WASM_PACK=../target/wasm-pack/bin/wasm-pack; fi; \"$WASM_PACK\" build ../phasewasm --target web --out-dir ../web/src/wasm --out-name phasewasm",
+    "build:wasm": "node scripts/build-wasm.mjs",
     "dev": "npm run build:wasm && vite",
     "build": "npm run build:wasm && vite build",
     "dev:app": "npm run build:wasm && vite --base=/",
