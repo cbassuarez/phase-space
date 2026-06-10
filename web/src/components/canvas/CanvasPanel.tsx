@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { computeCameraPose } from "../../camera/controller";
 import { cameraInput } from "../../camera/cameraInput";
 import CrossDissolveOverlay from "./CrossDissolveOverlay";
-import { captureCanvasDataURL, captureCanvasPngDataURL } from "../../utils/canvasCapture";
+import { captureCanvasDataURL } from "../../utils/canvasCapture";
 import { beginDissolveFreeze, isDissolveFrozen } from "../../visual/dissolveFreeze";
 import { DISSOLVE_MS } from "../../visual/transitionConfig";
 import { advanceMaterialTransition } from "./renderers/materials";
@@ -51,8 +51,6 @@ import { computeVisualFeatures, type VisualFeatureFrame } from "../../visual/vis
 import { useModulation } from "../../state/modulationState";
 import { getRenderQuality, getViewportBackgroundColor } from "../../visual/renderQuality";
 import { recordFrameRendered } from "../../hooks/useFrameStats";
-import { setLatestVisualFrame } from "../../visual/liveOutputFrame";
-import type { FrameCaptureOptions } from "../../state/viewerState";
 
 interface CanvasPanelProps {
   ready: boolean;
@@ -85,7 +83,6 @@ interface CanvasPanelProps {
 
 type PhaseSceneProps = Omit<CanvasPanelProps, "ready" | "loading" | "error"> & {
   setRenderStillHandler: (handler: (() => void) | null) => void;
-  setFrameCaptureHandler: (handler: ((options?: FrameCaptureOptions) => string | null) | null) => void;
 };
 
 function FrameLimiter({ enabled }: { enabled: boolean }) {
@@ -136,7 +133,6 @@ function PhaseScene({
   photonWeaveSettings,
   causticsSettings,
   setRenderStillHandler,
-  setFrameCaptureHandler,
 }: PhaseSceneProps) {
   const groupRef = useRef<THREE.Group>(null);
   const timeRef = useRef(0);
@@ -196,13 +192,11 @@ function PhaseScene({
 
   // "Save PNG": capture synchronously inside the click gesture. (A deferred
   // flag-then-render-next-frame approach leaked downloads — the flag survived
-  // tab-blur/bfcache and fired on refocus/reload.) We also expose a capture
-  // callback for the desktop shell so native export can write outside the
-  // browser download sandbox.
+  // tab-blur/bfcache and fired on refocus/reload.) We render one transparent
+  // frame straight to the canvas, with the render-target/clear state the
+  // composer leaves behind made explicit so the export isn't blank.
   useEffect(() => {
-    const canvas = gl.domElement as HTMLCanvasElement;
-
-    const renderTransparentFrame = (options?: FrameCaptureOptions) => {
+    const handler = () => {
       const canvas = gl.domElement as HTMLCanvasElement;
       const prevBg = scene.background;
       const prevClear = gl.getClearColor(new THREE.Color());
@@ -215,24 +209,11 @@ function PhaseScene({
       gl.setClearColor(0x000000, 0);
       gl.clear();
       gl.render(scene, threeCamera);
-      const url = captureCanvasPngDataURL(canvas, options);
+      const url = canvas.toDataURL("image/png");
       scene.background = prevBg;
       gl.setClearColor(prevClear, prevAlpha);
       gl.autoClear = prevAuto;
       gl.setRenderTarget(prevTarget);
-      return url;
-    };
-
-    const captureFrame = (options?: FrameCaptureOptions) => {
-      if (options?.transparent) {
-        return renderTransparentFrame(options);
-      }
-      return captureCanvasPngDataURL(canvas, options);
-    };
-
-    const handler = () => {
-      const url = renderTransparentFrame();
-      if (!url) return;
       const a = document.createElement("a");
       a.href = url;
       a.download = `phase-space-${Date.now()}.png`;
@@ -243,12 +224,8 @@ function PhaseScene({
     // updater and *call* it (capturing/downloading on mount, and storing
     // `undefined` so the button later does nothing).
     setRenderStillHandler(() => handler);
-    setFrameCaptureHandler(captureFrame);
-    return () => {
-      setRenderStillHandler(null);
-      setFrameCaptureHandler(null);
-    };
-  }, [gl, scene, threeCamera, setRenderStillHandler, setFrameCaptureHandler]);
+    return () => setRenderStillHandler(null);
+  }, [gl, scene, threeCamera, setRenderStillHandler]);
 
   const quality = useMemo(() => getRenderQuality(resolution), [resolution]);
   
@@ -541,7 +518,6 @@ function PhaseScene({
       visualFrameRef.current ?? undefined
     );
     visualFrameRef.current = visual;
-    setLatestVisualFrame(visual);
     if (modEngine) {
       modEngine.step(audioFrameRef.current, visual);
     }
@@ -656,7 +632,7 @@ function CanvasPanel({
   photonWeaveSettings,
   causticsSettings,
 }: CanvasPanelProps) {
-  const { clampFps60, setRenderStillHandler, setFrameCaptureHandler } = useViewerState();
+  const { clampFps60, setRenderStillHandler } = useViewerState();
 
   // Structural cross-dissolve: when render style / palette / system / resolution
   // changes (the latter two surface as a new `trajectories` reference), snapshot
@@ -793,7 +769,6 @@ function CanvasPanel({
               photonWeaveSettings={photonWeaveSettings}
               causticsSettings={causticsSettings}
               setRenderStillHandler={setRenderStillHandler}
-              setFrameCaptureHandler={setFrameCaptureHandler}
             />
           </Suspense>
         </Canvas>

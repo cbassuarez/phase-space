@@ -3,34 +3,18 @@ import { usePhaseWasmEngine, type AttractorValidation } from "../hooks/usePhaseW
 import { useTheme } from "./themeState";
 import type { CameraProgram } from "../camera/types";
 import { createDefaultCameraProgram, migrateCameraProgram } from "../camera/migrate";
-import { getDefaultSceneJSON, getDefaultSceneSpec } from "../data/defaultScenes";
+import { getDefaultSceneSpec } from "../data/defaultScenes";
 import {
   blankAttractor,
   buildCustomScene,
   validationInput,
   loadUserAttractors,
-  saveUserAttractors,
-  upsertAttractorList,
-  deleteAttractorFromList,
+  upsertUserAttractor,
+  deleteUserAttractor,
   decodeFromHash,
-  parseManifest,
   type AttractorDef,
 } from "../data/customAttractors";
 import { fetchCommunityAttractors } from "../data/communityPacks";
-import {
-  autosavePhaseProject,
-  getDesktopRuntimeCapabilities,
-  integrateSceneNative,
-  pendingOpenProjectPaths,
-  readAttractorLibrary,
-  readDroppedFile,
-  readPhaseAutosave,
-  readPhaseProject,
-  savePhaseProject,
-  writeAttractorLibrary,
-  type DesktopRuntimeCapabilities,
-} from "../utils/desktopRuntime";
-import { isTauri, onMenuEvent } from "../utils/tauri";
 import type {
   Background,
   Palette,
@@ -65,22 +49,6 @@ interface TrajectoryMeta {
   count: number;
   points: number;
 }
-
-interface PhaseSpaceProject {
-  schema: 1;
-  app: "phase-space";
-  savedAt: string;
-  scene: SceneSpec;
-  customAttractors?: AttractorDef[];
-}
-
-export interface FrameCaptureOptions {
-  width?: number;
-  height?: number;
-  transparent?: boolean;
-}
-
-type FrameCaptureHandler = (options?: FrameCaptureOptions) => string | null;
 
 interface ViewerContextValue {
   ready: boolean;
@@ -134,10 +102,6 @@ interface ViewerContextValue {
   background: Background;
   sceneJson: string;
   sceneSpec: SceneSpec | null;
-  projectPath: string | null;
-  projectStatus: string | null;
-  computeBackend: string;
-  runtimeCapabilities: DesktopRuntimeCapabilities | null;
   cameraProgram: CameraProgram | null;
   trajectories: Trajectories;
   trajectoryMeta: TrajectoryMeta;
@@ -167,11 +131,6 @@ interface ViewerContextValue {
   setCameraProgram: (updater: (c: CameraProgram) => CameraProgram) => void;
   requestRenderStill: () => void;
   setRenderStillHandler: (handler: (() => void) | null) => void;
-  captureFrameDataURL: (options?: FrameCaptureOptions) => string | null;
-  setFrameCaptureHandler: (handler: FrameCaptureHandler | null) => void;
-  saveProject: (path?: string) => Promise<void>;
-  openProject: (path: string) => Promise<void>;
-  recoverAutosave: () => Promise<void>;
   refreshScene: () => void;
 }
 
@@ -248,69 +207,6 @@ function lineWeightToThickness(value: LineWeight): LineThickness {
   return "default";
 }
 
-function projectFromState(scene: SceneSpec, customAttractors: AttractorDef[]): PhaseSpaceProject {
-  return {
-    schema: 1,
-    app: "phase-space",
-    savedAt: new Date().toISOString(),
-    scene,
-    customAttractors: customAttractors.map((def) => ({ ...def, source: "local" as const })),
-  };
-}
-
-function parseProject(json: string): PhaseSpaceProject {
-  const parsed = JSON.parse(json) as PhaseSpaceProject | SceneSpec;
-  if ("scene" in parsed && parsed.scene) {
-    const project = parsed as PhaseSpaceProject;
-    return {
-      schema: 1,
-      app: "phase-space",
-      savedAt: project.savedAt ?? new Date().toISOString(),
-      scene: project.scene,
-      customAttractors: project.customAttractors ?? [],
-    };
-  }
-  return {
-    schema: 1,
-    app: "phase-space",
-    savedAt: new Date().toISOString(),
-    scene: parsed as SceneSpec,
-    customAttractors: [],
-  };
-}
-
-function defaultProjectPath(scene: SceneSpec | null, fallbackDir?: string | null): string {
-  const dir = fallbackDir || "~/Documents/phase-space";
-  const id = scene?.id || scene?.system || "scene";
-  const safe = String(id).replace(/[^a-zA-Z0-9_.-]+/g, "-").replace(/^[-_.]+|[-_.]+$/g, "") || "scene";
-  return `${dir.replace(/[\\/]+$/, "")}/${safe}.phsp`;
-}
-
-function paletteFromText(text: string): CustomPaletteState | null {
-  try {
-    const value = JSON.parse(text) as { stops?: { color?: string }[]; palette_spec?: { stops?: { color?: string }[] } };
-    const stops = value.stops ?? value.palette_spec?.stops ?? [];
-    const colors = stops.map((stop) => stop.color).filter(Boolean) as string[];
-    if (colors.length > 0) {
-      return {
-        low: colors[0],
-        mid: colors[Math.floor(colors.length / 2)] ?? colors[0],
-        high: colors[colors.length - 1] ?? colors[0],
-      };
-    }
-  } catch {
-    /* try loose text palette parsing below */
-  }
-
-  const colors = Array.from(text.matchAll(/#[0-9a-fA-F]{6}\b/g), (match) => match[0]);
-  if (colors.length === 0) return null;
-  return {
-    low: colors[0],
-    mid: colors[Math.floor(colors.length / 2)] ?? colors[0],
-    high: colors[colors.length - 1] ?? colors[0],
-  };
-}
-
 export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const { ready: engineReady, error: engineError, api } = usePhaseWasmEngine();
   const initialSystemRef = useRef<SystemId>(initialSystemFromLocation());
@@ -368,15 +264,9 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const { theme: background, setTheme } = useTheme();
   const [sceneJson, setSceneJson] = useState("{}");
   const [sceneSpec, setSceneSpec] = useState<SceneSpec | null>(null);
-  const [projectPath, setProjectPath] = useState<string | null>(null);
-  const [projectStatus, setProjectStatus] = useState<string | null>(null);
-  const [computeBackend, setComputeBackend] = useState("wasm");
-  const [runtimeCapabilities, setRuntimeCapabilities] = useState<DesktopRuntimeCapabilities | null>(null);
   const [cameraProgram, setCameraProgramState] = useState<CameraProgram | null>(null);
   const cameraProgramRef = useRef<CameraProgram | null>(null);
   const lastLoadedSystemRef = useRef<string | null>(null);
-  const suppressNextAutoLoadRef = useRef(false);
-  const loadSeqRef = useRef(0);
   // User-defined attractors: the active one (overrides `system` when set) and
   // the saved localStorage library.
   const [activeCustom, setActiveCustomState] = useState<AttractorDef | null>(null);
@@ -389,7 +279,6 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [renderStillHandler, setRenderStillHandler] = useState<(() => void) | null>(null);
-  const [frameCaptureHandler, setFrameCaptureHandlerState] = useState<FrameCaptureHandler | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -401,28 +290,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!engineError) return;
-    if (runtimeCapabilities?.native_compute.available) return;
     setError(engineError);
-  }, [engineError, runtimeCapabilities]);
-
-  useEffect(() => {
-    if (!isTauri()) return;
-    let cancelled = false;
-    getDesktopRuntimeCapabilities()
-      .then((capabilities) => {
-        if (cancelled) return;
-        setRuntimeCapabilities(capabilities);
-        if (capabilities?.native_compute.available) {
-          setComputeBackend(`native (${capabilities.rayon_threads} threads)`);
-          setError((prev) => (prev === engineError ? null : prev));
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) setProjectStatus(String(err));
-      });
-    return () => {
-      cancelled = true;
-    };
   }, [engineError]);
 
   useEffect(() => {
@@ -433,29 +301,10 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     activeCustomRef.current = activeCustom;
   }, [activeCustom]);
 
-  const persistAttractorLibrary = useCallback((list: AttractorDef[]) => {
-    saveUserAttractors(list);
-    if (isTauri()) {
-      writeAttractorLibrary(JSON.stringify(list)).catch((err) => setProjectStatus(String(err)));
-    }
-  }, []);
-
   // Load the saved custom-attractor library; honour a ?#attractor=… share link;
   // fetch the reviewed community pack index as install candidates.
   useEffect(() => {
-    const localAttractors = loadUserAttractors();
-    setCustomAttractors(localAttractors);
-    if (isTauri()) {
-      readAttractorLibrary()
-        .then((raw) => {
-          if (!raw) return;
-          const parsed = JSON.parse(raw) as AttractorDef[];
-          if (Array.isArray(parsed)) {
-            setCustomAttractors(parsed.map((d) => ({ ...d, source: "local" as const })));
-          }
-        })
-        .catch((err) => setProjectStatus(String(err)));
-    }
+    setCustomAttractors(loadUserAttractors());
     const shared = decodeFromHash(typeof window !== "undefined" ? window.location.hash : "");
     if (shared) setActiveCustomState(shared);
     fetchCommunityAttractors().then(setCommunityAttractors).catch(() => undefined);
@@ -465,99 +314,9 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     systemRef.current = system;
   }, [system]);
 
-  const integrateScene = useCallback(
-    async (sceneJsonInput: string): Promise<{ trajectories: Trajectories; scene: SceneSpec }> => {
-      const scene = JSON.parse(sceneJsonInput) as SceneSpec;
-      if (runtimeCapabilities?.native_compute.available) {
-        const result = await integrateSceneNative(scene);
-        setComputeBackend(`${result.backend} · ${result.threads} threads · ${result.elapsedMs} ms`);
-        return { trajectories: result.trajectories, scene };
-      }
-      if (!api) {
-        throw new Error("No integration engine is ready");
-      }
-      const result = api.integrateScene(sceneJsonInput);
-      setComputeBackend("wasm");
-      return result;
-    },
-    [api, runtimeCapabilities]
-  );
-
-  const applyIntegratedScene = useCallback(
-    (
-      scene: SceneSpec,
-      traj: Trajectories,
-      loadKey: string,
-      options: { honorUserLocks?: boolean; preserveSceneCamera?: boolean } = {}
-    ) => {
-      const honorUserLocks = options.honorUserLocks ?? true;
-      const normalizedView = normalizeViewSpec(scene.view);
-      const systemChanged = lastLoadedSystemRef.current !== loadKey;
-      const sceneCamera =
-        options.preserveSceneCamera && scene.camera ? migrateCameraProgram(scene.camera) : null;
-      const nextCameraProgram =
-        sceneCamera ??
-        (systemChanged
-          ? resetCameraParameterGroups(cameraProgramRef.current)
-          : cloneCameraProgram(cameraProgramRef.current ?? createDefaultCameraProgram()));
-      const effectiveRenderStyle =
-        honorUserLocks && renderStyleLockedRef.current
-          ? renderStyleRef.current
-          : mapLegacyRenderStyle(normalizedView.render_style ?? "line");
-      const effectiveMaterialTransmission =
-        honorUserLocks && materialTransmissionLockedRef.current
-          ? materialTransmissionRef.current
-          : normalizedView.material_transmission ?? 0.5;
-      const effectiveMaterialStyle = materialTransmissionToStyle(effectiveMaterialTransmission);
-      normalizedView.render_style = mapLegacyRenderStyle(effectiveRenderStyle);
-      normalizedView.material_style = effectiveMaterialStyle;
-      normalizedView.material_transmission = effectiveMaterialTransmission;
-      const normalizedScene = { ...scene, view: normalizedView, camera: nextCameraProgram } as SceneSpec;
-      if (
-        normalizedView.palette === "custom" &&
-        normalizedView.palette_spec?.stops &&
-        normalizedView.palette_spec.stops.length > 0
-      ) {
-        const sortedStops = [...(normalizedView.palette_spec.stops ?? [])].sort(
-          (a, b) => (a.t ?? 0) - (b.t ?? 0)
-        );
-        setCustomPaletteState((prev) => {
-          const low = sortedStops[0]?.color ?? prev.low ?? "#000000";
-          const mid = sortedStops[Math.floor(sortedStops.length / 2)]?.color ?? prev.mid ?? low;
-          const high = sortedStops[sortedStops.length - 1]?.color ?? prev.high ?? mid;
-          const next = { ...prev, low, mid, high } as CustomPaletteState;
-          saveCustomPalette(next);
-          return next;
-        });
-      }
-      setSceneJson(JSON.stringify({ ...normalizedScene }, null, 2));
-      setSceneSpec(normalizedScene);
-      setRenderStyleState(effectiveRenderStyle);
-      setMaterialStyleState(effectiveMaterialStyle);
-      setMaterialTransmissionState(effectiveMaterialTransmission);
-      if ((!honorUserLocks || !paletteLockedRef.current) && scene.view?.palette) {
-        setPaletteState(mapLegacyPalette(scene.view.palette));
-      }
-      setCameraProgramState(nextCameraProgram);
-      setTrajectories(traj);
-      const meta = traj.reduce(
-        (acc, t) => {
-          acc.count += 1;
-          acc.points += Array.isArray(t) ? t.length : 0;
-          return acc;
-        },
-        { count: 0, points: 0 }
-      );
-      setTrajectoryMeta(meta);
-      lastLoadedSystemRef.current = loadKey;
-      setError(null);
-    },
-    []
-  );
-
   const loadScene = useCallback(
-    async (nextSystem: SystemId, res: Resolution) => {
-      const seq = ++loadSeqRef.current;
+    (nextSystem: SystemId, res: Resolution) => {
+      if (!api) return;
       setLoading(true);
       try {
         // A user-defined attractor (when active) overrides the built-in system.
@@ -567,30 +326,79 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
         const loadKey = activeC ? `custom:${activeC.id}` : nextSystem;
         const baseScene = activeC
           ? JSON.stringify(buildCustomScene(activeC))
-          : getDefaultSceneJSON(nextSystem);
+          : api.getDefaultScene(nextSystem);
         const tunedScene = activeC ? baseScene : applyResolution(baseScene, res);
-        const { trajectories: traj, scene } = await integrateScene(tunedScene);
-        if (seq !== loadSeqRef.current) return;
-        applyIntegratedScene(scene, traj, loadKey);
+        const { trajectories: traj, scene } = api.integrateScene(tunedScene);
+        const normalizedView = normalizeViewSpec(scene.view);
+        const systemChanged = lastLoadedSystemRef.current !== loadKey;
+        const nextCameraProgram = systemChanged
+          ? resetCameraParameterGroups(cameraProgramRef.current)
+          : cloneCameraProgram(cameraProgramRef.current ?? createDefaultCameraProgram());
+        // Honor user-locked render/material controls over the scene default so
+        // the rendered view *and* the exported scene stay on the chosen values.
+        const effectiveRenderStyle = renderStyleLockedRef.current
+          ? renderStyleRef.current
+          : mapLegacyRenderStyle(normalizedView.render_style ?? "line");
+        const effectiveMaterialTransmission = materialTransmissionLockedRef.current
+          ? materialTransmissionRef.current
+          : normalizedView.material_transmission ?? 0.5;
+        const effectiveMaterialStyle = materialTransmissionToStyle(effectiveMaterialTransmission);
+        normalizedView.render_style = mapLegacyRenderStyle(effectiveRenderStyle);
+        normalizedView.material_style = effectiveMaterialStyle;
+        normalizedView.material_transmission = effectiveMaterialTransmission;
+        const normalizedScene = { ...scene, view: normalizedView, camera: nextCameraProgram } as SceneSpec;
+        if (
+          normalizedView.palette === "custom" &&
+          normalizedView.palette_spec?.stops &&
+          normalizedView.palette_spec.stops.length > 0
+        ) {
+          const sortedStops = [...(normalizedView.palette_spec.stops ?? [])].sort(
+            (a, b) => (a.t ?? 0) - (b.t ?? 0)
+          );
+          setCustomPaletteState((prev) => {
+            const low = sortedStops[0]?.color ?? prev.low ?? "#000000";
+            const mid = sortedStops[Math.floor(sortedStops.length / 2)]?.color ?? prev.mid ?? low;
+            const high = sortedStops[sortedStops.length - 1]?.color ?? prev.high ?? mid;
+            const next = { ...prev, low, mid, high } as CustomPaletteState;
+            saveCustomPalette(next);
+            return next;
+          });
+        }
+        setSceneJson(JSON.stringify({ ...normalizedScene }, null, 2));
+        setSceneSpec(normalizedScene);
+        setRenderStyleState(effectiveRenderStyle);
+        setMaterialStyleState(effectiveMaterialStyle);
+        setMaterialTransmissionState(effectiveMaterialTransmission);
+        if (!paletteLockedRef.current && scene.view?.palette) {
+          setPaletteState(mapLegacyPalette(scene.view.palette));
+        }
+        setCameraProgramState(nextCameraProgram);
+        setTrajectories(traj);
+        const meta = traj.reduce(
+          (acc, t) => {
+            acc.count += 1;
+            acc.points += Array.isArray(t) ? t.length : 0;
+            return acc;
+          },
+          { count: 0, points: 0 }
+        );
+        setTrajectoryMeta(meta);
+        lastLoadedSystemRef.current = loadKey;
+        setError(null);
       } catch (err) {
         console.error(err);
-        if (seq === loadSeqRef.current) setError(String(err));
+        setError(String(err));
       } finally {
-        if (seq === loadSeqRef.current) setLoading(false);
+        setLoading(false);
       }
     },
-    [integrateScene, applyIntegratedScene]
+    [api]
   );
 
   useEffect(() => {
-    const nativeReady = !!runtimeCapabilities?.native_compute.available;
-    if ((!engineReady || !api) && !nativeReady) return;
-    if (suppressNextAutoLoadRef.current) {
-      suppressNextAutoLoadRef.current = false;
-      return;
-    }
-    void loadScene(system, resolution);
-  }, [engineReady, api, runtimeCapabilities, system, resolution, activeCustom, loadScene]);
+    if (!engineReady || !api) return;
+    loadScene(system, resolution);
+  }, [engineReady, api, system, resolution, activeCustom, loadScene]);
 
   const setCameraProgram = useCallback(
     (updater: (c: CameraProgram) => CameraProgram) => {
@@ -619,207 +427,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     [sceneSpec, system]
   );
 
-  const refreshScene = useCallback(() => {
-    void loadScene(system, resolution);
-  }, [loadScene, system, resolution]);
-
-  const loadProject = useCallback(
-    async (project: PhaseSpaceProject, path: string | null, status: string) => {
-      const seq = ++loadSeqRef.current;
-      setLoading(true);
-      try {
-        if (project.customAttractors?.length) {
-          const nextLibrary = project.customAttractors.map((d) => ({ ...d, source: "local" as const }));
-          setCustomAttractors(nextLibrary);
-          persistAttractorLibrary(nextLibrary);
-        }
-        const scene = project.scene;
-        const systemId = normalizeSystemId(String(scene.system));
-        if (systemId) {
-          suppressNextAutoLoadRef.current = true;
-          setActiveCustomState(null);
-          setSystemState(systemId);
-        }
-        const { trajectories: traj } = await integrateScene(JSON.stringify(scene));
-        if (seq !== loadSeqRef.current) return;
-        applyIntegratedScene(scene, traj, path ? `project:${path}` : `project:${scene.id ?? Date.now()}`, {
-          honorUserLocks: false,
-          preserveSceneCamera: true,
-        });
-        setProjectPath(path);
-        setProjectStatus(status);
-      } catch (err) {
-        console.error(err);
-        if (seq === loadSeqRef.current) {
-          setError(String(err));
-          setProjectStatus(String(err));
-        }
-      } finally {
-        if (seq === loadSeqRef.current) setLoading(false);
-      }
-    },
-    [applyIntegratedScene, integrateScene, persistAttractorLibrary]
-  );
-
-  const openProject = useCallback(
-    async (path: string) => {
-      const result = await readPhaseProject(path);
-      await loadProject(parseProject(result.projectJson), result.path, `opened ${result.path}`);
-    },
-    [loadProject]
-  );
-
-  const saveProject = useCallback(
-    async (path?: string) => {
-      if (!sceneSpec) {
-        setProjectStatus("no scene to save");
-        return;
-      }
-      const target =
-        path ??
-        projectPath ??
-        defaultProjectPath(sceneSpec, runtimeCapabilities?.default_project_dir);
-      const project = projectFromState(sceneSpec, customAttractors);
-      const result = await savePhaseProject(target, JSON.stringify(project, null, 2));
-      setProjectPath(result.path);
-      setProjectStatus(`saved ${result.path}`);
-    },
-    [sceneSpec, projectPath, runtimeCapabilities, customAttractors]
-  );
-
-  const recoverAutosave = useCallback(async () => {
-    const result = await readPhaseAutosave();
-    if (!result) {
-      setProjectStatus("no autosave found");
-      return;
-    }
-    await loadProject(parseProject(result.projectJson), result.path, `recovered ${result.path}`);
-  }, [loadProject]);
-
-  const importDroppedPath = useCallback(
-    async (path: string) => {
-      const dropped = await readDroppedFile(path);
-      if (dropped.kind === "project" && dropped.text) {
-        await loadProject(parseProject(dropped.text), dropped.path, `opened ${dropped.name}`);
-        return;
-      }
-      if ((dropped.kind === "palette" || dropped.kind === "json") && dropped.text) {
-        const importedPalette = paletteFromText(dropped.text);
-        if (importedPalette) {
-          setCustomPaletteState(importedPalette);
-          saveCustomPalette(importedPalette);
-          setPaletteState("custom");
-          setSceneSpec((prev) => {
-            if (!prev) return prev;
-            const updatedView = normalizeViewSpec(prev.view);
-            const nextScene = {
-              ...prev,
-              view: {
-                ...updatedView,
-                palette: "custom" as Palette,
-                palette_spec: {
-                  stops: [
-                    { t: 0, color: importedPalette.low },
-                    { t: 0.5, color: importedPalette.mid },
-                    { t: 1, color: importedPalette.high },
-                  ],
-                },
-              },
-            } as SceneSpec;
-            setSceneJson(JSON.stringify(nextScene, null, 2));
-            return nextScene;
-          });
-          setProjectStatus(`imported palette ${dropped.name}`);
-          return;
-        }
-      }
-      if (dropped.kind === "json" && dropped.text) {
-        const manifest = parseManifest(dropped.text);
-        setCustomAttractors((prev) => {
-          const next = upsertAttractorList(prev, manifest);
-          persistAttractorLibrary(next);
-          return next;
-        });
-        setActiveCustomState(manifest);
-        setProjectStatus(`imported attractor ${manifest.name}`);
-        return;
-      }
-      if (dropped.kind === "audio") {
-        setProjectStatus(`audio file ready for native workflow: ${dropped.name}`);
-        return;
-      }
-      setProjectStatus(`unsupported drop: ${dropped.name}`);
-    },
-    [loadProject, persistAttractorLibrary]
-  );
-
-  useEffect(() => {
-    if (!isTauri() || !sceneSpec) return;
-    const id = window.setTimeout(() => {
-      const project = projectFromState(sceneSpec, customAttractors);
-      autosavePhaseProject(JSON.stringify(project, null, 2))
-        .then((result) => setProjectStatus(`autosaved ${result.path}`))
-        .catch((err) => setProjectStatus(String(err)));
-    }, 2500);
-    return () => window.clearTimeout(id);
-  }, [sceneSpec, customAttractors]);
-
-  useEffect(() => {
-    if (!isTauri()) return;
-    let cancelled = false;
-    pendingOpenProjectPaths()
-      .then(async (paths) => {
-        if (cancelled || paths.length === 0) return;
-        await openProject(paths[0]);
-      })
-      .catch((err) => {
-        if (!cancelled) setProjectStatus(String(err));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [openProject]);
-
-  useEffect(() => {
-    if (!isTauri()) return;
-    let cleanup: (() => void) | null = null;
-    import("@tauri-apps/api/webview")
-      .then(async ({ getCurrentWebview }) => {
-        cleanup = await getCurrentWebview().onDragDropEvent((event) => {
-          if (event.payload.type !== "drop") return;
-          const [path] = event.payload.paths;
-          if (path) {
-            importDroppedPath(path).catch((err) => setProjectStatus(String(err)));
-          }
-        });
-      })
-      .catch((err) => setProjectStatus(String(err)));
-    return () => {
-      cleanup?.();
-    };
-  }, [importDroppedPath]);
-
-  useEffect(() => {
-    let cancelled = false;
-    let cleanupMenu: (() => void) | null = null;
-    onMenuEvent((id) => {
-      if (cancelled) return;
-      if (id === "save-project") {
-        saveProject().catch((err) => setProjectStatus(String(err)));
-      } else if (id === "recover-autosave") {
-        recoverAutosave().catch((err) => setProjectStatus(String(err)));
-      } else if (id === "open-project") {
-        setProjectStatus("drop a .phsp file onto the window, or use the Project path field");
-      }
-    }).then((unlisten) => {
-      if (cancelled) unlisten();
-      else cleanupMenu = unlisten;
-    });
-    return () => {
-      cancelled = true;
-      cleanupMenu?.();
-    };
-  }, [saveProject, recoverAutosave]);
+  const refreshScene = useCallback(() => loadScene(system, resolution), [loadScene, system, resolution]);
 
   const setSystem = useCallback((nextSystem: SystemId) => {
     // Choosing a built-in system leaves any active custom attractor.
@@ -942,17 +550,8 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     }
   }, [renderStillHandler]);
 
-  const captureFrameDataURL = useCallback(
-    (options?: FrameCaptureOptions) => frameCaptureHandler?.(options) ?? null,
-    [frameCaptureHandler]
-  );
-
-  const setFrameCaptureHandler = useCallback((handler: FrameCaptureHandler | null) => {
-    setFrameCaptureHandlerState(() => handler);
-  }, []);
-
   const value = useMemo<ViewerContextValue>(() => ({
-    ready: engineReady || !!runtimeCapabilities?.native_compute.available,
+    ready: engineReady,
     loading,
     error,
     system,
@@ -984,10 +583,6 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     background,
     sceneJson,
     sceneSpec,
-    projectPath,
-    projectStatus,
-    computeBackend,
-    runtimeCapabilities,
     cameraProgram,
     trajectories,
     trajectoryMeta,
@@ -995,28 +590,16 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     setCustomAttractor: (def: AttractorDef) => setActiveCustomState(def),
     clearCustomAttractor: () => setActiveCustomState(null),
     saveCustomAttractor: (def: AttractorDef) => {
-      setCustomAttractors((prev) => {
-        const next = upsertAttractorList(prev, def);
-        persistAttractorLibrary(next);
-        return next;
-      });
+      setCustomAttractors(upsertUserAttractor(def));
       setActiveCustomState(def);
     },
     installCommunityAttractor: (def: AttractorDef) => {
       const installed = { ...def, source: "local" as const };
-      setCustomAttractors((prev) => {
-        const next = upsertAttractorList(prev, installed);
-        persistAttractorLibrary(next);
-        return next;
-      });
+      setCustomAttractors(upsertUserAttractor(installed));
       setActiveCustomState(installed);
     },
     deleteCustomAttractor: (id: string) => {
-      setCustomAttractors((prev) => {
-        const next = deleteAttractorFromList(prev, id);
-        persistAttractorLibrary(next);
-        return next;
-      });
+      setCustomAttractors(deleteUserAttractor(id));
       setActiveCustomState((cur) => (cur && cur.id === id ? null : cur));
     },
     validateAttractor: (def: AttractorDef, paramValues?: Record<string, number>) =>
@@ -1048,11 +631,6 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     setCameraProgram,
     requestRenderStill,
     setRenderStillHandler,
-    captureFrameDataURL,
-    setFrameCaptureHandler,
-    saveProject,
-    openProject,
-    recoverAutosave,
     refreshScene,
   }), [
     api,
@@ -1088,15 +666,10 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     background,
     sceneJson,
     sceneSpec,
-    projectPath,
-    projectStatus,
-    computeBackend,
-    runtimeCapabilities,
     cameraProgram,
     trajectories,
     trajectoryMeta,
     setSystem,
-    persistAttractorLibrary,
     setCameraProgram,
     setRenderStyle,
     setLineWeight,
@@ -1110,11 +683,6 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     setPalette,
     requestRenderStill,
     setRenderStillHandler,
-    captureFrameDataURL,
-    setFrameCaptureHandler,
-    saveProject,
-    openProject,
-    recoverAutosave,
     refreshScene,
   ]);
 

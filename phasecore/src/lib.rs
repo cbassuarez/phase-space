@@ -4,10 +4,9 @@ pub mod integrator;
 pub mod scene;
 pub mod expr;
 pub mod custom;
-pub mod runtime;
 
 pub use vec3::Vec3;
 pub use integrator::{integrate_trajectory, IntegratorConfig};
 pub use scene::{IntegratorSpec, SceneSpec, SystemId};
 pub use custom::{CompileErrors, CustomSystem};
-pub use runtime::{integrate_scene, validate_attractor_input, IntegrateSceneReport};
+

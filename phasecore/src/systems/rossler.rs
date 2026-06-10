@@ -22,7 +22,6 @@ impl Default for RosslerParams {
     }
 }
 
-#[derive(Default)]
 pub struct Rossler;
 
 impl System3 for Rossler {

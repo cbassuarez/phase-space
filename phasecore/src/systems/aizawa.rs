@@ -30,7 +30,6 @@ impl Default for AizawaParams {
     }
 }
 
-#[derive(Default)]
 pub struct Aizawa;
 
 impl System3 for Aizawa {

@@ -18,7 +18,6 @@ impl Default for LorenzParams {
     }
 }
 
-#[derive(Default)]
 pub struct Lorenz;
 
 impl System3 for Lorenz {
@@ -41,3 +40,4 @@ impl System3 for Lorenz {
         Vec3::new(dx, dy, dz)
     }
 }
+

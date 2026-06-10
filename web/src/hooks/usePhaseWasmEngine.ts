@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getDefaultSceneJSON } from "../data/defaultScenes";
 import type { SceneSpec, SystemId, Trajectories } from "../types";
-import { sceneForRust } from "../utils/sceneBridge";
 
 export interface AttractorExprError {
   message: string;
@@ -25,6 +24,31 @@ type WasmEngineClass = new () => {
 interface PhaseWasmApi {
   WasmEngine: WasmEngineClass;
   default: () => Promise<unknown>;
+}
+
+const wasmRenderStyleMap: Record<string, string> = {
+  line: "path-trace",
+  cells: "volumetric-cloud",
+  "photon-weave": "neon-filaments",
+  caustics: "crt-scope",
+  ribbon: "ribbon",
+  "volumetric-cloud": "volumetric-cloud",
+};
+
+function sceneForWasm(scene: SceneSpec): Record<string, unknown> {
+  const wasmScene = JSON.parse(JSON.stringify(scene)) as Record<string, unknown>;
+  delete wasmScene.camera;
+  const view = wasmScene.view as Record<string, unknown> | undefined;
+  if (view) {
+    const renderStyle = view.render_style;
+    if (renderStyle) {
+      view.render_style = wasmRenderStyleMap[String(renderStyle)];
+    }
+    if (view.background === "dim") {
+      view.background = "dark";
+    }
+  }
+  return wasmScene;
 }
 
 type EngineInstance = {
@@ -70,7 +94,7 @@ export function usePhaseWasmEngine() {
       },
       integrateScene: (sceneJson: string): { trajectories: Trajectories; scene: SceneSpec } => {
         const scene = JSON.parse(sceneJson) as SceneSpec;
-        const trajectories = engine.integrate_scene_value(sceneForRust(scene)) as Trajectories;
+        const trajectories = engine.integrate_scene_value(sceneForWasm(scene)) as Trajectories;
         return { trajectories, scene };
       },
       // Validate user-defined attractor equations. Input is

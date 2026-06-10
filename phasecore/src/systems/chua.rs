@@ -64,7 +64,6 @@ fn chua_diode(x: f32, m0: f32, m1: f32, bp: f32) -> f32 {
     m1 * x + 0.5 * (m0 - m1) * ((x + bp).abs() - (x - bp).abs())
 }
 
-#[derive(Default)]
 pub struct Chua;
 
 impl System3 for Chua {

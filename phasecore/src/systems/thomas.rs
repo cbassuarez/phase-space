@@ -19,7 +19,6 @@ impl Default for ThomasParams {
     }
 }
 
-#[derive(Default)]
 pub struct Thomas;
 
 impl System3 for Thomas {
