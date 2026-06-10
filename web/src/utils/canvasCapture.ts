@@ -23,3 +23,29 @@ export function captureCanvasDataURL(src: HTMLCanvasElement, maxDim = 900): stri
     return null;
   }
 }
+
+export interface CanvasPngCaptureOptions {
+  width?: number;
+  height?: number;
+}
+
+export function captureCanvasPngDataURL(
+  src: HTMLCanvasElement,
+  options: CanvasPngCaptureOptions = {}
+): string | null {
+  if (!src.width || !src.height) return null;
+  const w = Math.max(1, Math.round(options.width ?? src.width));
+  const h = Math.max(1, Math.round(options.height ?? src.height));
+  if (!tmp) tmp = document.createElement("canvas");
+  tmp.width = w;
+  tmp.height = h;
+  const ctx = tmp.getContext("2d");
+  if (!ctx) return null;
+  try {
+    ctx.clearRect(0, 0, w, h);
+    ctx.drawImage(src, 0, 0, w, h);
+    return tmp.toDataURL("image/png");
+  } catch {
+    return null;
+  }
+}

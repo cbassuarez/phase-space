@@ -1,3 +1,15 @@
+## [1.2.0](https://github.com/cbassuarez/phase-space/compare/v1.1.1...v1.2.0) (2026-06-10)
+
+
+### Features
+
+* desktop output tab — live-output controls, arbitrary-path PNG frame writes, ffmpeg sequence encoding handoff, and Art-Net/DMX UDP output from the current system state
+* native desktop compute path — Tauri invokes phasecore directly, using Rayon across trajectories on native builds with WASM retained as the browser fallback
+* project files — `.phsp` scene/project save and open flows, autosave and crash recovery, file association metadata, startup open handling, and native drag/drop imports for projects, attractor manifests, palettes, and audio assets
+* disk-backed desktop attractor library for unbounded local artist packs outside browser storage limits
+* capability reporting for Syphon/Spout, NDI, and wgpu-native renderer targets so unavailable native pipeline pieces are shown explicitly while WebGL remains the current renderer
+
+
 ## [1.1.1](https://github.com/cbassuarez/phase-space/compare/v1.1.0...v1.1.1) (2026-06-06)
 
 

@@ -188,18 +188,27 @@ export function saveUserAttractors(list: AttractorDef[]): void {
   }
 }
 
-export function upsertUserAttractor(def: AttractorDef): AttractorDef[] {
-  const list = loadUserAttractors();
+export function upsertAttractorList(list: AttractorDef[], def: AttractorDef): AttractorDef[] {
+  const next = [...list];
   const i = list.findIndex((d) => d.id === def.id);
   const clean = { ...def, source: "local" as const };
-  if (i >= 0) list[i] = clean;
-  else list.push(clean);
+  if (i >= 0) next[i] = clean;
+  else next.push(clean);
+  return next;
+}
+
+export function deleteAttractorFromList(list: AttractorDef[], id: string): AttractorDef[] {
+  return list.filter((d) => d.id !== id);
+}
+
+export function upsertUserAttractor(def: AttractorDef): AttractorDef[] {
+  const list = upsertAttractorList(loadUserAttractors(), def);
   saveUserAttractors(list);
   return list;
 }
 
 export function deleteUserAttractor(id: string): AttractorDef[] {
-  const list = loadUserAttractors().filter((d) => d.id !== id);
+  const list = deleteAttractorFromList(loadUserAttractors(), id);
   saveUserAttractors(list);
   return list;
 }

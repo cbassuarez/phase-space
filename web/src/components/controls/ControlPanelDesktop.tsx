@@ -11,6 +11,7 @@ import { SidebarTabs, SIDEBAR_TAB_ORDER, type SidebarTabId } from "./SidebarTabs
 import StatusBadge from "./StatusBadge";
 import InspectorPanel from "./InspectorPanel";
 import StyleDetail from "./StyleDetail";
+import OutputPanel from "./OutputPanel";
 import { builtinPalettes } from "../../palettes";
 import CustomPaletteEditor from "./CustomPaletteEditor";
 import { LightingControlGroup } from "../LightingTweaks";
@@ -721,6 +722,8 @@ function ControlPanelDesktop({ onCollapse }: { onCollapse?: () => void }) {
                 <ModulationSection />
               </section>
             )}
+
+            {activeTab === "output" && <OutputPanel />}
             </motion.div>
           </AnimatePresence>
         </div>

@@ -1,14 +1,15 @@
 import type { KeyboardEvent } from "react";
 import clsx from "clsx";
-import { AudioLines, Sparkles, Video, type LucideIcon } from "lucide-react";
+import { AudioLines, RadioTower, Sparkles, Video, type LucideIcon } from "lucide-react";
 import { controlFocusRing, controlTransition } from "./controlStyles";
 
-export type SidebarTabId = "scene" | "camera" | "audio";
+export type SidebarTabId = "scene" | "camera" | "audio" | "output";
 
 const TABS: { id: SidebarTabId; label: string; Icon: LucideIcon }[] = [
   { id: "scene", label: "Scene", Icon: Sparkles },
   { id: "camera", label: "Camera", Icon: Video },
   { id: "audio", label: "Audio", Icon: AudioLines },
+  { id: "output", label: "Output", Icon: RadioTower },
 ];
 
 export const SIDEBAR_TAB_ORDER: SidebarTabId[] = TABS.map((t) => t.id);
